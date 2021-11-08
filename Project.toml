@@ -1,0 +1,13 @@
+name = "GreenFunc"
+uuid = "9efc7ea6-d529-4241-ab29-dcf68b94af7c"
+authors = ["Tao Wang", "Xiansheng Cai"]
+version = "0.1.0"
+
+[compat]
+julia = "1.6"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
