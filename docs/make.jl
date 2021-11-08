@@ -20,5 +20,5 @@ makedocs(;
 
 deploydocs(;
     repo="github.com/fsxbhyy/GreenFunc.jl",
-    devbranch="main",
+    devbranch="master",
 )
