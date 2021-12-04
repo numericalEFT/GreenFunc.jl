@@ -1,6 +1,9 @@
 using GreenFunc
-using Test
+using Test, StaticArrays, LinearAlgebra, Printf, Random, Statistics
 
-@testset "GreenFunc.jl" begin
-    # Write your tests here.
+if isempty(ARGS)
+    include("test_Green.jl")
+    #include("interpolate.jl")
+else
+    include(ARGS[1])
 end
