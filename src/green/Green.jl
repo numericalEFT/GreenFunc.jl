@@ -98,7 +98,9 @@ mutable struct Green2DLR{T<:Number,TGT,SGT,CT}
     dlrGrid::DLRGrid
     instant::AbstractArray{T,3}
     dynamic::AbstractArray{T,4}
-    error::Any
+    hasError::Bool
+    instantError::AbstractArray{T,3}
+    dynamicError::AbstractArray{T,4}
 
     """
          function Green2DLR{T}(timeType,spaceType,isFermi, β, Euv, rtol,spaceGrid::SGT; color::CT=nothing, timeGrid::TGT=nothing,timeSymmetry=:none, spaceSymmetry=nothing,error=nothing)where{T<:Number,TGT,SGT,CT}
@@ -120,9 +122,9 @@ mutable struct Green2DLR{T<:Number,TGT,SGT,CT}
     - 'dlrGrid': In-built Discrete Lehmann Representation
     - 'error': The error of noisy Green's function
     """
-    function Green2DLR{T}(isFermi, Euv, rtol, spaceType, spaceGrid::SGT, β, timeType; timeSymmetry=:none, timeGrid::TGT=nothing, color::CT=nothing, spaceSymmetry=nothing, error=nothing)where{T<:Number,TGT,SGT,CT}
+    function Green2DLR{T}(isFermi, Euv, rtol, spaceType, spaceGrid::SGT, β, timeType; timeSymmetry=:none, timeGrid::TGT=nothing, color::CT=nothing, spaceSymmetry=nothing, hasError = false)where{T<:Number,TGT,SGT,CT}
         @assert timeType == :n ||timeType == :τ ||timeType == :ω
-        @assert spaceType == :k ||timeType == :x
+        @assert spaceType == :k ||spaceType == :x
         @assert timeSymmetry == :ph ||timeSymmetry == :pha ||timeSymmetry == :none
         dlrGrid = DLRGrid(Euv, β, rtol, isFermi, timeSymmetry)
         tgt = TGT
@@ -143,7 +145,9 @@ mutable struct Green2DLR{T<:Number,TGT,SGT,CT}
         end
         instant = zeros(T, (length(color),length(color),length(spaceGrid)))
         dynamic = zeros(T, (length(color), length(color), length(spaceGrid),length(timeGrid)))
-        return new{T,tgt,SGT,ct}(isFermi, β, timeType, timeSymmetry, timeGrid, spaceType, spaceSymmetry, spaceGrid, color, Euv, rtol, dlrGrid, instant,dynamic, error)
+        instantError = Array{T,3}(undef, 0, 0, 0)
+        dynamicError = Array{T,4}(undef, 0, 0, 0, 0)
+        return new{T,tgt,SGT,ct}(isFermi, β, timeType, timeSymmetry, timeGrid, spaceType, spaceSymmetry, spaceGrid, color, Euv, rtol, dlrGrid, instant,dynamic, hasError, instantError, dynamicError)
     end
 
     # function Green2DLR{T}(timeType,spaceType, dlrGrid::DLRGrid, color::CT,timeGrid::TGT,spaceGrid::SGT; instant=nothing, dynamic = nothing, spaceSymmetry=nothing,error=nothing)where{T<:Number,TGT,SGT,CT}
@@ -187,21 +191,27 @@ function TimeFourier(green::Green2DLR, targetType::Symbol; targetGrid = nothing)
         end
     end
 
+    if (green.hasError == true)
+        error = green.dynamicError
+    else
+        error = nothing
+    end
+
     if(green.timeType==:n)
         if(targetType == :τ)
             T_factor = 1/green.β
-            dynamic = matfreq2tau(green.dlrGrid, green.dynamic, targetGrid, green.timeGrid; green.error, axis=4)
+            dynamic = matfreq2tau(green.dlrGrid, green.dynamic, targetGrid, green.timeGrid; error, axis=4)
         elseif(targetType == :ω)
             T_factor = 1.0
-            dynamic = matfreq2dlr(green.dlrGrid, green.dynamic, green.timeGrid; green.error,axis=4)
+            dynamic = matfreq2dlr(green.dlrGrid, green.dynamic, green.timeGrid; error,axis=4)
         end
     elseif(green.timeType == :τ)
         if(targetType == :n)
             T_factor = green.β
-            dynamic = tau2matfreq(green.dlrGrid, green.dynamic, targetGrid, green.timeGrid; green.error, axis=4)            
+            dynamic = tau2matfreq(green.dlrGrid, green.dynamic, targetGrid, green.timeGrid; error, axis=4)            
         elseif(targetType == :ω)
             T_factor = green.β
-            dynamic = tau2dlr(green.dlrGrid, green.dynamic, green.timeGrid; green.error,axis=4)
+            dynamic = tau2dlr(green.dlrGrid, green.dynamic, green.timeGrid; error,axis=4)
         end
     elseif(green.timeType == :ω)
         if(targetType == :n)
@@ -212,9 +222,16 @@ function TimeFourier(green::Green2DLR, targetType::Symbol; targetGrid = nothing)
             dynamic = dlr2tau(green.dlrGrid, green.dynamic, targetGrid; axis=4)
         end
     end
-    green_new = Green2DLR{eltype(dynamic)}(green.isFermi, green.Euv, green.rtol, green.spaceType, green.spaceGrid, green.β, targetType; timeSymmetry = green.timeSymmetry, timeGrid = targetGrid, color = green.color, spaceSymmetry = green.spaceSymmetry, error = green.error)
+
+
+    green_new = Green2DLR{eltype(dynamic)}(green.isFermi, green.Euv, green.rtol, green.spaceType, green.spaceGrid, green.β, targetType; timeSymmetry = green.timeSymmetry, timeGrid = targetGrid, color = green.color, spaceSymmetry = green.spaceSymmetry)
     green_new.dynamic = dynamic
     green_new.instant = T_factor * green.instant
+    if (green.hasError == true)
+        green_new.instantError = T_factor * green.instantError
+        green_new.dynamicError = 0.0 * green_new.dynamic
+        # Need future implementation
+    end
     return green_new
 end
 
