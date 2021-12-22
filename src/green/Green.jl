@@ -84,21 +84,21 @@ Green's function with two external legs that has in-built Discrete Lehmann Repre
 """
 
 mutable struct Green2DLR{T<:Number,TGT,SGT,CT}
-    timeType::Symbol
-    spaceType::Symbol
     isFermi::Bool
-    timeSymmetry::Symbol
-    spaceSymmetry::Any
     β::Float64
+    timeType::Symbol
+    timeSymmetry::Symbol
+    timeGrid::TGT
+    spaceType::Symbol
+    spaceSymmetry::Any
+    spaceGrid::SGT
+    color::CT
     Euv::Float64
     rtol::Float64
-    color::CT
-    timeGrid::TGT
-    spaceGrid::SGT
+    dlrGrid::DLRGrid
     instant::AbstractArray{T,3}
     dynamic::AbstractArray{T,4}
     error::Any
-    dlrGrid::DLRGrid
 
     """
          function Green2DLR{T}(timeType,spaceType,isFermi, β, Euv, rtol,spaceGrid::SGT; color::CT=nothing, timeGrid::TGT=nothing,timeSymmetry=:none, spaceSymmetry=nothing,error=nothing)where{T<:Number,TGT,SGT,CT}
@@ -106,46 +106,44 @@ mutable struct Green2DLR{T<:Number,TGT,SGT,CT}
     Create two-leg Green's function on timeGrid, spaceGrid and color, with in-built DLR.
     The value of instant and dynamic parts are initialized with zero.
     #Arguements
-    - 'timeType': Whether the Green's function is in time/frequency/dlr space
-    - 'spaceType': Whether the Green's function is in coordinate space/momentum space
     - 'isFermi': Particle is fermi or boson
-    - 'timeSymmetry': Whether the Green's function has particle-hole symmetry, anti-particle-hole symmetry or none of them
-    - 'spaceSymmetry': Symmetry of lattice
     - 'β': Inverse temperature
+    - 'timeType': Whether the Green's function is in time/frequency/dlr space
+    - 'timeSymmetry': Whether the Green's function has particle-hole symmetry, anti-particle-hole symmetry or none of them
+    - 'timeGrid': τ/n/ω  grid. Default: DLR grid in timeType (:τ/:n/:ω) 
+    - 'spaceType': Whether the Green's function is in coordinate space/momentum space
+    - 'spaceSymmetry': Symmetry of lattice
+    - 'spaceGrid': k/x grid 
+    - 'color': Indices of species of Green's function (such as different spin values). Default: One element array [1]
     - 'Euv': the UV energy scale of the spectral density
     - 'rtol': tolerance absolute error
-    - 'color': Indices of species of Green's function (such as different spin values). Default: One element array [1]
-    - 'timeGrid': Time or Frequency grid. Default: DLR grid in timeType (frequency, tau or dlr) 
-    - 'spaceGrid': Coordinate or momentum grid
-    - 'error': The error of noisy Green's function
     - 'dlrGrid': In-built Discrete Lehmann Representation
+    - 'error': The error of noisy Green's function
     """
-    function Green2DLR{T}(timeType,spaceType,isFermi, β, Euv, rtol,spaceGrid::SGT; color::CT=nothing, timeGrid::TGT=nothing,timeSymmetry=:none, spaceSymmetry=nothing,error=nothing)where{T<:Number,TGT,SGT,CT}
-        @assert timeType == :freq ||timeType == :tau ||timeType == :dlr
-        @assert spaceType == :mom ||timeType == :spa
+    function Green2DLR{T}(isFermi, Euv, rtol, spaceType, spaceGrid::SGT, β, timeType; timeSymmetry=:none, timeGrid::TGT=nothing, color::CT=nothing, spaceSymmetry=nothing, error=nothing)where{T<:Number,TGT,SGT,CT}
+        @assert timeType == :n ||timeType == :τ ||timeType == :ω
+        @assert spaceType == :k ||timeType == :x
         @assert timeSymmetry == :ph ||timeSymmetry == :pha ||timeSymmetry == :none
         dlrGrid = DLRGrid(Euv, β, rtol, isFermi, timeSymmetry)
-        ct = CT
         tgt = TGT
         if(timeGrid == nothing)
-            if(timeType == :freq)
+            if(timeType == :n)
                 timeGrid = dlrGrid.n
-            elseif(timeType == :tau)
+            elseif(timeType == :τ)
                 timeGrid = dlrGrid.τ
-            elseif(timeType == :dlr)
+            elseif(timeType == :ω)
                 timeGrid = dlrGrid.ω
             end
             tgt = typeof(timeGrid)
         end
+        ct = CT
         if(color == nothing)
             color = [1]
             ct = typeof(color)
         end
-        static_val = zeros(T, (length(color),length(color),length(spaceGrid)))
-        dynamic_val = zeros(T, (length(color), length(color), length(spaceGrid),length(timeGrid)))
-        instant = static_val
-        dynamic = dynamic_val
-        return new{T,tgt,SGT,ct}(timeType,spaceType,isFermi,timeSymmetry,spaceSymmetry, β, Euv, rtol, color,timeGrid,spaceGrid,instant,dynamic, error,dlrGrid)
+        instant = zeros(T, (length(color),length(color),length(spaceGrid)))
+        dynamic = zeros(T, (length(color), length(color), length(spaceGrid),length(timeGrid)))
+        return new{T,tgt,SGT,ct}(isFermi, β, timeType, timeSymmetry, timeGrid, spaceType, spaceSymmetry, spaceGrid, color, Euv, rtol, dlrGrid, instant,dynamic, error)
     end
 
     # function Green2DLR{T}(timeType,spaceType, dlrGrid::DLRGrid, color::CT,timeGrid::TGT,spaceGrid::SGT; instant=nothing, dynamic = nothing, spaceSymmetry=nothing,error=nothing)where{T<:Number,TGT,SGT,CT}
@@ -169,6 +167,7 @@ end
 """
     function TimeFourier(green::Green2DLR, aimType::Symbol; aimGrid = nothing)
     Convert Green's function to different time representation (frequency, tau , or dlr).
+    The fourier convention of instant part is:  G_ins(ωn) = G_ins(ω) = β*G_ins(τ) = G_ins
     #Arguements
     - 'green': Original Green's function
     - 'aimType': Time representation of outcome Green's function
@@ -176,41 +175,46 @@ end
 """
 
 
-function TimeFourier(green::Green2DLR, aimType::Symbol; aimGrid = nothing)
-    if(aimGrid == nothing)
-        if(aimType == :freq)
-            aimGrid = green.dlrGrid.n
-        elseif(aimType == :tau)
-            aimGrid = green.dlrGrid.τ
-        elseif(aimType == :dlr)
-            aimGrid = green.dlrGrid.ω
-        end
-    end
-    if(green.timeType==:freq)
-        if(aimType == :tau)
-            data_mid = matfreq2dlr(green.dlrGrid, green.dynamic, green.timeGrid; green.error,axis=4)
-            data = dlr2tau(green.dlrGrid, data_mid, aimGrid; axis=4)
-        elseif(aimType == :dlr)
-            data = matfreq2dlr(green.dlrGrid, green.dynamic, green.timeGrid; green.error,axis=4)
-        end
-    elseif(green.timeType == :tau)
-        if(aimType == :freq)
-            data_mid = tau2dlr(green.dlrGrid, green.dynamic, green.timeGrid; green.error,axis=4)
-            data = dlr2matfreq(green.dlrGrid, data_mid, aimGrid; axis=4)
-        elseif(aimType == :dlr)
-            data = tau2dlr(green.dlrGrid, green.dynamic, green.timeGrid; green.error,axis=4)
-        end
-    elseif(green.timeType == :dlr)
-        if(aimType == :freq)
-            data = dlr2matfreq(green.dlrGrid, green.dynamic, aimGrid; axis=4)
-        elseif(aimType == :tau)
-            data = dlr2tau(green.dlrGrid, green.dynamic, aimGrid; axis=4)
+function TimeFourier(green::Green2DLR, targetType::Symbol; targetGrid = nothing)
+    @assert targetType == :n ||targetType == :τ ||targetType == :ω
+    if(targetGrid == nothing)
+        if(targetType == :n)
+            targetGrid = green.dlrGrid.n
+        elseif(targetType == :τ)
+            targetGrid = green.dlrGrid.τ
+        elseif(targetType == :ω)
+            targetGrid = green.dlrGrid.ω
         end
     end
 
-    green_new = Green2DLR{typeof(data[1,1,1,1])}(aimType,green.spaceType, green.isFermi, green.β, green.Euv, green.rtol, green.spaceGrid; color = green.color, timeGrid = aimGrid, timeSymmetry = green.timeSymmetry, spaceSymmetry = green.spaceSymmetry, error = green.error)
-    green_new.dynamic = data
-    green_new.instant = green.instant
+    if(green.timeType==:n)
+        if(targetType == :τ)
+            T_factor = 1/green.β
+            dynamic = matfreq2tau(green.dlrGrid, green.dynamic, targetGrid, green.timeGrid; green.error, axis=4)
+        elseif(targetType == :ω)
+            T_factor = 1.0
+            dynamic = matfreq2dlr(green.dlrGrid, green.dynamic, green.timeGrid; green.error,axis=4)
+        end
+    elseif(green.timeType == :τ)
+        if(targetType == :n)
+            T_factor = green.β
+            dynamic = tau2matfreq(green.dlrGrid, green.dynamic, targetGrid, green.timeGrid; green.error, axis=4)            
+        elseif(targetType == :ω)
+            T_factor = green.β
+            dynamic = tau2dlr(green.dlrGrid, green.dynamic, green.timeGrid; green.error,axis=4)
+        end
+    elseif(green.timeType == :ω)
+        if(targetType == :n)
+            T_factor = 1.0
+            dynamic = dlr2matfreq(green.dlrGrid, green.dynamic, targetGrid; axis=4)
+        elseif(targetType == :τ)
+            T_factor = 1/green.β
+            dynamic = dlr2tau(green.dlrGrid, green.dynamic, targetGrid; axis=4)
+        end
+    end
+    green_new = Green2DLR{eltype(dynamic)}(green.isFermi, green.Euv, green.rtol, green.spaceType, green.spaceGrid, green.β, targetType; timeSymmetry = green.timeSymmetry, timeGrid = targetGrid, color = green.color, spaceSymmetry = green.spaceSymmetry, error = green.error)
+    green_new.dynamic = dynamic
+    green_new.instant = T_factor * green.instant
     return green_new
 end
 
