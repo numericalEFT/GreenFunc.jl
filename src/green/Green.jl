@@ -26,7 +26,6 @@ and corresponding grids of τ, q and σ.
 - 'instant': Instantaneous part of Green's function that is δ(τ) in τ space.
 - 'dynamic': Dynamic part of Green's function
 """
-
 mutable struct Green2{T<:AbstractFloat,TGT,SGT,CT}
     timeType::Symbol
     spaceType::Symbol
@@ -66,21 +65,21 @@ end
 Green's function with two external legs that has in-built Discrete Lehmann Representation.
 
 #Members:
-- 'timeType': Whether the Green's function is in time/frequency/dlr space
-- 'spaceType': Whether the Green's function is in coordinate space/momentum space
 - 'isFermi': Particle is fermi or boson
-- 'timeSymmetry': Whether the Green's function has particle-hole symmetry, anti-particle-hole symmetry or none of them
-- 'spaceSymmetry': Symmetry of lattice
 - 'β': Inverse temperature
-- 'color': Indices of species of Green's function (such as different spin values)
+- 'timeType': Whether the Green's function is in time/frequency/dlr space
+- 'timeSymmetry': Whether the Green's function has particle-hole symmetry, anti-particle-hole symmetry or none of them
 - 'timeGrid': Time or Frequency grid
+- 'spaceType': Whether the Green's function is in coordinate space/momentum space
+- 'spaceSymmetry': Symmetry of lattice
 - 'spaceGrid': Coordinate or momentum grid
+- 'color': Indices of species of Green's function (such as different spin values)
+- 'dlrGrid': In-built Discrete Lehmann Representation
 - 'instant': Instantaneous part of Green's function that is proportional to δ(τ) in τ space.
 - 'dynamic': Dynamic part of Green's function
-- 'error': The error of noisy Green's function
-- 'dlrGrid': In-built Discrete Lehmann Representation
+- 'instantError': Error of instantaneous part
+- 'dynamicError': Error of dynamic part
 """
-
 mutable struct Green2DLR{T<:Number,TGT,SGT,CT}
     isFermi::Bool
     β::Float64
@@ -102,21 +101,21 @@ mutable struct Green2DLR{T<:Number,TGT,SGT,CT}
          function Green2DLR{T}(timeType,spaceType,isFermi, β, Euv, rtol,spaceGrid::SGT; color::CT=nothing, timeGrid::TGT=nothing,timeSymmetry=:none, spaceSymmetry=nothing,error=nothing)where{T<:Number,TGT,SGT,CT}
     
     Create two-leg Green's function on timeGrid, spaceGrid and color, with in-built DLR.
-    The value of instant and dynamic parts are initialized with zero.
+    The value and error of instant and dynamic parts are initialized with zero.
     #Arguements
     - 'isFermi': Particle is fermi or boson
+    - 'Euv': the UV energy scale of the spectral density
+    - 'rtol': tolerance absolute error
+    - 'spaceType': Whether the Green's function is in coordinate space/momentum space
+    - 'spaceSymmetry': Symmetry of lattice
+    - 'spaceGrid': k/x grid
     - 'β': Inverse temperature
     - 'timeType': Whether the Green's function is in time/frequency/dlr space
     - 'timeSymmetry': Whether the Green's function has particle-hole symmetry, anti-particle-hole symmetry or none of them
     - 'timeGrid': τ/n/ω  grid. Default: DLR grid in timeType (:τ/:n/:ω) 
-    - 'spaceType': Whether the Green's function is in coordinate space/momentum space
-    - 'spaceSymmetry': Symmetry of lattice
-    - 'spaceGrid': k/x grid 
     - 'color': Indices of species of Green's function (such as different spin values). Default: One element array [1]
-    - 'Euv': the UV energy scale of the spectral density
-    - 'rtol': tolerance absolute error
     - 'dlrGrid': In-built Discrete Lehmann Representation
-    - 'error': The error of noisy Green's function
+    - 'hasError': If Green's function is noisy
     """
     function Green2DLR{T}(isFermi, Euv, rtol, spaceType, spaceGrid::SGT, β, timeType; timeSymmetry=:none, timeGrid::TGT=nothing, color::CT=nothing, spaceSymmetry=nothing, hasError = false)where{T<:Number,TGT,SGT,CT}
         @assert timeType == :n ||timeType == :τ ||timeType == :ω
@@ -124,7 +123,7 @@ mutable struct Green2DLR{T<:Number,TGT,SGT,CT}
         @assert timeSymmetry == :ph ||timeSymmetry == :pha ||timeSymmetry == :none
         dlrGrid = DLRGrid(Euv, β, rtol, isFermi, timeSymmetry)
         tgt = TGT
-        if(timeGrid == nothing)
+        if(isnothing(timeGrid))
             if(timeType == :n)
                 timeGrid = dlrGrid.n
             elseif(timeType == :τ)
@@ -135,14 +134,19 @@ mutable struct Green2DLR{T<:Number,TGT,SGT,CT}
             tgt = typeof(timeGrid)
         end
         ct = CT
-        if(color == nothing)
+        if(isnothing(color))
             color = [1]
             ct = typeof(color)
         end
         instant = zeros(T, (length(color),length(color),length(spaceGrid)))
         dynamic = zeros(T, (length(color), length(color), length(spaceGrid),length(timeGrid)))
-        instantError = Array{T,3}(undef, 0, 0, 0)
-        dynamicError = Array{T,4}(undef, 0, 0, 0, 0)
+        if hasError
+            instantError = zeros(T, (length(color),length(color),length(spaceGrid)))
+            dynamicError = zeros(T, (length(color), length(color), length(spaceGrid),length(timeGrid)))
+        else
+            instantError = Array{T,3}(undef, 0, 0, 0)
+            dynamicError = Array{T,4}(undef, 0, 0, 0, 0)
+        end
         return new{T,tgt,SGT,ct}(isFermi, β, timeType, timeSymmetry, timeGrid, spaceType, spaceSymmetry, spaceGrid, color, dlrGrid, instant,dynamic, hasError, instantError, dynamicError)
     end
 
@@ -173,10 +177,10 @@ end
     - 'aimType': Time representation of outcome Green's function
     - 'aimGrid': Grid of outcome Green's function. Default: DLR grid of aimType
 """
-
 function toTau(green::Green2DLR, targetGrid = green.dlrGrid.τ)
-    if(green.hasError==true)
-        error = green.dynamicError
+    if green.hasError
+        #error = green.dynamicError #Need to fix Lehmann bug
+        error = nothing
     else
         error = nothing
     end
@@ -193,7 +197,7 @@ function toTau(green::Green2DLR, targetGrid = green.dlrGrid.τ)
     green_new = Green2DLR{eltype(dynamic)}(green.isFermi, green.dlrGrid.Euv, green.dlrGrid.rtol, green.spaceType, green.spaceGrid, green.β, :τ; timeSymmetry = green.timeSymmetry, timeGrid = targetGrid, color = green.color, spaceSymmetry = green.spaceSymmetry)
     green_new.dynamic = dynamic
     green_new.instant = T_factor * green.instant
-    if (green.hasError == true)
+    if green.hasError
         green_new.instantError = T_factor * green.instantError
         green_new.dynamicError = 0.0 * green_new.dynamic
         # Need future implementation
@@ -202,8 +206,9 @@ function toTau(green::Green2DLR, targetGrid = green.dlrGrid.τ)
 end
 
 function toMatFreq(green::Green2DLR, targetGrid = green.dlrGrid.n)
-    if(green.hasError==true)
-        error = green.dynamicError
+    if green.hasError
+        #error = green.dynamicError
+        error = nothing
     else
         error = nothing
     end
@@ -220,7 +225,7 @@ function toMatFreq(green::Green2DLR, targetGrid = green.dlrGrid.n)
     green_new = Green2DLR{eltype(dynamic)}(green.isFermi, green.dlrGrid.Euv, green.dlrGrid.rtol, green.spaceType, green.spaceGrid, green.β, :n; timeSymmetry = green.timeSymmetry, timeGrid = targetGrid, color = green.color, spaceSymmetry = green.spaceSymmetry)
     green_new.dynamic = dynamic
     green_new.instant = T_factor * green.instant
-    if (green.hasError == true)
+    if green.hasError
         green_new.instantError = T_factor * green.instantError
         green_new.dynamicError = 0.0 * green_new.dynamic
         # Need future implementation
@@ -229,8 +234,9 @@ function toMatFreq(green::Green2DLR, targetGrid = green.dlrGrid.n)
 end
 
 function toDLR(green::Green2DLR, targetGrid = green.dlrGrid.ω)
-    if(green.hasError==true)
-        error = green.dynamicError
+    if green.hasError
+        #error = green.dynamicError
+        error = nothing
     else
         error = nothing
     end
@@ -249,7 +255,7 @@ function toDLR(green::Green2DLR, targetGrid = green.dlrGrid.ω)
     green_new = Green2DLR{eltype(dynamic)}(green.isFermi, green.dlrGrid.Euv, green.dlrGrid.rtol, green.spaceType, green.spaceGrid, green.β, :ω; timeSymmetry = green.timeSymmetry, timeGrid = targetGrid, color = green.color, spaceSymmetry = green.spaceSymmetry)
     green_new.dynamic = dynamic
     green_new.instant = T_factor * green.instant
-    if (green.hasError == true)
+    if green.hasError
         green_new.instantError = T_factor * green.instantError
         green_new.dynamicError = 0.0 * green_new.dynamic
         # Need future implementation

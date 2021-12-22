@@ -18,7 +18,7 @@ SemiCircle(dlr, grid, type) = Sample.SemiCircle(dlr.Euv, dlr.β, dlr.isFermi, dl
         symmetry=:none
         dlr = DLRGrid(Euv, β, rtol, isFermi, symmetry)
         tgrid = dlr.n
-        green_freq = GreenBasic.Green2DLR{ComplexF64}(true,Euv,rtol,:k,sgrid, β, :n, timeSymmetry=symmetry)
+        green_freq = GreenBasic.Green2DLR{ComplexF64}(true,Euv,rtol,:k,sgrid, β, :n, timeSymmetry=symmetry, hasError = false)
         Gτ = SemiCircle(dlr, dlr.τ, :τ)
         Gn = SemiCircle(dlr, dlr.n, :ωn)
 
