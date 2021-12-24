@@ -109,11 +109,20 @@ mutable struct Green2DLR{T<:Number,TGT,SGT,CT}
     - 'spaceType': Whether the Green's function is in coordinate space/momentum space
     - 'spaceSymmetry': Symmetry of lattice
     - 'spaceGrid': k/x grid
+        #Required function
+        - 'getValue(data, x, method, axis)': Return values of data at x
+            #Arguments
+            - 'data': Multidimensional array that has one dimension on the spaceGrid
+            - 'x': Target k/x value
+            - 'method': Interpolation method
+            - 'axis': The axis of spaceGrid
     - 'β': Inverse temperature
     - 'timeType': Whether the Green's function is in time/frequency/dlr space
     - 'timeSymmetry': Whether the Green's function has particle-hole symmetry, anti-particle-hole symmetry or none of them
     - 'timeGrid': τ/n/ω  grid. Default: DLR grid in timeType (:τ/:n/:ω) 
     - 'color': Indices of species of Green's function (such as different spin values). Default: One element array [1]
+         #Required functions
+         - 'getIndex(color)': Return the index of given color
     - 'dlrGrid': In-built Discrete Lehmann Representation
     - 'hasError': If Green's function is noisy
     """
@@ -185,8 +194,13 @@ function toTau(green::Green2DLR, targetGrid = green.dlrGrid.τ)
         error = nothing
     end
     if(green.timeType == :τ)
-        green_new = green
-        return green_new
+        if(targetGrid == green.dlrGrid.τ)
+            green_new = green
+            return green_new
+        else
+            T_factor = 1.0
+            dynamic = tau2tau(green.dlrGrid, green.dynamic, targetGrid, green.timeGrid; error, axis=4)
+        end
     elseif(green.timeType == :n)
         T_factor = 1/green.β
         dynamic = matfreq2tau(green.dlrGrid, green.dynamic, targetGrid, green.timeGrid; error, axis=4)
@@ -213,8 +227,13 @@ function toMatFreq(green::Green2DLR, targetGrid = green.dlrGrid.n)
         error = nothing
     end
     if(green.timeType == :n)
-        green_new = green
-        return green_new
+        if(targetGrid == green.dlrGrid.n)
+            green_new = green
+            return green_new
+        else
+            T_factor = 1.0
+            dynamic = matfreq2matfreq(green.dlrGrid, green.dynamic, targetGrid, green.timeGrid; error, axis=4)      
+        end
     elseif(green.timeType == :τ)
         T_factor = green.β
         dynamic = tau2matfreq(green.dlrGrid, green.dynamic, targetGrid, green.timeGrid; error, axis=4)        
@@ -263,6 +282,44 @@ function toDLR(green::Green2DLR, targetGrid = green.dlrGrid.ω)
     return green_new
 end
 
+
+"""
+    function getValue(green::Green2DLR, timevalue, spacevalue, colorvalue, spacemethod=:linear)
+
+Find value of Green's function at given color, τ/ωn and k/x by interpolation.
+Interpolation in τ/ωn use DLR method
+#Argument
+- 'green': Green's function
+- 'timevalue': Target τ/ωn point 
+- 'spacevalue': Target k/x point
+- 'colorvalue': Target color
+- spacemethod: Method of interpolation in k/x 
+"""
+function getValue(green::Green2DLR, timevalue, spacevalue, colorvalue=nothing, spacemethod=:linear)
+    @assert  green.timeType == :n ||green.timeType == :τ
+
+    if green.hasError
+        #error = green.dynamicError
+        error = nothing
+    else
+        error = nothing
+    end
+    if(isnothing(colorvalue))
+        cindex = 1
+    else
+        cindex = green.color.getIndex(colorvalue)
+    end
+    dynamic_c = green.dynamic[cindex, cindex, :, :]
+
+    dynamic_x = green.spaceGrid.getValue(dynamic_c, spacevalue, spacemethod, axis = 1)
+    if(green.timeType == :n)
+        dynamic_τ = matfreq2matfreq(green.dlrGrid, dynamic_x, [timevalue,], green.timeGrid; error)
+    elseif(green.timeType == :τ)
+        dynamic_τ = tau2tau(green.dlrGrid, dynamic_x, [timevalue,], green.timeGrid; error)     
+    end
+           
+    return dynamic_τ[1]
+end
 
 end
 
