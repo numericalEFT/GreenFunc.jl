@@ -194,13 +194,8 @@ function toTau(green::Green2DLR, targetGrid = green.dlrGrid.τ)
         error = nothing
     end
     if(green.timeType == :τ)
-        if(targetGrid == green.dlrGrid.τ)
-            green_new = green
-            return green_new
-        else
-            T_factor = 1.0
-            dynamic = tau2tau(green.dlrGrid, green.dynamic, targetGrid, green.timeGrid; error, axis=4)
-        end
+        T_factor = 1.0
+        dynamic = tau2tau(green.dlrGrid, green.dynamic, targetGrid, green.timeGrid; error, axis=4)
     elseif(green.timeType == :n)
         T_factor = 1/green.β
         dynamic = matfreq2tau(green.dlrGrid, green.dynamic, targetGrid, green.timeGrid; error, axis=4)
@@ -227,13 +222,8 @@ function toMatFreq(green::Green2DLR, targetGrid = green.dlrGrid.n)
         error = nothing
     end
     if(green.timeType == :n)
-        if(targetGrid == green.dlrGrid.n)
-            green_new = green
-            return green_new
-        else
-            T_factor = 1.0
-            dynamic = matfreq2matfreq(green.dlrGrid, green.dynamic, targetGrid, green.timeGrid; error, axis=4)      
-        end
+        T_factor = 1.0
+        dynamic = matfreq2matfreq(green.dlrGrid, green.dynamic, targetGrid, green.timeGrid; error, axis=4)      
     elseif(green.timeType == :τ)
         T_factor = green.β
         dynamic = tau2matfreq(green.dlrGrid, green.dynamic, targetGrid, green.timeGrid; error, axis=4)        
