@@ -1,5 +1,5 @@
 using GreenFunc
-using Test, StaticArrays, LinearAlgebra, Printf, Statistics, Lehmann
+using Test, StaticArrays, LinearAlgebra, Printf, Statistics, Lehmann, CompositeGrids
 
 if isempty(ARGS)
     include("test_Green.jl")
