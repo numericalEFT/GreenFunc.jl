@@ -9,7 +9,7 @@ SemiCircle(dlr, grid, type) = Sample.SemiCircle(dlr.Euv, dlr.β, dlr.isFermi, dl
     #     println(green_simple.dynamic)        
     # end
     @testset "Green2DLR" begin
-        sgrid = [0.0]
+        sgrid = [0.0,1.0]
         color_n = [0.0]
         β = 10.0
         isFermi = true
