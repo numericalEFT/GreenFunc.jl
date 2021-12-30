@@ -9,10 +9,12 @@ abstract type ImFreq <: TimeDomain end
 abstract type ReFreq <: TimeDomain end
 abstract type DLRFreq <: TimeDomain end
 
+struct DLRInterp <: CompositeGrids.Interp.InterpStyle end
+
 export TimeDomain, ImTime, ReTime, ImFreq, ReFreq, DLRFreq
 
 include("green/Green.jl")
-export Green2DLR, toTau, toMatFreq, toDLR, get
+export Green2DLR, toTau, toMatFreq, toDLR, getDynamic, getInstant
 
 
 
