@@ -62,14 +62,13 @@ Green's function with two external legs that has in-built Discrete Lehmann Repre
 - 'name': Name of green's function
 - 'isFermi': Particle is fermi or boson
 - 'β': Inverse temperature
+- 'color': Number of different species of Green's function (such as different spin values)
+- 'dlrGrid': In-built Discrete Lehmann Representation
 - 'timeType': Whether the Green's function is in time/frequency/dlr space
 - 'timeSymmetry': Whether the Green's function has particle-hole symmetry, anti-particle-hole symmetry or none of them
 - 'timeGrid': Time or Frequency grid
 - 'spaceType': Whether the Green's function is in coordinate space/momentum space
-- 'spaceSymmetry': Symmetry of lattice
 - 'spaceGrid': Coordinate or momentum grid
-- 'color': Indices of species of Green's function (such as different spin values)
-- 'dlrGrid': In-built Discrete Lehmann Representation
 - 'instant': Instantaneous part of Green's function that is proportional to δ(τ) in τ space.
 - 'dynamic': Dynamic part of Green's function
 - 'instantError': Error of instantaneous part
@@ -100,27 +99,25 @@ mutable struct Green2DLR{T<:Number,Type<:TimeDomain,TGT,SGT}
     dynamicError::Array{T,4}
 
     """
-         function Green2DLR{T}(timeType,spaceType,isFermi, β, Euv, rtol,spaceGrid::SGT; color::CT=nothing, timeGrid::TGT=nothing,timeSymmetry=:none, spaceSymmetry=nothing,error=nothing)where{T<:Number,TGT,SGT,CT}
-
+        function Green2DLR{T,TimeType}(name::Symbol, β, isFermi::Bool, Euv, spaceGrid, color::Int = 1;
+            timeSymmetry::Symbol = :none, rtol = 1e-8, kwargs...
+        ) where {T<:Number,TimeType<:TimeDomain}
     Create two-leg Green's function on timeGrid, spaceGrid and color, with in-built DLR.
-    The value and error of instant and dynamic parts are initialized with zero.
     #Arguements
-    - 'name': Name of green's function. Default: :green
+    - 'name': Name of green's function. 
     - 'β': Inverse temperature
     - 'isFermi': Particle is fermi or boson
     - 'Euv': the UV energy scale of the spectral density
     - 'spaceGrid': k/x grid
-    - 'color': Indices of species of Green's function (such as different spin values). Default: One element array [1]
-         #Required functions
-         - 'getIndex(color)': Return the index of given color
-
-    - 'rtol': tolerance absolute error
+    - 'color': Number of different species of Green's function (such as different spin values). Default: 1 color
     - 'timeSymmetry': Whether the Green's function has particle-hole symmetry, anti-particle-hole symmetry or none of them
+    - 'rtol': tolerance absolute error
+    #Optional Arguments
     - 'timeGrid': τ/n/ω  grid. Default: DLR grid in timeType (:τ/:n/:ω) 
-    - 'instant': Instantaneous part of Green's function that is proportional to δ(τ) in τ space.
-    - 'dynamic': Dynamic part of Green's function
-    - 'instantError': Error of instantaneous part
-    - 'dynamicError': Error of dynamic part
+    - 'instant': Instantaneous part of Green's function that is proportional to δ(τ) in τ space. Default: 0 everywhere
+    - 'dynamic': Dynamic part of Green's function. Default: 0 everywhere
+    - 'instantError': Error of instantaneous part. Default: 0 everywhere
+    - 'dynamicError': Error of dynamic part. Default: 0 everywhere
     """
     function Green2DLR{T,TimeType}(name::Symbol, β, isFermi::Bool, Euv, spaceGrid, color::Int = 1;
         timeSymmetry::Symbol = :none, rtol = 1e-8, kwargs...
@@ -136,11 +133,6 @@ mutable struct Green2DLR{T<:Number,Type<:TimeDomain,TGT,SGT}
 
         if :timeGrid in keys(kwargs)
             timeGrid = kwargs[:timeGrid]
-            if TimeType == DLRFreq
-                @assert length(timeGrid) == dlrGrid.size "The size of the DLR grid should match the DLR rank = $(dlrGrid.size)."
-            elseif TimeType == ImFreq
-                @assert eltype(timeGrid) <: Int "Matsubara frequency grid is expected to be integers!"
-            end
         else
             if TimeType == ImFreq
                 timeGrid = dlrGrid.n
@@ -157,6 +149,12 @@ mutable struct Green2DLR{T<:Number,Type<:TimeDomain,TGT,SGT}
             timeGrid = CompositeGrids.SimpleG.Arbitrary{eltype(timeGrid)}(timeGrid)
         end
         @assert timeGrid isa AbstractGrid "Input timeGrid has to be Vector or Composite grid"
+        if TimeType == DLRFreq
+            @assert length(timeGrid.grid) == dlrGrid.size "The size of the DLR grid should match the DLR rank = $(dlrGrid.size)."
+        elseif TimeType == ImFreq
+            @assert eltype(timeGrid.grid) <: Int "Matsubara frequency grid is expected to be integers!"
+        end
+
         # println(TGT)
 
         if spaceGrid isa AbstractVector
@@ -233,12 +231,87 @@ function toTau(green::Green2DLR, targetGrid = green.dlrGrid.τ)
         dynamic = dlr2tau(green.dlrGrid, green.dynamic, targetGrid.grid; axis = 4)
     end
 
-    return Green2DLR{eltype(dynamic),green.timeType}(
+    return Green2DLR{eltype(dynamic),ImTime}(
         green.name, green.β, green.isFermi, green.dlrGrid.Euv, green.spaceGrid, green.color;
         timeSymmetry = green.timeSymmetry, timeGrid = targetGrid, rtol = green.dlrGrid.rtol,
         dynamic = dynamic, instant = green.instant)
 
 end
+
+"""
+    function toTau(green::Green2DLR, targetGrid =  green.dlrGrid.τ)
+    Convert Green's function to τ space by Fourier transform.
+    If green is already in τ space then it will be interpolated to the new grid.
+    #Arguements
+    - 'green': Original Green's function
+    - 'targetGrid': Grid of outcome Green's function. Default: DLR τ grid
+"""
+function toMatFreq(green::Green2DLR, targetGrid = green.dlrGrid.n)
+
+    if targetGrid isa AbstractVector
+        targetGrid = CompositeGrids.SimpleG.Arbitrary{eltype(targetGrid)}(targetGrid)
+    end
+
+    # do nothing if the domain and the grid remain the same
+    if green.timeType == ImFreq && length(green.timeGrid.grid) ≈ length(targetGrid.grid) && green.timeGrid.grid ≈ targetGrid.grid
+        return green
+    end
+    if isempty(green.dynamic) # if dynamic data has not yet been initialized, there is nothing to do
+        return green
+    end
+
+
+    if (green.timeType == ImFreq)
+        dynamic = matfreq2matfreq(green.dlrGrid, green.dynamic, targetGrid.grid, green.timeGrid.grid; axis = 4)
+    elseif (green.timeType == ImTime)
+        dynamic = tau2matfreq(green.dlrGrid, green.dynamic, targetGrid.grid, green.timeGrid.grid; axis = 4)
+    elseif (green.timeType == DLRFreq)
+        dynamic = dlr2matfreq(green.dlrGrid, green.dynamic, targetGrid.grid; axis = 4)
+    end
+
+    return Green2DLR{eltype(dynamic),ImFreq}(
+        green.name, green.β, green.isFermi, green.dlrGrid.Euv, green.spaceGrid, green.color;
+        timeSymmetry = green.timeSymmetry, timeGrid = targetGrid, rtol = green.dlrGrid.rtol,
+        dynamic = dynamic, instant = green.instant)
+
+end
+
+"""
+    function toTau(green::Green2DLR, targetGrid =  green.dlrGrid.τ)
+    Convert Green's function to τ space by Fourier transform.
+    If green is already in τ space then it will be interpolated to the new grid.
+    #Arguements
+    - 'green': Original Green's function
+    - 'targetGrid': Grid of outcome Green's function. Default: DLR τ grid
+"""
+function toDLR(green::Green2DLR)
+
+    
+    targetGrid = CompositeGrids.SimpleG.Arbitrary{eltype(green.dlrGrid.ω)}(green.dlrGrid.ω)
+
+
+    # do nothing if the domain and the grid remain the same
+    if green.timeType == ImFreq
+        return green
+    end
+    if isempty(green.dynamic) # if dynamic data has not yet been initialized, there is nothing to do
+        return green
+    end
+
+
+    if (green.timeType == ImTime)
+        dynamic = dlr2tau(green.dlrGrid, green.dynamic, targetGrid.grid; axis = 4)
+    elseif (green.timeType == ImFreq)
+        dynamic = dlr2matfreq(green.dlrGrid, green.dynamic, targetGrid.grid; axis = 4)
+    end
+
+    return Green2DLR{eltype(dynamic),DLRFreq}(
+        green.name, green.β, green.isFermi, green.dlrGrid.Euv, green.spaceGrid, green.color;
+        timeSymmetry = green.timeSymmetry, timeGrid = targetGrid, rtol = green.dlrGrid.rtol,
+        dynamic = dynamic, instant = green.instant)
+
+end
+
 
 # """
 #     function toMatFreq(green::Green2DLR, targetGrid =  green.dlrGrid.τ)
@@ -311,44 +384,61 @@ end
 # end
 
 
-# """
-#     function getValue(green::Green2DLR, time, space; color=nothing, timeMethod = :default, spaceMethod=:default)
+"""
+    function get(green::Green2DLR, time, space; color=nothing, timeMethod = :default, spaceMethod=:default)
 
-# Find value of Green's function at given color, τ/ωn and k/x by interpolation.
-# Interpolation in τ/ωn use DLR method
-# #Argument
-# - 'green': Green's function
-# - 'time': Target τ/ωn point 
-# - 'space': Target k/x point
-# - 'colorvalue': Target color
-# - 'timeMethod':Method of interpolation in ωn/τ
-# - 'spacemethod': Method of interpolation in k/x 
-# """
-# function get(green::Green2DLR, time, space; color = nothing, timeMethod = :default, spaceMethod = :default)
-#     @assert green.timeType == :n || green.timeType == :τ
-#     if green.hasError
-#         #error = green.dynamicError
-#         error = nothing
-#     else
-#         error = nothing
-#     end
-#     if (isnothing(color))
-#         cindex = 1
-#     else
-#         cindex = green.color.getIndex(color)
-#     end
-#     dynamic_c = green.dynamic[cindex, cindex, :, :]
-#     dynamic_x = CompositeGrids.Interp.interp1D(dynamic_c, green.spaceGrid, space; axis = 1, interpstyle = spaceMethod)
-#     if (timeMethod == :dlr)
-#         if (green.timeType == :n)
-#             dynamic_τ = (matfreq2matfreq(green.dlrGrid, dynamic_x, [timevalue,], green.timeGrid.grid; error))[1]
-#         elseif (green.timeType == :τ)
-#             dynamic_τ = (tau2tau(green.dlrGrid, dynamic_x, [timevalue,], green.timeGrid.grid; error))[1]
-#         end
-#     else
-#         dynamic_τ = CompositeGrids.Interp.interp1D(dynamic_c, green.timeGrid, time; axis = 1, interpstyle = timeMethod)
-#     end
-#     return dynamic_τ
-# end
+Find value of Green's function at given color, τ/ωn and k/x by interpolation.
+Interpolation in τ/ωn use DLR method
+#Argument
+- 'green': Green's function
+- 'time': Target τ/ωn point 
+- 'space': Target k/x point
+- 'colorvalue': Target color
+- 'timeMethod':Method of interpolation in ωn/τ
+- 'spacemethod': Method of interpolation in k/x 
+"""
+function getDynamic(green::Green2DLR, time, space; colorIndex = 1, timeMethod = CompositeGrids.Interp.LinearInterp(), spaceMethod = CompositeGrids.Interp.LinearInterp())
+    #@assert green.timeType == :n || green.timeType == :τ
+    if !(typeof(spaceMethod)<:CompositeGrids.Interp.InterpStyle)
+        error("Space Interpolation method not implemented!")
+    end
+    if isempty(green.dynamic)
+        error("Dynamic Green's function can not be empty!")
+    else
+        dynamic_τx = green.dynamic[colorIndex, colorIndex, :, :]
+        spaceNeighbor = CompositeGrids.Interp.findneighbor(spaceMethod, green.spaceGrid, space)
+        dynamic_x_slice = CompositeGrids.Interp.dataslice(dynamic_τx, 1, spaceNeighbor.index)
+        if timeMethod == DLRInterp()
+            dynamic_τ = CompositeGrids.Interp.interpsliced(spaceNeighbor, dynamic_x_slice, axis = 1)
+            if green.timeType == ImFreq
+                dynamic = (matfreq2matfreq(green.dlrGrid, dynamic_τ, [time,], green.timeGrid.grid))[1]
+            elseif green.timeType == ImTime
+                dynamic = (tau2tau(green.dlrGrid, dynamic_τ, [time,], green.timeGrid.grid))[1]
+            end
+        elseif typeof(timeMethod)<:CompositeGrids.Interp.InterpStyle
+            timeNeighbor = CompositeGrids.Interp.findneighbor(timeMethod, green.timeGrid, time)
+            dynamic_τx_slice =  CompositeGrids.Interp.dataslice(dynamic_x_slice, 2, timeNeighbor.index)
+            dynamic_τ = CompositeGrids.Interp.interpsliced(spaceNeighbor, dynamic_τx_slice, axis = 1)
+            dynamic = CompositeGrids.Interp.interpsliced(timeNeighbor, dynamic_τ, axis = 1)
+        else
+            error("Time interpolation method not implemented!")
+        end
+    end
 
 
+    return dynamic
+end
+
+function getInstant(green::Green2DLR, space; colorIndex = 1, spaceMethod = CompositeGrids.Interp.LinearInterp())
+    if isempty(green.instant)
+        error("Instant Green's function can not be empty!")
+    elseif typeof(spaceMethod)<:CompositeGrids.Interp.InterpStyle
+        instant_x = green.instant[colorIndex, colorIndex, :]
+        spaceNeighbor = CompositeGrids.Interp.findneighbor(spaceMethod, green.spaceGrid, space)
+        instant_x_slice = CompositeGrids.Interp.dataslice(instant_x, spaceNeighbor.index)
+        instant = CompositeGrids.Interp.interpsliced(spaceNeighbor, instant_x_slice)
+    else
+        error("Space Interpolation method not implemented!")
+    end
+    return instant
+end
