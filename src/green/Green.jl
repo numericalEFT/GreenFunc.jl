@@ -150,7 +150,7 @@ mutable struct Green2DLR{T<:Number,Type<:TimeDomain,TGT,SGT}
         end
         @assert timeGrid isa AbstractGrid "Input timeGrid has to be Vector or Composite grid"
         if TimeType == DLRFreq
-            @assert length(timeGrid.grid) == dlrGrid.size "The size of the DLR grid should match the DLR rank = $(dlrGrid.size)."
+            #@assert length(timeGrid.grid) == dlrGrid.size "The size of the DLR grid should match the DLR rank = $(dlrGrid.size)."
         elseif TimeType == ImFreq
             @assert eltype(timeGrid.grid) <: Int "Matsubara frequency grid is expected to be integers!"
         end
@@ -291,7 +291,7 @@ function toDLR(green::Green2DLR)
 
 
     # do nothing if the domain and the grid remain the same
-    if green.timeType == ImFreq
+    if green.timeType == DLRFreq
         return green
     end
     if isempty(green.dynamic) # if dynamic data has not yet been initialized, there is nothing to do
@@ -300,9 +300,9 @@ function toDLR(green::Green2DLR)
 
 
     if (green.timeType == ImTime)
-        dynamic = dlr2tau(green.dlrGrid, green.dynamic, targetGrid.grid; axis = 4)
+        dynamic = tau2dlr(green.dlrGrid, green.dynamic,  green.timeGrid.grid ; axis = 4)
     elseif (green.timeType == ImFreq)
-        dynamic = dlr2matfreq(green.dlrGrid, green.dynamic, targetGrid.grid; axis = 4)
+        dynamic = matfreq2dlr(green.dlrGrid, green.dynamic, green.timeGrid.grid ; axis = 4)
     end
 
     return Green2DLR{eltype(dynamic),DLRFreq}(

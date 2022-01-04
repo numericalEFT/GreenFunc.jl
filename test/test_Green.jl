@@ -1,4 +1,44 @@
 SemiCircle(dlr, grid, type) = Sample.SemiCircle(dlr.Euv, dlr.β, dlr.isFermi, dlr.symmetry, grid, type, dlr.rtol, 24, true)
+function deepequal(a::Array, b::Array)
+    typeof(a) == typeof(b) || return false
+    N = length(a)
+    for i in 1:N
+        deepequal(a[i] , b[i]) || return false
+    end
+    return true
+end
+
+function deepequal(a, b)
+    typeof(a) == typeof(b) || return false
+    N = fieldcount(typeof(a))
+    if N==0
+        return a==b
+    end
+    for i in 1:N
+        deepequal(getfield(a, i) , getfield(b, i)) || return false
+    end
+    return true
+end
+function deeptest(a::Array, b::Array)
+    @test typeof(a) == typeof(b) 
+    N = length(a)
+    for i in 1:N
+        deeptest(a[i] , b[i])
+    end
+end
+
+function deeptest(a, b)
+    @test typeof(a) == typeof(b) 
+    N = fieldcount(typeof(a))
+    if N==0
+        @test a==b
+    end
+    for i in 1:N
+        deeptest(getfield(a, i) , getfield(b, i))
+        @test deepequal(a,b)
+    end
+end
+
 @testset "GreenFunc" begin
     # @testset "Green2" begin
     #     tgrid = [0.0,1.0]
@@ -53,6 +93,7 @@ SemiCircle(dlr, grid, type) = Sample.SemiCircle(dlr.Euv, dlr.β, dlr.isFermi, dl
         d = load("example.jld2")
         green_read = d["green"]
         @test green_read.dynamic == green_freq.dynamic
+        #deeptest(green_read, green_freq)
         rm("example.jld2")
     end
 
