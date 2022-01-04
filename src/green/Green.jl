@@ -8,19 +8,19 @@ struct ReTime <: TimeDomain end
 struct ImFreq <: TimeDomain end
 struct ReFreq <: TimeDomain end
 struct DLRFreq <: TimeDomain end
-const imtime = ImTime()
-const retime = ReTime()
-const imfreq = ImFreq()
-const refreq = ReFreq()
-const dlrfreq = DLRFreq()
+const IMTIME = ImTime()
+const RETIME = ReTime()
+const IMFREQ = ImFreq()
+const REFREQ = ReFreq()
+const DLRFREQ = DLRFreq()
 
 abstract type InterpMethod end
 struct DefaultInterp <: InterpMethod end
 struct LinearInterp <: InterpMethod end
 struct DLRInterp <: InterpMethod end
-const defaultinterp = DefaultInterp()
-const linearinterp = LinearInterp()
-const dlrinterp = DLRInterp()
+const DEFAULTINTERP = DefaultInterp()
+const LINEARINTERP = LinearInterp()
+const DLRINTERP = DLRInterp()
 
 
 InterpMethod(GT::Type{<:CompositeGrids.AbstractGrid}, MT::Type{<:LinearInterp}) = CompositeGrids.Interp.LinearInterp()
@@ -29,12 +29,16 @@ InterpMethod(GT, MT::Type{<:DLRInterp}) = DLRInterp()
 
 """
 Green's function with two external legs that has in-built Discrete Lehmann Representation.
+#Parameters:
+- 'T': type of data
+- 'TType': type of time domain, TType<:TimeDomain
+- 'TGT': type of time grid
+- 'SGT': type of space grid
 
 #Members:
 - 'name': Name of green's function
 - 'color': Number of different species of Green's function (such as different spin values)
 - 'dlrGrid': In-built Discrete Lehmann Representation
-- 'timeSymmetry': Whether the Green's function has particle-hole symmetry, anti-particle-hole symmetry or none of them
 - 'timeGrid': Time or Frequency grid
 - 'spaceType': Whether the Green's function is in coordinate space/momentum space
 - 'spaceGrid': Coordinate or momentum grid
@@ -53,7 +57,7 @@ mutable struct Green2DLR{T<:Number,Type<:TimeDomain,TGT,SGT}
     #########    Mesh   ##############
 
     # timeType::DataType
-    timeSymmetry::Symbol
+    # timeSymmetry::Symbol
     timeGrid::TGT
 
     spaceType::Symbol
@@ -68,12 +72,15 @@ mutable struct Green2DLR{T<:Number,Type<:TimeDomain,TGT,SGT}
     dynamicError::Array{T,4}
 
     """
-        function Green2DLR{T,TimeType}(name::Symbol, β, isFermi::Bool, Euv, spaceGrid, color::Int = 1;
+        function Green2DLR{T}(name::Symbol, timeType::TT, β, isFermi::Bool, Euv, spaceGrid, color::Int = 1;
             timeSymmetry::Symbol = :none, rtol = 1e-8, kwargs...
-        ) where {T<:Number,TimeType<:TimeDomain}
+        ) where {T<:Number, TT<:TimeDomain}
+
     Create two-leg Green's function on timeGrid, spaceGrid and color, with in-built DLR.
+
     #Arguements
-    - 'name': Name of green's function. 
+    - 'name': Name of green's function.
+    - 'timeType': type of time domain, TT<:TimeDomain
     - 'β': Inverse temperature
     - 'isFermi': Particle is fermi or boson
     - 'Euv': the UV energy scale of the spectral density
@@ -144,7 +151,7 @@ mutable struct Green2DLR{T<:Number,Type<:TimeDomain,TGT,SGT}
 
         gnew = new{T,TT,typeof(timeGrid),typeof(compSpaceGrid)}(
             name, color, dlrGrid,
-            timeSymmetry, timeGrid,
+            timeGrid,
             spaceType, compSpaceGrid,
             instant, dynamic,
             instantError, dynamicError)
@@ -159,6 +166,8 @@ function Base.getproperty(obj::Green2DLR{T,TT,TGT,SGT}, sym::Symbol) where {T,TT
         return obj.dlrGrid.β
     elseif sym === :timeType
         return TT
+    elseif sym === :timeSymmetry
+        return obj.dlrGrid.symmetry
     else # fallback to getfield
         return getfield(obj, sym)
     end
@@ -218,7 +227,7 @@ function toTau(green::Green2DLR, targetGrid = green.dlrGrid.τ)
     end
 
     return Green2DLR{eltype(dynamic)}(
-        green.name, imtime,green.β, green.isFermi, green.dlrGrid.Euv, green.spaceGrid, green.color;
+        green.name, IMTIME,green.β, green.isFermi, green.dlrGrid.Euv, green.spaceGrid, green.color;
         timeSymmetry = green.timeSymmetry, timeGrid = targetGrid, rtol = green.dlrGrid.rtol,
         dynamic = dynamic, instant = green.instant)
 end
@@ -255,7 +264,7 @@ function toMatFreq(green::Green2DLR, targetGrid = green.dlrGrid.n)
     end
 
     return Green2DLR{eltype(dynamic)}(
-        green.name, imfreq, green.β, green.isFermi, green.dlrGrid.Euv, green.spaceGrid, green.color;
+        green.name, IMFREQ, green.β, green.isFermi, green.dlrGrid.Euv, green.spaceGrid, green.color;
         timeSymmetry = green.timeSymmetry, timeGrid = targetGrid, rtol = green.dlrGrid.rtol,
         dynamic = dynamic, instant = green.instant)
 
@@ -287,7 +296,7 @@ function toDLR(green::Green2DLR)
     end
 
     return Green2DLR{eltype(dynamic)}(
-        green.name,dlrfreq, green.β, green.isFermi, green.dlrGrid.Euv, green.spaceGrid, green.color;
+        green.name,DLRFREQ, green.β, green.isFermi, green.dlrGrid.Euv, green.spaceGrid, green.color;
         timeSymmetry = green.timeSymmetry, timeGrid = green.dlrGrid.ω, rtol = green.dlrGrid.rtol,
         dynamic = dynamic, instant = green.instant)
 
@@ -295,51 +304,19 @@ end
 
 
 """
-    function get(green::Green2DLR, time, space; color=nothing, timeMethod = :default, spaceMethod=:default)
+    function instant(green::Green2DLR{DT,TT,TGT,SGT}, space, color1::Int, color2::Int=color1; spaceMethod::SM = DEFAULTINTERP) where {DT,TT,TGT,SGT,SM}
 
-Find value of Green's function at given color, τ/ωn and k/x by interpolation.
-Interpolation in τ/ωn use DLR method
+Find value of Green's function's instant part at given color and k/x by interpolation.
+Interpolation method is by default depending on the grid, but could also be chosen to be linear.
+
 #Argument
 - 'green': Green's function
-- 'time': Target τ/ωn point 
 - 'space': Target k/x point
-- 'colorvalue': Target color
-- 'timeMethod':Method of interpolation in ωn/τ
-- 'spacemethod': Method of interpolation in k/x 
+- 'color1': Target color1
+- 'color2': Target color2
+- 'spaceMethod': Method of interpolation for space. 
 """
-# function getDynamic(green::Green2DLR, time, space; colorIndex = 1, timeMethod = CompositeGrids.Interp.LinearInterp(), spaceMethod = CompositeGrids.Interp.LinearInterp())
-#     #@assert green.timeType == :n || green.timeType == :τ
-#     if !(typeof(spaceMethod)<:CompositeGrids.Interp.InterpStyle)
-#         error("Space Interpolation method not implemented!")
-#     end
-#     if isempty(green.dynamic)
-#         error("Dynamic Green's function can not be empty!")
-#     else
-#         dynamic_τx = green.dynamic[colorIndex, colorIndex, :, :]
-#         spaceNeighbor = CompositeGrids.Interp.findneighbor(spaceMethod, green.spaceGrid, space)
-#         dynamic_x_slice = CompositeGrids.Interp.dataslice(dynamic_τx, 1, spaceNeighbor.index)
-#         if timeMethod == DLRInterp()
-#             dynamic_τ = CompositeGrids.Interp.interpsliced(spaceNeighbor, dynamic_x_slice, axis = 1)
-#             if green.timeType == ImFreq
-#                 dynamic = (matfreq2matfreq(green.dlrGrid, dynamic_τ, [time,], green.timeGrid.grid))[1]
-#             elseif green.timeType == ImTime
-#                 dynamic = (tau2tau(green.dlrGrid, dynamic_τ, [time,], green.timeGrid.grid))[1]
-#             end
-#         elseif typeof(timeMethod)<:CompositeGrids.Interp.InterpStyle
-#             timeNeighbor = CompositeGrids.Interp.findneighbor(timeMethod, green.timeGrid, time)
-#             dynamic_τx_slice =  CompositeGrids.Interp.dataslice(dynamic_x_slice, 2, timeNeighbor.index)
-#             dynamic_τ = CompositeGrids.Interp.interpsliced(spaceNeighbor, dynamic_τx_slice, axis = 1)
-#             dynamic = CompositeGrids.Interp.interpsliced(timeNeighbor, dynamic_τ, axis = 1)
-#         else
-#             error("Time interpolation method not implemented!")
-#         end
-#     end
-
-
-#     return dynamic
-# end
-
-function getInstant(green::Green2DLR{DT,TT,TGT,SGT}, space, color1::Int, color2::Int=color1; spaceMethod::SM = linearinterp) where {DT,TT,TGT,SGT,SM}
+function instant(green::Green2DLR{DT,TT,TGT,SGT}, space, color1::Int, color2::Int=color1; spaceMethod::SM = DEFAULTINTERP) where {DT,TT,TGT,SGT,SM}
     if isempty(green.instant)
         error("Instant Green's function can not be empty!")
     else
@@ -350,7 +327,22 @@ function getInstant(green::Green2DLR{DT,TT,TGT,SGT}, space, color1::Int, color2:
     end
 end
 
-function getDynamic(green::Green2DLR{DT,TT,TGT,SGT}, time, space, color1::Int, color2::Int, timeMethod::TM , spaceMethod::SM) where {DT,TT,TGT<:CompositeGrids.AbstractGrid,SGT<:CompositeGrids.AbstractGrid,TM,SM}
+"""
+    function dynamic(green::Green2DLR{DT,TT,TGT,SGT}, time, space, color1::Int, color2::Int, timeMethod::TM , spaceMethod::SM) where {DT,TT,TGT<:CompositeGrids.AbstractGrid,SGT<:CompositeGrids.AbstractGrid,TM,SM}
+
+Find value of Green's function's dynamic part at given color and k/x by interpolation.
+Interpolation method is by default depending on the grid, but could also be chosen to be linear.
+
+#Argument
+- 'green': Green's function
+- 'time': Target τ/ω_n point
+- 'space': Target k/x point
+- 'color1': Target color1
+- 'color2': Target color2
+- 'timeMethod': Method of interpolation for time
+- 'spaceMethod': Method of interpolation for space 
+"""
+function dynamic(green::Green2DLR{DT,TT,TGT,SGT}, time, space, color1::Int, color2::Int, timeMethod::TM , spaceMethod::SM) where {DT,TT,TGT<:CompositeGrids.AbstractGrid,SGT<:CompositeGrids.AbstractGrid,TM,SM}
     # for double composite
     if isempty(green.dynamic)
         error("Dynamic Green's function can not be empty!")
@@ -368,9 +360,9 @@ function getDynamic(green::Green2DLR{DT,TT,TGT,SGT}, time, space, color1::Int, c
     return result
 end
 
-function getDynamic(
+function dynamic(
     green::Green2DLR{DT,TT,TGT,SGT}, time, space, color1::Int, color2::Int,
-    timeMethod::LinearInterp = linearinterp , spaceMethod::LinearInterp = linearinterp
+    timeMethod::LinearInterp = LINEARINTERP , spaceMethod::LinearInterp = LINEARINTERP
     ) where {DT,TT,TGT<:CompositeGrids.AbstractGrid,SGT<:CompositeGrids.AbstractGrid}
     # for double composite and double linear
     if isempty(green.dynamic)
@@ -382,7 +374,7 @@ function getDynamic(
     return result
 end
 
-function getDynamic(green::Green2DLR{DT,TT,TGT,SGT}, time, space, color1::Int, color2::Int, timeMethod::DLRInterp , spaceMethod::SM) where {DT,TT,TGT<:CompositeGrids.AbstractGrid,SGT<:CompositeGrids.AbstractGrid,SM}
+function dynamic(green::Green2DLR{DT,TT,TGT,SGT}, time, space, color1::Int, color2::Int, timeMethod::DLRInterp , spaceMethod::SM) where {DT,TT,TGT<:CompositeGrids.AbstractGrid,SGT<:CompositeGrids.AbstractGrid,SM}
     # for composite space and dlr time
     if isempty(green.dynamic)
         error("Dynamic Green's function can not be empty!")
