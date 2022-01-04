@@ -95,6 +95,10 @@ SemiCircle(dlr, grid, type) = Sample.SemiCircle(dlr.Euv, dlr.β, dlr.isFermi, dl
         @test interp_dym - τ * x < 1e-8
         interp_ins = getInstant(green_linear, x,1,1)
         @test interp_ins - x < 1e-8
+        interp_ins = getDynamic(green_linear, τ, x,1,1,GreenFunc.defaultinterp,GreenFunc.defaultinterp)
+        @test interp_ins - x < 1e-8
+        interp_ins = getDynamic(green_linear, τ, x,1,1,GreenFunc.dlrinterp,GreenFunc.defaultinterp)
+        @test interp_ins - x < 1e-8
     end
 end
 

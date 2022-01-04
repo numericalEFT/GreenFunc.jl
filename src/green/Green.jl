@@ -344,9 +344,9 @@ function getInstant(green::Green2DLR{DT,TT,TGT,SGT}, space, color1::Int, color2:
         error("Instant Green's function can not be empty!")
     else
         IM = InterpMethod(SGT,SM)
-        instant_x = view(green.instant, color1, color2, :)
-        result=CompositeGrids.Interp.interp1D(instant_x, green.spaceGrid, space; method=IM)
-        return result
+        nei = CompositeGrids.Interp.findneighbor(IM, green.spaceGrid,space)
+        instant_x = view(green.instant, color1, color2, nei.index)
+        return CompositeGrids.Interp.interpsliced(nei,instant_x)
     end
 end
 
@@ -358,9 +358,8 @@ function getDynamic(green::Green2DLR{DT,TT,TGT,SGT}, time, space, color1::Int, c
         TIM = InterpMethod(TGT,SM)
         SIM = InterpMethod(SGT,SM)
 
-
-        spaceNeighbor = CompositeGrids.Interp.findneighbor(spaceMethod, green.spaceGrid, space)
-        timeNeighbor = CompositeGrids.Interp.findneighbor(timeMethod, green.timeGrid, time)
+        spaceNeighbor = CompositeGrids.Interp.findneighbor(SIM, green.spaceGrid, space)
+        timeNeighbor = CompositeGrids.Interp.findneighbor(TIM, green.timeGrid, time)
         dynamic_slice = view(green.dynamic, color1, color2, spaceNeighbor.index, timeNeighbor.index)
 
         dynamic_slice_xint = CompositeGrids.Interp.interpsliced(spaceNeighbor,dynamic_slice, axis=1)
@@ -389,7 +388,7 @@ function getDynamic(green::Green2DLR{DT,TT,TGT,SGT}, time, space, color1::Int, c
         error("Dynamic Green's function can not be empty!")
     else
         SIM = InterpMethod(SGT,SM)
-        spaceNeighbor = CompositeGrids.Interp.findneighbor(spaceMethod, green.spaceGrid, space)
+        spaceNeighbor = CompositeGrids.Interp.findneighbor(SIM, green.spaceGrid, space)
         dynamic_slice = view(green.dynamic, color1, color2, spaceNeighbor.index,:)
 
         dynamic_slice_xint = CompositeGrids.Interp.interpsliced(spaceNeighbor,dynamic_slice, axis=1)
