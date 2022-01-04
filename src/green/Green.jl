@@ -124,7 +124,7 @@ mutable struct Green2DLR{T<:Number,Type<:TimeDomain,TGT,SGT}
         #if timeGrid is nothing, then set it to be the DLR grid, which is a vector of Integer or Float64
 
         if TT == DLRFreq
-            @assert length(timeGrid.grid) == dlrGrid.size "The size of the DLR grid should match the DLR rank = $(dlrGrid.size)."
+            #@assert length(timeGrid.grid) == dlrGrid.size "The size of the DLR grid should match the DLR rank = $(dlrGrid.size)."
         elseif TT == ImFreq
             @assert eltype(timeGrid.grid) <: Int "Matsubara frequency grid is expected to be integers!"
         end
@@ -272,7 +272,7 @@ end
 function toDLR(green::Green2DLR)
 
     # do nothing if the domain and the grid remain the same
-    if green.timeType == ImFreq
+    if green.timeType == DLRFreq
         return green
     end
     if isempty(green.dynamic) # if dynamic data has not yet been initialized, there is nothing to do
@@ -281,14 +281,14 @@ function toDLR(green::Green2DLR)
 
 
     if (green.timeType == ImTime)
-        dynamic = tau2dlr(green.dlrGrid, green.dynamic; axis = 4)
+        dynamic = tau2dlr(green.dlrGrid, green.dynamic,  green.timeGrid.grid; axis = 4)
     elseif (green.timeType == ImFreq)
-        dynamic = matfreq2dlr(green.dlrGrid, green.dynamic; axis = 4)
+        dynamic = matfreq2dlr(green.dlrGrid, green.dynamic,  green.timeGrid.grid; axis = 4)
     end
 
     return Green2DLR{eltype(dynamic)}(
         green.name,dlrfreq, green.β, green.isFermi, green.dlrGrid.Euv, green.spaceGrid, green.color;
-        timeSymmetry = green.timeSymmetry, timeGrid = targetGrid, rtol = green.dlrGrid.rtol,
+        timeSymmetry = green.timeSymmetry, timeGrid = green.dlrGrid.ω, rtol = green.dlrGrid.rtol,
         dynamic = dynamic, instant = green.instant)
 
 end

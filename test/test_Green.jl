@@ -17,8 +17,9 @@ SemiCircle(dlr, grid, type) = Sample.SemiCircle(dlr.Euv, dlr.β, dlr.isFermi, dl
         isFermi = true
         Euv = 1000.0
 
-        green_freq = Green2DLR{ComplexF64}(:green, GreenFunc.imtime ,β, isFermi, Euv, sgrid)
+        green_freq = Green2DLR{ComplexF64}(:green, GreenFunc.imfreq ,β, isFermi, Euv, sgrid)
         rtol = green_freq.dlrGrid.rtol
+        println(green_freq.timeType)
         Gτ = SemiCircle(green_freq.dlrGrid, green_freq.dlrGrid.τ, :τ)
         Gn = SemiCircle(green_freq.dlrGrid, green_freq.dlrGrid.n, :ωn)
         green_dum = zeros(ComplexF64, (green_freq.color, green_freq.color, green_freq.spaceGrid.size, green_freq.timeGrid.size))
