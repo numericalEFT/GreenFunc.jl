@@ -197,11 +197,12 @@ end
 
 """
     function toTau(green::Green2DLR, targetGrid =  green.dlrGrid.τ)
-    Convert Green's function to τ space by Fourier transform.
-    If green is already in τ space then it will be interpolated to the new grid.
-    #Arguements
-    - 'green': Original Green's function
-    - 'targetGrid': Grid of outcome Green's function. Default: DLR τ grid
+Convert Green's function to τ space by Fourier transform.
+If green is already in τ space then it will be interpolated to the new grid.
+
+#Arguements
+- 'green': Original Green's function
+- 'targetGrid': Grid of outcome Green's function. Default: DLR τ grid
 """
 function toTau(green::Green2DLR, targetGrid = green.dlrGrid.τ)
 
@@ -233,12 +234,13 @@ function toTau(green::Green2DLR, targetGrid = green.dlrGrid.τ)
 end
 
 """
-    function toTau(green::Green2DLR, targetGrid =  green.dlrGrid.τ)
-    Convert Green's function to τ space by Fourier transform.
-    If green is already in τ space then it will be interpolated to the new grid.
-    #Arguements
-    - 'green': Original Green's function
-    - 'targetGrid': Grid of outcome Green's function. Default: DLR τ grid
+    function toMatFreq(green::Green2DLR, targetGrid =  green.dlrGrid.n)
+Convert Green's function to matfreq space by Fourier transform.
+If green is already in matfreq space then it will be interpolated to the new grid.
+
+#Arguements
+- 'green': Original Green's function
+- 'targetGrid': Grid of outcome Green's function. Default: DLR n grid
 """
 function toMatFreq(green::Green2DLR, targetGrid = green.dlrGrid.n)
 
@@ -271,12 +273,11 @@ function toMatFreq(green::Green2DLR, targetGrid = green.dlrGrid.n)
 end
 
 """
-    function toTau(green::Green2DLR, targetGrid =  green.dlrGrid.τ)
-    Convert Green's function to τ space by Fourier transform.
-    If green is already in τ space then it will be interpolated to the new grid.
-    #Arguements
-    - 'green': Original Green's function
-    - 'targetGrid': Grid of outcome Green's function. Default: DLR τ grid
+    function toDLR(green::Green2DLR)
+Convert Green's function to dlr space.
+
+#Arguements
+- 'green': Original Green's function
 """
 function toDLR(green::Green2DLR)
 
