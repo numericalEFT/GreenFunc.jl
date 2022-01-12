@@ -1,4 +1,4 @@
-SemiCircle(dlr, grid, type) = Sample.SemiCircle(dlr.Euv, dlr.β, dlr.isFermi, dlr.symmetry, grid, type, dlr.rtol, 24, true)
+SemiCircle(dlr, grid, type) = Sample.SemiCircle(dlr.Euv, dlr.β, dlr.isFermi, grid, type, dlr.symmetry; rtol = dlr.rtol, degree = 24, regularized = true)
 
 @testset "GreenFunc" begin
     # @testset "Green2" begin
@@ -21,7 +21,7 @@ SemiCircle(dlr, grid, type) = Sample.SemiCircle(dlr.Euv, dlr.β, dlr.isFermi, dl
         rtol = green_freq.dlrGrid.rtol
         println(green_freq.timeType)
         Gτ = SemiCircle(green_freq.dlrGrid, green_freq.dlrGrid.τ, :τ)
-        Gn = SemiCircle(green_freq.dlrGrid, green_freq.dlrGrid.n, :ωn)
+        Gn = SemiCircle(green_freq.dlrGrid, green_freq.dlrGrid.n, :n)
         green_dum = zeros(ComplexF64, (green_freq.color, green_freq.color, green_freq.spaceGrid.size, green_freq.timeGrid.size))
         for (ti, t) in enumerate(green_freq.timeGrid)
             for (qi, q) in enumerate(green_freq.spaceGrid)
