@@ -51,7 +51,7 @@ SemiCircle(dlr, grid, type) = Sample.SemiCircle(dlr.Euv, dlr.β, dlr.isFermi, gr
 
         #test JLD2
         ############# FileIO API #################
-        save("example.jld2", Dict("green" => green_freq), compress = true)
+        save("example.jld2", Dict("green" => green_freq), compress = false)
         d = load("example.jld2")
         green_read = d["green"]
         @test green_read.dynamic == green_freq.dynamic
