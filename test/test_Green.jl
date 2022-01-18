@@ -1,43 +1,4 @@
-SemiCircle(dlr, grid, type) = Sample.SemiCircle(dlr.Euv, dlr.β, dlr.isFermi, dlr.symmetry, grid, type, dlr.rtol, 24, true)
-function deepequal(a::Array, b::Array)
-    typeof(a) == typeof(b) || return false
-    N = length(a)
-    for i in 1:N
-        deepequal(a[i] , b[i]) || return false
-    end
-    return true
-end
-
-function deepequal(a, b)
-    typeof(a) == typeof(b) || return false
-    N = fieldcount(typeof(a))
-    if N==0
-        return a==b
-    end
-    for i in 1:N
-        deepequal(getfield(a, i) , getfield(b, i)) || return false
-    end
-    return true
-end
-function deeptest(a::Array, b::Array)
-    @test typeof(a) == typeof(b) 
-    N = length(a)
-    for i in 1:N
-        deeptest(a[i] , b[i])
-    end
-end
-
-function deeptest(a, b)
-    @test typeof(a) == typeof(b) 
-    N = fieldcount(typeof(a))
-    if N==0
-        @test a==b
-    end
-    for i in 1:N
-        deeptest(getfield(a, i) , getfield(b, i))
-        @test deepequal(a,b)
-    end
-end
+SemiCircle(dlr, grid, type) = Sample.SemiCircle(dlr.Euv, dlr.β, dlr.isFermi, grid, type, dlr.symmetry; rtol = dlr.rtol, degree = 24, regularized = true)
 
 @testset "GreenFunc" begin
     # @testset "Green2" begin
@@ -56,10 +17,11 @@ end
         isFermi = true
         Euv = 1000.0
 
-        green_freq = Green2DLR{ComplexF64,ImFreq}(:green, β, isFermi, Euv, sgrid)
+        green_freq = Green2DLR{ComplexF64}(:green, GreenFunc.IMFREQ ,β, isFermi, Euv, sgrid)
         rtol = green_freq.dlrGrid.rtol
+        println(green_freq.timeType)
         Gτ = SemiCircle(green_freq.dlrGrid, green_freq.dlrGrid.τ, :τ)
-        Gn = SemiCircle(green_freq.dlrGrid, green_freq.dlrGrid.n, :ωn)
+        Gn = SemiCircle(green_freq.dlrGrid, green_freq.dlrGrid.n, :n)
         green_dum = zeros(ComplexF64, (green_freq.color, green_freq.color, green_freq.spaceGrid.size, green_freq.timeGrid.size))
         for (ti, t) in enumerate(green_freq.timeGrid)
             for (qi, q) in enumerate(green_freq.spaceGrid)
@@ -104,7 +66,7 @@ end
         isFermi = true
         Euv = 1000.0
 
-        green_linear = Green2DLR{Float64,ImTime}(:green, β, isFermi, Euv, sgrid)
+        green_linear = Green2DLR{Float64}(:green, GreenFunc.IMTIME,β, isFermi, Euv, sgrid)
         rtol = green_linear.dlrGrid.rtol
         green_dum = zeros(Float64, (green_linear.color, green_linear.color, green_linear.spaceGrid.size, green_linear.timeGrid.size))
         for (ti, t) in enumerate(green_linear.timeGrid)
@@ -131,9 +93,13 @@ end
 
         τ = 0.5
         x = 0.3
-        interp_dym = getDynamic(green_linear, τ, x)
+        interp_dym = dynamic(green_linear, τ, x, 1,1)
         @test interp_dym - τ * x < 1e-8
-        interp_ins = getInstant(green_linear, x)
+        interp_ins = instant(green_linear, x,1,1)
+        @test interp_ins - x < 1e-8
+        interp_ins = dynamic(green_linear, τ, x,1,1,GreenFunc.DEFAULTINTERP,GreenFunc.DEFAULTINTERP)
+        @test interp_ins - x < 1e-8
+        interp_ins = dynamic(green_linear, τ, x,1,1,GreenFunc.DLRINTERP,GreenFunc.DEFAULTINTERP)
         @test interp_ins - x < 1e-8
     end
 end
