@@ -17,7 +17,7 @@ SemiCircle(dlr, grid, type) = Sample.SemiCircle(dlr.Euv, dlr.β, dlr.isFermi, gr
         isFermi = true
         Euv = 1000.0
 
-        green_freq = Green2DLR{ComplexF64}(:green, GreenFunc.IMFREQ ,β, isFermi, Euv, sgrid)
+        green_freq = Green2DLR{ComplexF64}(:green, GreenFunc.IMFREQ, β, isFermi, Euv, sgrid)
         rtol = green_freq.dlrGrid.rtol
         println(green_freq.timeType)
         Gτ = SemiCircle(green_freq.dlrGrid, green_freq.dlrGrid.τ, :τ)
@@ -55,6 +55,7 @@ SemiCircle(dlr, grid, type) = Sample.SemiCircle(dlr.Euv, dlr.β, dlr.isFermi, gr
         d = load("example.jld2")
         green_read = d["green"]
         @test green_read.dynamic == green_freq.dynamic
+        #deeptest(green_read, green_freq)
         rm("example.jld2")
     end
 
@@ -65,7 +66,7 @@ SemiCircle(dlr, grid, type) = Sample.SemiCircle(dlr.Euv, dlr.β, dlr.isFermi, gr
         isFermi = true
         Euv = 1000.0
 
-        green_linear = Green2DLR{Float64}(:green, GreenFunc.IMTIME,β, isFermi, Euv, sgrid)
+        green_linear = Green2DLR{Float64}(:green, GreenFunc.IMTIME, β, isFermi, Euv, sgrid)
         rtol = green_linear.dlrGrid.rtol
         green_dum = zeros(Float64, (green_linear.color, green_linear.color, green_linear.spaceGrid.size, green_linear.timeGrid.size))
         for (ti, t) in enumerate(green_linear.timeGrid)
@@ -92,13 +93,13 @@ SemiCircle(dlr, grid, type) = Sample.SemiCircle(dlr.Euv, dlr.β, dlr.isFermi, gr
 
         τ = 0.5
         x = 0.3
-        interp_dym = dynamic(green_linear, τ, x, 1,1)
+        interp_dym = dynamic(green_linear, τ, x, 1, 1)
         @test interp_dym - τ * x < 1e-8
-        interp_ins = instant(green_linear, x,1,1)
+        interp_ins = instant(green_linear, x, 1, 1)
         @test interp_ins - x < 1e-8
-        interp_ins = dynamic(green_linear, τ, x,1,1,GreenFunc.DEFAULTINTERP,GreenFunc.DEFAULTINTERP)
+        interp_ins = dynamic(green_linear, τ, x, 1, 1, GreenFunc.DEFAULTINTERP, GreenFunc.DEFAULTINTERP)
         @test interp_ins - x < 1e-8
-        interp_ins = dynamic(green_linear, τ, x,1,1,GreenFunc.DLRINTERP,GreenFunc.DEFAULTINTERP)
+        interp_ins = dynamic(green_linear, τ, x, 1, 1, GreenFunc.DLRINTERP, GreenFunc.DEFAULTINTERP)
         @test interp_ins - x < 1e-8
     end
 end
