@@ -1,7 +1,7 @@
 name = "GreenFunc"
 uuid = "9efc7ea6-d529-4241-ab29-dcf68b94af7c"
 authors = ["Tao Wang", "Xiansheng Cai"]
-version = "0.1.1"
+version = "0.1.2"
 
 [deps]
 CompositeGrids = "b5136c89-beeb-4521-9139-60d2cac8be56"
