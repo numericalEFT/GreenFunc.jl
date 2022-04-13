@@ -105,7 +105,7 @@ mutable struct Green2DLR{T<:Number,Type<:TimeDomain,TGT,SGT}
 
         dlrGrid = DLRGrid(Euv, β, rtol, isFermi, timeSymmetry)
 
-        println(keys(kwargs))
+        # println(keys(kwargs))
 
         if :timeGrid in keys(kwargs)
             givenTimeGrid = kwargs[:timeGrid]
