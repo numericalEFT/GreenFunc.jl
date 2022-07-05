@@ -111,14 +111,14 @@ SemiCircle(dlr, grid, type) = Sample.SemiCircle(dlr.Euv, dlr.β, dlr.isFermi, gr
         println(green_linear.timeGrid.grid)
         τ = 5
         x = 0.3
-        interp_dym = dynamic(green_linear, τ, x, 1, 1)
+        interp_dym = dynamic(green_linear, τ, x)
         #println(interp_dym,"\t",(2*τ+1)*π/β * x)
         @test abs(interp_dym - (2*τ+1)*π/β * x) < 5e-8
-        interp_ins = instant(green_linear, x, 1, 1)
+        interp_ins = instant(green_linear, x)
         @test abs(interp_ins - x) < 5e-8
-        interp_dym = dynamic(green_linear, τ, x, 1, 1, GreenFunc.DEFAULTINTERP, GreenFunc.DEFAULTINTERP)
+        interp_dym = dynamic(green_linear, τ, x, GreenFunc.DEFAULTINTERP, GreenFunc.DEFAULTINTERP)
         @test abs(interp_dym - (2*τ+1)*π/β * x) < 5e-8
-        interp_dym = dynamic(green_linear, τ, x, 1, 1, GreenFunc.DLRINTERP, GreenFunc.DEFAULTINTERP)
+        interp_dym = dynamic(green_linear, τ, x, GreenFunc.DLRINTERP, GreenFunc.DEFAULTINTERP)
         @test abs(interp_dym - (2*τ+1)*π/β * x) < 5e-6
     end
 end

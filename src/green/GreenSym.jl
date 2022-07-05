@@ -336,7 +336,7 @@ Interpolation method is by default depending on the grid, but could also be chos
 - 'color2': Target color2
 - 'spaceMethod': Method of interpolation for space. 
 """
-function instant(green::GreenSym2DLR{DT,TT,TGT,SGT}, space, color1::Int, color2::Int=color1; spaceMethod::SM = DEFAULTINTERP) where {DT,TT,TGT,SGT,SM}
+function instant(green::GreenSym2DLR{DT,TT,TGT,SGT}, space; spaceMethod::SM = DEFAULTINTERP, color1::Int = 1, color2::Int=1) where {DT,TT,TGT,SGT,SM}
     if isempty(green.instant)
         error("Instant Green's function can not be empty!")
     else
@@ -362,7 +362,7 @@ Interpolation method is by default depending on the grid, but could also be chos
 - 'timeMethod': Method of interpolation for time
 - 'spaceMethod': Method of interpolation for space 
 """
-function dynamic(green::GreenSym2DLR{DT,TT,TGT,SGT}, time, space, color1::Int, color2::Int, timeMethod::TM , spaceMethod::SM) where {DT,TT,TGT<:CompositeGrids.AbstractGrid,SGT<:CompositeGrids.AbstractGrid,TM,SM}
+function dynamic(green::GreenSym2DLR{DT,TT,TGT,SGT}, time, space, timeMethod::TM , spaceMethod::SM, color1::Int = 1, color2::Int = 1) where {DT,TT,TGT<:CompositeGrids.AbstractGrid,SGT<:CompositeGrids.AbstractGrid,TM,SM}
     # for double composite
     if isempty(green.dynamic)
         error("Dynamic Green's function can not be empty!")
@@ -390,8 +390,9 @@ function dynamic(green::GreenSym2DLR{DT,TT,TGT,SGT}, time, space, color1::Int, c
 end
 
 function dynamic(
-    green::GreenSym2DLR{DT,TT,TGT,SGT}, time, space, color1::Int, color2::Int,
+    green::GreenSym2DLR{DT,TT,TGT,SGT}, time, space,
     timeMethod::LinearInterp = LINEARINTERP , spaceMethod::LinearInterp = LINEARINTERP
+    , color1::Int =1 , color2::Int =1 
     ) where {DT,TT,TGT<:CompositeGrids.AbstractGrid,SGT<:CompositeGrids.AbstractGrid}
     # for double composite and double linear
     if isempty(green.dynamic)
@@ -411,7 +412,7 @@ function dynamic(
     return result
 end
 
-function dynamic(green::GreenSym2DLR{DT,TT,TGT,SGT}, time, space, color1::Int, color2::Int, timeMethod::DLRInterp , spaceMethod::SM) where {DT,TT,TGT<:CompositeGrids.AbstractGrid,SGT<:CompositeGrids.AbstractGrid,SM}
+function dynamic(green::GreenSym2DLR{DT,TT,TGT,SGT}, time, space, timeMethod::DLRInterp , spaceMethod::SM, color1::Int =1 , color2::Int =1) where {DT,TT,TGT<:CompositeGrids.AbstractGrid,SGT<:CompositeGrids.AbstractGrid,SM}
     # for composite space and dlr time
     if isempty(green.dynamic)
         error("Dynamic Green's function can not be empty!")
