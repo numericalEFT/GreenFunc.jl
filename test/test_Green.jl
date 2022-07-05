@@ -99,7 +99,7 @@ SemiCircle(dlr, grid, type) = Sample.SemiCircle(dlr.Euv, dlr.β, dlr.isFermi, gr
         interp_dym = dynamic(green_linear, τ, x, 1, 1, GreenFunc.DEFAULTINTERP, GreenFunc.DEFAULTINTERP)
         @test abs(interp_dym - (2*τ+1)*π/β * x) < 5e-8
         interp_dym = dynamic(green_linear, τ, x, 1, 1, GreenFunc.DLRINTERP, GreenFunc.DEFAULTINTERP)
-        @test abs(interp_dym - (2*τ+1)*π/β * x) < 5e-7
+        @test abs(interp_dym - (2*τ+1)*π/β * x) < 1e-6
     end
 end
 
