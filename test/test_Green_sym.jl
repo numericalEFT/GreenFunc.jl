@@ -18,22 +18,22 @@ SemiCircle(dlr, grid, type) = Sample.SemiCircle(dlr.Euv, dlr.β, dlr.isFermi, gr
         Euv = 1000.0
 
         green_freq = GreenSym2DLR{ComplexF64}(:green, GreenFunc.IMFREQ, β, isFermi, Euv, sgrid)
-        rtol = green_freq.dlrRlGrid.rtol
+        rtol = green_freq.dlrReGrid.rtol
         println(green_freq.timeType)
         Gτ = SemiCircle(green_freq.dlrGrid, green_freq.dlrGrid.τ, :τ)
         Gn = SemiCircle(green_freq.dlrGrid, green_freq.dlrGrid.n, :n)
-        Gn_Rl = real.(SemiCircle(green_freq.dlrGrid, green_freq.dlrRlGrid.n, :n))
+        Gn_Rl = real.(SemiCircle(green_freq.dlrGrid, green_freq.dlrReGrid.n, :n))
         Gn_Im = im * imag.(SemiCircle(green_freq.dlrGrid, green_freq.dlrImGrid.n, :n))
         
         green_dum = zeros(ComplexF64, (green_freq.color, green_freq.color, green_freq.spaceGrid.size, green_freq.timeGrid.size))
-        green_dum_Rl = zeros(ComplexF64, (green_freq.color, green_freq.color, green_freq.spaceGrid.size, green_freq.dlrRlGrid.size))
+        green_dum_Rl = zeros(ComplexF64, (green_freq.color, green_freq.color, green_freq.spaceGrid.size, green_freq.dlrReGrid.size))
         green_dum_Im = zeros(ComplexF64, (green_freq.color, green_freq.color, green_freq.spaceGrid.size, green_freq.dlrImGrid.size))
 
    
         for (qi, q) in enumerate(green_freq.spaceGrid)
             for (c1i, c1) in enumerate(color_n)
                 for (c2i, c2) in enumerate(color_n)
-                    for (ti, t) in enumerate(green_freq.dlrRlGrid.n)
+                    for (ti, t) in enumerate(green_freq.dlrReGrid.n)
                         green_dum_Rl[c1i, c2i, qi, ti] = Gn_Rl[ti]
                     end
                     for (ti, t) in enumerate(green_freq.dlrImGrid.n)

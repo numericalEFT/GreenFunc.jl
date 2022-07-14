@@ -320,7 +320,7 @@ Interpolation method is by default depending on the grid, but could also be chos
 - 'color2': Target color2
 - 'spaceMethod': Method of interpolation for space. 
 """
-function instant(green::Green2DLR{DT,TT,TGT,SGT}, space; spaceMethod::SM = DEFAULTINTERP, color1::Int = 1, color2::Int = 1) where {DT,TT,TGT,SGT,SM}
+function instant(green::Green2DLR{DT,TT,TGT,SGT}, space,  color1::Int, color2::Int=color1; spaceMethod::SM = DEFAULTINTERP) where {DT,TT,TGT,SGT,SM}
     if isempty(green.instant)
         error("Instant Green's function can not be empty!")
     else
@@ -329,6 +329,10 @@ function instant(green::Green2DLR{DT,TT,TGT,SGT}, space; spaceMethod::SM = DEFAU
         instant_x = view(green.instant, color1, color2, nei.index)
         return CompositeGrids.Interp.interpsliced(nei,instant_x)
     end
+end
+
+function instant(green::Green2DLR{DT,TT,TGT,SGT}, space; spaceMethod::SM = DEFAULTINTERP) where {DT,TT,TGT,SGT,SM}
+    return instant(green, space, 1, 1; spaceMethod)
 end
 
 """
@@ -346,7 +350,7 @@ Interpolation method is by default depending on the grid, but could also be chos
 - 'timeMethod': Method of interpolation for time
 - 'spaceMethod': Method of interpolation for space 
 """
-function dynamic(green::Green2DLR{DT,TT,TGT,SGT}, time, space,  timeMethod::TM , spaceMethod::SM; color1::Int = 1, color2::Int = 1) where {DT,TT,TGT<:CompositeGrids.AbstractGrid,SGT<:CompositeGrids.AbstractGrid,TM,SM}
+function dynamic(green::Green2DLR{DT,TT,TGT,SGT}, time, space, color1::Int, color2::Int,  timeMethod::TM , spaceMethod::SM) where {DT,TT,TGT<:CompositeGrids.AbstractGrid,SGT<:CompositeGrids.AbstractGrid,TM,SM}
     # for double composite
     if isempty(green.dynamic)
         error("Dynamic Green's function can not be empty!")
@@ -372,10 +376,14 @@ function dynamic(green::Green2DLR{DT,TT,TGT,SGT}, time, space,  timeMethod::TM ,
     return result
 end
 
+function dynamic(green::Green2DLR{DT,TT,TGT,SGT}, time, space,  timeMethod::TM , spaceMethod::SM) where {DT,TT,TGT<:CompositeGrids.AbstractGrid,SGT<:CompositeGrids.AbstractGrid,TM,SM}
+    return  dynamic(green, time, space, 1, 1,  timeMethod , spaceMethod)
+end
+
 function dynamic(
-    green::Green2DLR{DT,TT,TGT,SGT}, time, space,
-    ;timeMethod::LinearInterp = LINEARINTERP , spaceMethod::LinearInterp = LINEARINTERP
-    ,color1::Int =1, color2::Int = 1) where {DT,TT,TGT<:CompositeGrids.AbstractGrid,SGT<:CompositeGrids.AbstractGrid}
+    green::Green2DLR{DT,TT,TGT,SGT}, time, space, color1::Int, color2::Int,
+    timeMethod::LinearInterp = LINEARINTERP , spaceMethod::LinearInterp = LINEARINTERP
+    ) where {DT,TT,TGT<:CompositeGrids.AbstractGrid,SGT<:CompositeGrids.AbstractGrid}
     # for double composite and double linear
     if isempty(green.dynamic)
         error("Dynamic Green's function can not be empty!")
@@ -394,7 +402,14 @@ function dynamic(
     return result
 end
 
-function dynamic(green::Green2DLR{DT,TT,TGT,SGT}, time, space, timeMethod::DLRInterp , spaceMethod::SM ;color1::Int =1, color2::Int = 1) where {DT,TT,TGT<:CompositeGrids.AbstractGrid,SGT<:CompositeGrids.AbstractGrid,SM}
+function dynamic(
+    green::Green2DLR{DT,TT,TGT,SGT}, time, space,
+    timeMethod::LinearInterp = LINEARINTERP , spaceMethod::LinearInterp = LINEARINTERP
+    ) where {DT,TT,TGT<:CompositeGrids.AbstractGrid,SGT<:CompositeGrids.AbstractGrid}
+    return dynamic( green, time, space, 1, 1, timeMethod, spaceMethod)
+end
+
+function dynamic(green::Green2DLR{DT,TT,TGT,SGT}, time, space, color1::Int, color2::Int ,timeMethod::DLRInterp , spaceMethod::SM ) where {DT,TT,TGT<:CompositeGrids.AbstractGrid,SGT<:CompositeGrids.AbstractGrid,SM}
     # for composite space and dlr time
     if isempty(green.dynamic)
         error("Dynamic Green's function can not be empty!")
@@ -413,4 +428,6 @@ function dynamic(green::Green2DLR{DT,TT,TGT,SGT}, time, space, timeMethod::DLRIn
     return result
 end
 
-
+function dynamic(green::Green2DLR{DT,TT,TGT,SGT}, time, space, timeMethod::DLRInterp , spaceMethod::SM ) where {DT,TT,TGT<:CompositeGrids.AbstractGrid,SGT<:CompositeGrids.AbstractGrid,SM}
+    return dynamic(green, time, space, 1, 1, timeMethod, spaceMethod)
+end
