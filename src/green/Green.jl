@@ -320,28 +320,6 @@ Interpolation method is by default depending on the grid, but could also be chos
 - 'color2': Target color2
 - 'spaceMethod': Method of interpolation for space. 
 """
-function instant(; green::Green2DLR{DT,TT,TGT,SGT}, space,  color1::Int, color2::Int=color1, spaceMethod::SM ) where {DT,TT,TGT,SGT,SM}
-    if isempty(green.instant)
-        error("Instant Green's function can not be empty!")
-    else
-        IM = InterpMethod(SGT,SM)
-        nei = CompositeGrids.Interp.findneighbor(IM, green.spaceGrid,space)
-        instant_x = view(green.instant, color1, color2, nei.index)
-        return CompositeGrids.Interp.interpsliced(nei,instant_x)
-    end
-end
-
-function instant(green::Green2DLR{DT,TT,TGT,SGT}, space, color1, color2) where {DT,TT,TGT,SGT}
-    return instant(; green=green, space = space, color1 = color1 , color2 = color2, spaceMethod = DEFAULTINTERP)
-end
-
-function instant(green::Green2DLR{DT,TT,TGT,SGT}, space, spaceMethod) where {DT,TT,TGT,SGT}
-    return instant(; green=green, space = space, color1 = 1 , color2 = 1, spaceMethod = spaceMethod)
-end
-
-function instant(green::Green2DLR{DT,TT,TGT,SGT}, space) where {DT,TT,TGT,SGT}
-    return instant(; green=green, space = space, color1 = 1 , color2 = 1, spaceMethod = DEFAULTINTERP)
-end
 
 """
     function dynamic(green::Green2DLR{DT,TT,TGT,SGT}, time, space, color1::Int, color2::Int, timeMethod::TM , spaceMethod::SM) where {DT,TT,TGT<:CompositeGrids.AbstractGrid,SGT<:CompositeGrids.AbstractGrid,TM,SM}
@@ -359,79 +337,16 @@ Interpolation method is by default depending on the grid, but could also be chos
 - 'spaceMethod': Method of interpolation for space 
 """
 
-function _dynamic(TIM, SIM; green::Green2DLR{DT,TT,TGT,SGT}, time, space, color1::Int, color2::Int) where {DT,TT,TGT<:CompositeGrids.AbstractGrid,SGT<:CompositeGrids.AbstractGrid}
-    # for double composite
-    if isempty(green.dynamic)
-        error("Dynamic Green's function can not be empty!")
-    else
-        spaceNeighbor = CompositeGrids.Interp.findneighbor(SIM, green.spaceGrid, space)
-        println(TIM)
-        if green.timeType == ImFreq && TIM != DLRInterp
-            timeGrid = (green.timeGrid.grid * 2 .+ 1) * π / green.β
-            comTimeGrid = CompositeGrids.SimpleG.Arbitrary{eltype(timeGrid)}(timeGrid)
-            comTime = (2*time+1)*π/green.β
-        else
-            comTimeGrid = green.timeGrid
-            comTime = time
-        end
 
-        timeNeighbor = CompositeGrids.Interp.findneighbor(TIM, comTimeGrid, comTime)
-        dynamic_slice = view(green.dynamic, color1, color2, spaceNeighbor.index, timeNeighbor.index)
-        dynamic_slice_xint = CompositeGrids.Interp.interpsliced(spaceNeighbor,dynamic_slice, axis=1)
-        result = CompositeGrids.Interp.interpsliced(timeNeighbor,dynamic_slice_xint, axis=1)
-    end
-    return result
-end
+# function dynamic(green::Union{Green2DLR{DT,TT,TGT,SGT},GreenSym2DLR{DT,TT,TGT,SGT}}, time, space,  timeMethod::TM , spaceMethod::SM) where {DT,TT,TGT<:CompositeGrids.AbstractGrid,SGT<:CompositeGrids.AbstractGrid,TM,SM}
+#     return  dynamic(; timeMethod = timeMethod, spaceMethod = spaceMethod, green = green, time=time, space=space, color1=1, color2 =1)
+# end
 
-function _dynamic( ::LinearInterp , ::LinearInterp
-    ;green::Green2DLR{DT,TT,TGT,SGT}, time, space, color1::Int, color2::Int,
-    ) where {DT,TT,TGT<:CompositeGrids.AbstractGrid,SGT<:CompositeGrids.AbstractGrid}
-    # for double composite and double linear
-    if isempty(green.dynamic)
-        error("Dynamic Green's function can not be empty!")
-    else
-        if green.timeType == ImFreq
-            timeGrid = (green.timeGrid.grid * 2 .+ 1) * π / green.β
-            comTimeGrid = CompositeGrids.SimpleG.Arbitrary{eltype(timeGrid)}(timeGrid)            
-            comTime = (2*time+1)*π/green.β
-        else
-            comTimeGrid = green.timeGrid
-            comTime = time
-        end
-        dynamic_slice = view(green.dynamic, color1, color2, :,:)
-        result = CompositeGrids.Interp.linear2D(dynamic_slice, green.spaceGrid, comTimeGrid,space,comTime)
-    end
-    return result
-end
+# function dynamic(green::Union{Green2DLR{DT,TT,TGT,SGT},GreenSym2DLR{DT,TT,TGT,SGT}}, time, space) where {DT,TT,TGT<:CompositeGrids.AbstractGrid,SGT<:CompositeGrids.AbstractGrid}
+#     return dynamic(; timeMethod =DEFAULTINTERP, spaceMethod = DEFAULTINTERP, green=green, time=time, space=space,color1=1, color2 =1)
+# end
 
+# function dynamic(green::Union{Green2DLR{DT,TT,TGT,SGT},GreenSym2DLR{DT,TT,TGT,SGT}}, time, space, color1::Int, color2::Int) where {DT,TT,TGT<:CompositeGrids.AbstractGrid,SGT<:CompositeGrids.AbstractGrid}
+#     return dynamic(; timeMethod =DEFAULTINTERP, spaceMethod = DEFAULTINTERP, green = green, time=time, space=space, color1=color1, color2 =color2)
+# end
 
-function _dynamic(::DLRInterp, SIM; green::Green2DLR{DT,TT,TGT,SGT}, time, space, color1::Int, color2::Int) where {DT,TT,TGT<:CompositeGrids.AbstractGrid,SGT<:CompositeGrids.AbstractGrid}
-    # for composite space and dlr time
-    if isempty(green.dynamic)
-        error("Dynamic Green's function can not be empty!")
-    else
-        spaceNeighbor = CompositeGrids.Interp.findneighbor(SIM, green.spaceGrid, space)
-        dynamic_slice = view(green.dynamic, color1, color2, spaceNeighbor.index,:)
-        dynamic_slice_xint = CompositeGrids.Interp.interpsliced(spaceNeighbor,dynamic_slice, axis=1)
-        if green.timeType == ImFreq
-            result = (matfreq2matfreq(green.dlrGrid, dynamic_slice_xint, [time,], green.timeGrid.grid))[1]
-        elseif green.timeType == ImTime
-            result = (tau2tau(green.dlrGrid, dynamic_slice_xint, [time,], green.timeGrid.grid))[1]
-        end
-    end
-    return result
-end
-
-dynamic(;timeMethod::TM, spaceMethod::SM ,green::Green2DLR{DT,TT,TGT,SGT}, time, space , color1::Int, color2::Int) where {TM,SM,TGT<:CompositeGrids.AbstractGrid,SGT<:CompositeGrids.AbstractGrid,DT,TT} = _dynamic(InterpMethod(TGT,TM), InterpMethod(SGT, SM); green, time, space, color1, color2)
-
-function dynamic(green::Green2DLR{DT,TT,TGT,SGT}, time, space,  timeMethod::TM , spaceMethod::SM) where {DT,TT,TGT<:CompositeGrids.AbstractGrid,SGT<:CompositeGrids.AbstractGrid,TM,SM}
-    return  dynamic(; timeMethod = timeMethod, spaceMethod = spaceMethod, green = green, time=time, space=space, color1=1, color2 =1)
-end
-
-function dynamic(green::Green2DLR{DT,TT,TGT,SGT}, time, space) where {DT,TT,TGT<:CompositeGrids.AbstractGrid,SGT<:CompositeGrids.AbstractGrid}
-    return dynamic(; timeMethod =LINEARINTERP, spaceMethod = LINEARINTERP, green=green, time=time, space=space,color1=1, color2 =1)
-end
-
-function dynamic(green::Green2DLR{DT,TT,TGT,SGT}, time, space, color1::Int, color2::Int) where {DT,TT,TGT<:CompositeGrids.AbstractGrid,SGT<:CompositeGrids.AbstractGrid}
-    return dynamic(; timeMethod =LINEARINTERP, spaceMethod = LINEARINTERP, green = green, time=time, space=space, color1=color1, color2 =color2)
-end
