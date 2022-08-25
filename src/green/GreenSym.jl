@@ -43,7 +43,7 @@ mutable struct GreenSym2DLR{T<:Number,Type<:TimeDomain,TGT,SGT}
     ###########     data   ###########
     instant::Array{T,3}
     dynamic::Array{T,4}
-    dynamicRl::Array{T,4}
+    dynamicRe::Array{T,4}
     dynamicIm::Array{T,4}
     """
         function Green2DLR{T}(name::Symbol, timeType::TT, β, isFermi::Bool, Euv, spaceGrid, color::Int = 1;
@@ -70,16 +70,16 @@ mutable struct GreenSym2DLR{T<:Number,Type<:TimeDomain,TGT,SGT}
     - 'dynamicError': Error of dynamic part. Default: 0 everywhere
     """
     function GreenSym2DLR{T}(name::Symbol, timeType::TT, β, isFermi::Bool, Euv, spaceGrid, color::Int = 1;
-                          timeRlSymmetry::Symbol = :pha,  timeImSymmetry::Symbol = :ph, rtol = 1e-8, kwargs...
+                          timeReSymmetry::Symbol = :pha,  timeImSymmetry::Symbol = :ph, rtol = 1e-8, kwargs...
     ) where {T<:Number, TT<:TimeDomain}
         # @assert spaceType == :k || spaceType == :x
-        @assert timeRlSymmetry == :ph || timeRlSymmetry == :pha
+        @assert timeReSymmetry == :ph || timeReSymmetry == :pha
         @assert timeImSymmetry == :ph || timeImSymmetry == :pha
 
         spaceType = :k #TODO: replace it with spaceGrid.type after we have a spaceGrid package
 
         dlrGrid = DLRGrid(Euv, β, rtol, isFermi, :none)        
-        dlrReGrid = DLRGrid(Euv, β, rtol, isFermi, timeRlSymmetry)
+        dlrReGrid = DLRGrid(Euv, β, rtol, isFermi, timeReSymmetry)
         dlrImGrid = DLRGrid(Euv, β, rtol, isFermi, timeImSymmetry)
 
         # println(keys(kwargs))
@@ -123,14 +123,14 @@ mutable struct GreenSym2DLR{T<:Number,Type<:TimeDomain,TGT,SGT}
 
         instant = Array{T,3}(undef, 0, 0, 0)
         dynamic = Array{T,4}(undef, 0, 0, 0, 0)
-        dynamicRl = Array{T,4}(undef, 0, 0, 0, 0)
+        dynamicRe = Array{T,4}(undef, 0, 0, 0, 0)
         dynamicIm = Array{T,4}(undef, 0, 0, 0, 0)
 
         gnew = new{T,TT,typeof(timeGrid),typeof(compSpaceGrid)}(
             name, color, dlrGrid, dlrReGrid,dlrImGrid,
             timeGrid,
             spaceType, compSpaceGrid,
-            instant, dynamic, dynamicRl,dynamicIm)
+            instant, dynamic, dynamicRe,dynamicIm)
         return set!(gnew; kwargs...)
     end
 end
@@ -142,7 +142,7 @@ function Base.getproperty(obj::GreenSym2DLR{T,TT,TGT,SGT}, sym::Symbol) where {T
         return obj.dlrReGrid.β
     elseif sym === :timeType
         return TT        
-    elseif sym === :timeRlSymmetry
+    elseif sym === :timeReSymmetry
         return obj.dlrReGrid.symmetry
     elseif sym === :timeImSymmetry
         return obj.dlrImGrid.symmetry
@@ -158,34 +158,34 @@ end
 function set!(green::GreenSym2DLR; kwargs...)
     size_green = size(green)
     dynamicSize = size_green[1:4]
-    dynamicRlSize = [size_green[1:3], size_green[6]]
+    dynamicReSize = [size_green[1:3], size_green[6]]
     dynamicImSize = [size_green[1:3], size_green[7]]
     instantSize = size_green[1:3]
     if :dynamic in keys(kwargs) && isempty(kwargs[:dynamic]) == false
         green.dynamic = reshape(kwargs[:dynamic], Tuple(dynamicSize))
         if(green.timeType == ImTime)
-            dynamicRl = real.(tau2matfreq(green.dlrGrid, green.dynamic, green.dlrReGrid.n, green.timeGrid.grid; axis = 4))
+            dynamicRe = real.(tau2matfreq(green.dlrGrid, green.dynamic, green.dlrReGrid.n, green.timeGrid.grid; axis = 4))
             dynamicIm = im * imag.(tau2matfreq(green.dlrGrid, green.dynamic, green.dlrImGrid.n, green.timeGrid.grid; axis = 4))            
-            green.dynamicRl = matfreq2tau(green.dlrReGrid, dynamicRl, green.dlrReGrid.τ; axis = 4)
+            green.dynamicRe = matfreq2tau(green.dlrReGrid, dynamicRe, green.dlrReGrid.τ; axis = 4)
             green.dynamicIm = matfreq2tau(green.dlrImGrid, dynamicIm, green.dlrImGrid.τ; axis = 4)
         elseif(green.timeType == ImFreq)
-            green.dynamicRl = real.(matfreq2matfreq(green.dlrGrid, green.dynamic, green.dlrReGrid.n, green.timeGrid.grid; axis = 4))
+            green.dynamicRe = real.(matfreq2matfreq(green.dlrGrid, green.dynamic, green.dlrReGrid.n, green.timeGrid.grid; axis = 4))
             green.dynamicIm = im * imag.(matfreq2matfreq(green.dlrGrid, green.dynamic, green.dlrImGrid.n, green.timeGrid.grid; axis = 4))
         elseif(green.timeType == DLRFreq)
-            dynamicRl = real.(dlr2matfreq(green.dlrGrid, green.dynamic, green.dlrReGrid.n; axis = 4))
+            dynamicRe = real.(dlr2matfreq(green.dlrGrid, green.dynamic, green.dlrReGrid.n; axis = 4))
             dynamicIm = im * imag.(dlr2matfreq(green.dlrGrid, green.dynamic, green.dlrImGrid.n; axis = 4))            
-            green.dynamicRl = matfreq2dlr(green.dlrReGrid, dynamicRl; axis = 4)
+            green.dynamicRe = matfreq2dlr(green.dlrReGrid, dynamicRe; axis = 4)
             green.dynamicIm = matfreq2dlr(green.dlrImGrid, dynamicIm; axis = 4)            
         end
-    elseif :dynamicRl in keys(kwargs) && isempty(kwargs[:dynamicRl]) == false && :dynamicIm in keys(kwargs) && isempty(kwargs[:dynamicIm]) == false
-        green.dynamicRl = reshape(kwargs[:dynamicRl], Tuple(dynamicRlSize))
+    elseif :dynamicRe in keys(kwargs) && isempty(kwargs[:dynamicRe]) == false && :dynamicIm in keys(kwargs) && isempty(kwargs[:dynamicIm]) == false
+        green.dynamicRe = reshape(kwargs[:dynamicRe], Tuple(dynamicReSize))
         green.dynamicIm = reshape(kwargs[:dynamicIm], Tuple(dynamicImSize))
         if(green.timeType == ImTime)
-            green.dynamic = tau2tau(green.dlrReGrid, green.dynamicRl, green.timeGrid.grid; axis = 4)+tau2tau(green.dlrImGrid, green.dynamicIm, green.timeGrid.grid; axis = 4)
+            green.dynamic = tau2tau(green.dlrReGrid, green.dynamicRe, green.timeGrid.grid; axis = 4)+tau2tau(green.dlrImGrid, green.dynamicIm, green.timeGrid.grid; axis = 4)
         elseif(green.timeType == ImFreq)
-            green.dynamic = matfreq2matfreq(green.dlrReGrid, green.dynamicRl, green.timeGrid.grid; axis = 4)+matfreq2matfreq(green.dlrImGrid, green.dynamicIm, green.timeGrid.grid; axis = 4)
+            green.dynamic = matfreq2matfreq(green.dlrReGrid, green.dynamicRe, green.timeGrid.grid; axis = 4)+matfreq2matfreq(green.dlrImGrid, green.dynamicIm, green.timeGrid.grid; axis = 4)
         elseif(green.timeType == DLRFreq)
-            dynamic = dlr2tau(green.dlrReGrid, green.dynamicRl, green.dlrGrid.τ; axis = 4) + dlr2tau(green.dlrImGrid, green.dynamicIm, green.dlrGrid.τ; axis = 4)
+            dynamic = dlr2tau(green.dlrReGrid, green.dynamicRe, green.dlrGrid.τ; axis = 4) + dlr2tau(green.dlrImGrid, green.dynamicIm, green.dlrGrid.τ; axis = 4)
             green.dynamic = tau2dlr(green.dlrGrid, dynamic; axis = 4)
         end
     end
@@ -217,29 +217,29 @@ function toTau(green::GreenSym2DLR, targetGrid = green.dlrGrid.τ)
     if green.timeType == ImTime && length(green.timeGrid.grid) ≈ length(targetGrid.grid) && green.timeGrid.grid ≈ targetGrid.grid
         return green
     end
-    if isempty(green.dynamicRl)||isempty(green.dynamicIm) # if dynamic data has not yet been initialized, there is nothing to do
+    if isempty(green.dynamicRe)||isempty(green.dynamicIm) # if dynamic data has not yet been initialized, there is nothing to do
         return green
     end
 
 
     if (green.timeType == ImTime)
-        dynamicRl = green.dynamicRl
+        dynamicRe = green.dynamicRe
         dynamicIm = green.dynamicIm
-        dynamic = tau2tau(green.dlrReGrid, green.dynamicRl, targetGrid.grid; axis = 4) + tau2tau(green.dlrImGrid, green.dynamicIm, targetGrid.grid; axis = 4)        
+        dynamic = tau2tau(green.dlrReGrid, green.dynamicRe, targetGrid.grid; axis = 4) + tau2tau(green.dlrImGrid, green.dynamicIm, targetGrid.grid; axis = 4)        
     elseif (green.timeType == ImFreq)
-        dynamicRl = matfreq2tau(green.dlrReGrid, green.dynamicRl; axis = 4)
+        dynamicRe = matfreq2tau(green.dlrReGrid, green.dynamicRe; axis = 4)
         dynamicIm = matfreq2tau(green.dlrImGrid, green.dynamicIm; axis = 4)
-        dynamic = matfreq2tau(green.dlrReGrid, green.dynamicRl, targetGrid.grid; axis = 4) + matfreq2tau(green.dlrImGrid, green.dynamicIm, targetGrid.grid; axis = 4)           
+        dynamic = matfreq2tau(green.dlrReGrid, green.dynamicRe, targetGrid.grid; axis = 4) + matfreq2tau(green.dlrImGrid, green.dynamicIm, targetGrid.grid; axis = 4)           
     elseif (green.timeType == DLRFreq)
-        dynamicRl = dlr2tau(green.dlrReGrid, green.dynamic; axis = 4)
+        dynamicRe = dlr2tau(green.dlrReGrid, green.dynamic; axis = 4)
         dynamicIm = dlr2tau(green.dlrImGrid, green.dynamic; axis = 4)
-        dynamic = dlr2tau(green.dlrReGrid, green.dynamicRl, targetGrid.grid; axis = 4) + dlr2tau(green.dlrImGrid, green.dynamicIm, targetGrid.grid; axis = 4)          
+        dynamic = dlr2tau(green.dlrReGrid, green.dynamicRe, targetGrid.grid; axis = 4) + dlr2tau(green.dlrImGrid, green.dynamicIm, targetGrid.grid; axis = 4)          
     end
 
     return GreenSym2DLR{eltype(dynamic)}(
         green.name, IMTIME,green.β, green.isFermi, green.dlrReGrid.Euv, green.spaceGrid, green.color;
-        timeRlSymmetry = green.timeRlSymmetry, timeImSymmetry = green.timeImSymmetry, timeGrid = targetGrid, rtol = green.dlrReGrid.rtol,
-        dynamic = dynamic, dynamicRl = dynamicRl, dynamicIm = dynamicIm, instant = green.instant)
+        timeReSymmetry = green.timeReSymmetry, timeImSymmetry = green.timeImSymmetry, timeGrid = targetGrid, rtol = green.dlrReGrid.rtol,
+        dynamic = dynamic, dynamicRe = dynamicRe, dynamicIm = dynamicIm, instant = green.instant)
 end
 
 """
@@ -261,29 +261,29 @@ function toMatFreq(green::GreenSym2DLR, targetGrid = green.dlrGrid.n)
     if green.timeType == ImFreq && length(green.timeGrid.grid) ≈ length(targetGrid.grid) && green.timeGrid.grid ≈ targetGrid.grid
         return green
     end
-    if isempty(green.dynamicRl)||isempty(green.dynamicIm) # if dynamic data has not yet been initialized, there is nothing to do
+    if isempty(green.dynamicRe)||isempty(green.dynamicIm) # if dynamic data has not yet been initialized, there is nothing to do
         return green
     end
 
 
     if (green.timeType == ImFreq)
-        dynamicRl = green.dynamicRl
+        dynamicRe = green.dynamicRe
         dynamicIm = green.dynamicIm
-        dynamic = matfreq2matfreq(green.dlrReGrid, green.dynamicRl, targetGrid.grid; axis = 4) + matfreq2matfreq(green.dlrImGrid, green.dynamicIm, targetGrid.grid; axis = 4)  
+        dynamic = matfreq2matfreq(green.dlrReGrid, green.dynamicRe, targetGrid.grid; axis = 4) + matfreq2matfreq(green.dlrImGrid, green.dynamicIm, targetGrid.grid; axis = 4)  
     elseif (green.timeType == ImTime)
-        dynamicRl = tau2matfreq(green.dlrReGrid, green.dynamicRl; axis = 4)
+        dynamicRe = tau2matfreq(green.dlrReGrid, green.dynamicRe; axis = 4)
         dynamicIm = tau2matfreq(green.dlrImGrid, green.dynamicIm; axis = 4)
-        dynamic = tau2matfreq(green.dlrReGrid, green.dynamicRl, targetGrid.grid; axis = 4) + tau2matfreq(green.dlrImGrid, green.dynamicIm, targetGrid.grid; axis = 4)     
+        dynamic = tau2matfreq(green.dlrReGrid, green.dynamicRe, targetGrid.grid; axis = 4) + tau2matfreq(green.dlrImGrid, green.dynamicIm, targetGrid.grid; axis = 4)     
     elseif (green.timeType == DLRFreq)
-        dynamicRl = dlr2matfreq(green.dlrReGrid, green.dynamic; axis = 4)
+        dynamicRe = dlr2matfreq(green.dlrReGrid, green.dynamic; axis = 4)
         dynamicIm = dlr2matfreq(green.dlrImGrid, green.dynamic; axis = 4)
-        dynamic = dlr2freq(green.dlrReGrid, green.dynamicRl, targetGrid.grid; axis = 4) + dlr2freq(green.dlrImGrid, green.dynamicIm, targetGrid.grid; axis = 4)   
+        dynamic = dlr2freq(green.dlrReGrid, green.dynamicRe, targetGrid.grid; axis = 4) + dlr2freq(green.dlrImGrid, green.dynamicIm, targetGrid.grid; axis = 4)   
     end
 
     return GreenSym2DLR{eltype(dynamic)}(
         green.name, IMFREQ, green.β, green.isFermi, green.dlrGrid.Euv, green.spaceGrid, green.color;
-        timeRlSymmetry = green.timeRlSymmetry, timeImSymmetry = green.timeImSymmetry, timeGrid = targetGrid, rtol = green.dlrReGrid.rtol,
-        dynamic = dynamic, dynamicRl = dynamicRl, dynamicIm = dynamicIm, instant = green.instant)
+        timeReSymmetry = green.timeReSymmetry, timeImSymmetry = green.timeImSymmetry, timeGrid = targetGrid, rtol = green.dlrReGrid.rtol,
+        dynamic = dynamic, dynamicRe = dynamicRe, dynamicIm = dynamicIm, instant = green.instant)
 
 end
 
@@ -300,25 +300,25 @@ function toDLR(green::GreenSym2DLR)
     if green.timeType == DLRFreq
         return green
     end
-    if isempty(green.dynamicRl)||isempty(green.dynamicIm) # if dynamic data has not yet been initialized, there is nothing to do
+    if isempty(green.dynamicRe)||isempty(green.dynamicIm) # if dynamic data has not yet been initialized, there is nothing to do
         return green
     end
 
 
     if (green.timeType == ImTime)
-        dynamicRl = tau2dlr(green.dlrReGrid, green.dynamicRl; axis = 4)
+        dynamicRe = tau2dlr(green.dlrReGrid, green.dynamicRe; axis = 4)
         dynamicIm = tau2dlr(green.dlrImGrid, green.dynamicIm; axis = 4)
         dynamic = tau2dlr(green.dlrGrid, green.dynamic,  green.timeGrid.grid; axis = 4)
     elseif (green.timeType == ImFreq)
-        dynamicRl = matfreq2dlr(green.dlrReGrid, green.dynamicRl; axis = 4)
+        dynamicRe = matfreq2dlr(green.dlrReGrid, green.dynamicRe; axis = 4)
         dynamicIm = matfreq2dlr(green.dlrImGrid, green.dynamicIm; axis = 4)        
         dynamic = matfreq2dlr(green.dlrGrid, green.dynamic,  green.timeGrid.grid; axis = 4)
     end
 
     return Green2DLR{eltype(dynamic)}(
         green.name,DLRFREQ, green.β, green.isFermi, green.dlrGrid.Euv, green.spaceGrid, green.color;
-        timeRlSymmetry = green.timeRlSymmetry, timeImSymmetry = green.timeImSymmetry, timeGrid = green.dlrGrid.ω, rtol = green.dlrGrid.rtol,
-        dynamic = dynamic,  dynamicRl = dynamicRl, dynamicIm = dynamicIm, instant = green.instant)
+        timeReSymmetry = green.timeReSymmetry, timeImSymmetry = green.timeImSymmetry, timeGrid = green.dlrGrid.ω, rtol = green.dlrGrid.rtol,
+        dynamic = dynamic,  dynamicRe = dynamicRe, dynamicIm = dynamicIm, instant = green.instant)
 
 end
 
