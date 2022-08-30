@@ -100,7 +100,7 @@ mutable struct Green2DLR{T<:Number,Type<:TimeDomain,TGT,SGT}
     """
     function Green2DLR{T}(name::Symbol, timeType::TT, β, isFermi::Bool, Euv, spaceGrid, color::Int = 1;
         timeSymmetry::Symbol = :none, rtol = 1e-8, kwargs...
-    ) where {T<:Number, TT<:TimeDomain}
+    ) where {T<:Number,TT<:TimeDomain}
         # @assert spaceType == :k || spaceType == :x
         @assert timeSymmetry == :ph || timeSymmetry == :pha || timeSymmetry == :none
 
@@ -231,7 +231,7 @@ function toTau(green::Green2DLR, targetGrid = green.dlrGrid.τ)
     end
 
     return Green2DLR{eltype(dynamic)}(
-        green.name, IMTIME,green.β, green.isFermi, green.dlrGrid.Euv, green.spaceGrid, green.color;
+        green.name, IMTIME, green.β, green.isFermi, green.dlrGrid.Euv, green.spaceGrid, green.color;
         timeSymmetry = green.timeSymmetry, timeGrid = targetGrid, rtol = green.dlrGrid.rtol,
         dynamic = dynamic, instant = green.instant)
 end
@@ -294,13 +294,13 @@ function toDLR(green::Green2DLR)
 
 
     if (green.timeType == ImTime)
-        dynamic = tau2dlr(green.dlrGrid, green.dynamic,  green.timeGrid.grid; axis = 4)
+        dynamic = tau2dlr(green.dlrGrid, green.dynamic, green.timeGrid.grid; axis = 4)
     elseif (green.timeType == ImFreq)
-        dynamic = matfreq2dlr(green.dlrGrid, green.dynamic,  green.timeGrid.grid; axis = 4)
+        dynamic = matfreq2dlr(green.dlrGrid, green.dynamic, green.timeGrid.grid; axis = 4)
     end
 
     return Green2DLR{eltype(dynamic)}(
-        green.name,DLRFREQ, green.β, green.isFermi, green.dlrGrid.Euv, green.spaceGrid, green.color;
+        green.name, DLRFREQ, green.β, green.isFermi, green.dlrGrid.Euv, green.spaceGrid, green.color;
         timeSymmetry = green.timeSymmetry, timeGrid = green.dlrGrid.ω, rtol = green.dlrGrid.rtol,
         dynamic = dynamic, instant = green.instant)
 
@@ -321,6 +321,7 @@ Interpolation method is by default depending on the grid, but could also be chos
 - 'spaceMethod': Method of interpolation for space. 
 """
 
+
 """
     function dynamic(green::Green2DLR{DT,TT,TGT,SGT}, time, space, color1::Int, color2::Int, timeMethod::TM , spaceMethod::SM) where {DT,TT,TGT<:CompositeGrids.AbstractGrid,SGT<:CompositeGrids.AbstractGrid,TM,SM}
 
@@ -336,7 +337,6 @@ Interpolation method is by default depending on the grid, but could also be chos
 - 'timeMethod': Method of interpolation for time
 - 'spaceMethod': Method of interpolation for space 
 """
-
 
 # function dynamic(green::Union{Green2DLR{DT,TT,TGT,SGT},GreenSym2DLR{DT,TT,TGT,SGT}}, time, space,  timeMethod::TM , spaceMethod::SM) where {DT,TT,TGT<:CompositeGrids.AbstractGrid,SGT<:CompositeGrids.AbstractGrid,TM,SM}
 #     return  dynamic(; timeMethod = timeMethod, spaceMethod = spaceMethod, green = green, time=time, space=space, color1=1, color2 =1)
