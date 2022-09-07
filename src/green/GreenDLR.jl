@@ -19,7 +19,6 @@ mutable struct GreenDLR{T<:Any,Type<:TimeDomain,TGT,SGT}<:AbstractArray
     #########   Mesh   ##############
     
     timeGrid::TGT
-    spaceType::Symbol
     mesh::SGT
     inner_state::Array{::Int, 1}
     ###########     data   ###########
@@ -33,9 +32,9 @@ mutable struct GreenDLR{T<:Any,Type<:TimeDomain,TGT,SGT}<:AbstractArray
         gnew = new{T,TT,typeof(timeGrid),typeof(mesh)}(
             name,  dlrGrid,
             timeGrid,
-            spaceType, mesh, inner_state,
+             mesh, inner_state,
             data)
-        return set!(gnew; kwargs...)
+        return gnew
     end
 end
 
@@ -133,7 +132,10 @@ function Base.setindex!(green::GreenDLR; kwargs...)
 
 end
 
+function Base.view(green::GreenDLR,inds...)
+    
 
+end
 
 function Base.getproperty(obj::GreenDLR{T,TT,TGT,SGT}, sym::Symbol) where {T,TT,TGT,SGT}
     if sym === :isFermi
