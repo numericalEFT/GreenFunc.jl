@@ -71,7 +71,8 @@ function Base.getindex(obj::MeshProduct, index...)
 end
 #TODO:find the index corresponds to linearindex I, then for all n meshes in mlist, return [..., (mlist[i])[index[i]], ...] 
 function Base.getindex(obj::MeshProduct, I::Int)
-    return getindex(meshprod,linear_to_index(meshprod,I)[1])
+    index =linear_to_index(obj,I)
+    return Tuple(obj.mlist[i][id] for (i,id) in enumerate(index))
 end
 
 #TODO:return the sliced pieces of 
@@ -89,7 +90,9 @@ Base.iterate(obj::MeshProduct, state) = (state>=length(obj)) ? nothing : (obj[st
 
 #TODO:nice print
 function Base.show(obj::MeshProduct)
-    return 1
+    for item in (meshprod)
+        println(item)
+    end
 end
 
 
