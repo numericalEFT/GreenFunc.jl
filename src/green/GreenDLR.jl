@@ -146,13 +146,37 @@ end
 
 """
 Base.getindex(obj::GreenDLR, inds...) = Base.getindex(obj.data, inds...)
+Base.getindex(obj::GreenDLR, I::Int) = Base.getindex(obj.data, I)
+Base.firstindex(obj::GreenDLR) = 1
+Base.lastindex(obj::GreenDLR) = length(obj)
 
+Base.iterate(obj::GreenDLR) = (obj[1], 1)
+Base.iterate(obj::GreenDLR, state) = (state>=length(obj)) ? nothing : (obj[state+1], state+1)
+
+@generated function sub2ind_gen(dims::NTuple{N}, I::Integer...) where N
+    ex = :(I[$N] - 1)
+    for i = (N - 1):-1:1
+        ex = :(I[$i] - 1 + dims[$i] * $ex)
+    end
+    return :($ex + 1)
+end
+@generated function ind2sub_gen(dims::NTuple{N}, I::Integer) where N
+    inds, quotion = :((I-1) % dims[1] + 1), :((I-1) ÷ dims[1])
+    for i = 2:N-1
+        inds, quotion = :($inds..., $quotion % dims[$i] + 1), :($quotion ÷ dims[$i])
+    end
+    inds = :($inds..., $quotion + 1)
+    return :($inds)
+end
 
 """
 
 """
 function Base.setindex!(obj::GreenDLR, X, inds...)
     obj.data[inds...] = X
+end
+function Base.setindex!(obj::GreenDLR, X, I::Int)
+    obj.data[I] = X
 end
 
 Base.view(obj::GreenDLR, inds...) = Base.view(obj.data, inds...)
@@ -172,6 +196,7 @@ function Base.getproperty(obj::GreenDLR{T,Domain,TGT,MT}, sym::Symbol) where {T,
 end
 
 Base.size(obj::GreenDLR) = size(obj.data)
+Base.length(obj::GreenDLR) = length(obj.data)
 
 #TODO:nice print
 #Kun: example from triqs: 
@@ -252,6 +277,7 @@ function _check(objL::GreenDLR, objR::GreenDLR)
 end
 
 function Base.:<<(Obj::GreenDLR, objSrc::Expr)
+
     return 1
 end
 
