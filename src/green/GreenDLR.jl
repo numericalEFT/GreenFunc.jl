@@ -26,7 +26,7 @@ mutable struct GreenDLR{T,Domain<:TimeDomain,TGT,MT,Ndata}
     DLR::DLRGrid
 
     #########   Mesh   ##############
-    
+
     tgrid::TGT
     mesh::MT
     innerstate::Tuple
@@ -34,22 +34,22 @@ mutable struct GreenDLR{T,Domain<:TimeDomain,TGT,MT,Ndata}
     data::Array{T,Ndata}
 
     """
-    
-    """
-    function GreenDLR{T}(; domain::Domain, DLR, tgrid::TGT, mesh::MT, β , isFermi, Euv, rtol, tsym, innerstate::Tuple, data::Array{T,Ndata}) where {T,Domain<:TimeDomain,TGT,MT,Ndata}
-        @assert tsym == :ph || tsym == :pha || tsym == :none        # data is initilized with zeros if not provided by user
-        @assert Ndata==length(innerstate)+2
 
-        gnew = new{T,Domain,typeof(tgrid),typeof(mesh), Ndata}(
+    """
+    function GreenDLR{T}(; domain::Domain, DLR, tgrid::TGT, mesh::MT, β, isFermi, Euv, rtol, tsym, innerstate::Tuple, data::Array{T,Ndata}) where {T,Domain<:TimeDomain,TGT,MT,Ndata}
+        @assert tsym == :ph || tsym == :pha || tsym == :none        # data is initilized with zeros if not provided by user
+        @assert Ndata == length(innerstate) + 2
+
+        gnew = new{T,Domain,typeof(tgrid),typeof(mesh),Ndata}(
             DLR,
             tgrid,
-             mesh, innerstate,
+            mesh, innerstate,
             data)
         return gnew
     end
 end
 
-function GreenDLR(;kwargs...)
+function GreenDLR(; kwargs...)
     if :datatype in keys(kwargs)
         datatype = kwargs[:datatype]
     else
@@ -137,9 +137,9 @@ function GreenDLR(;kwargs...)
         data = zeros(datatype, datasize)
     end
 
-       
-    return GreenDLR{datatype}(; domain = domain, DLR=DLR, tgrid = tgrid, mesh = mesh, β = β, isFermi = isFermi, Euv = Euv, rtol=rtol, tsym =tsym, innerstate = innerstate, data = data)
-    
+
+    return GreenDLR{datatype}(; domain=domain, DLR=DLR, tgrid=tgrid, mesh=mesh, β=β, isFermi=isFermi, Euv=Euv, rtol=rtol, tsym=tsym, innerstate=innerstate, data=data)
+
 end
 """
 
@@ -155,7 +155,7 @@ function Base.setindex!(obj::GreenDLR, X, inds...)
     obj.data[inds...] = X
 end
 
-Base.view(obj::GreenDLR,inds...)  = Base.view(obj.data, inds...)
+Base.view(obj::GreenDLR, inds...) = Base.view(obj.data, inds...)
 
 function Base.getproperty(obj::GreenDLR{T,Domain,TGT,MT}, sym::Symbol) where {T,Domain,TGT,MT}
     if sym === :isFermi
@@ -175,8 +175,19 @@ function Base.size(obj::GreenDLR)
     return size(obj.data)
 end
 #TODO:nice print
-function Base.show(obj::GreenDLR)
-    return 1
+function Base.show(io::IO, obj::GreenDLR)
+    if obj.tsym == :ph
+        sym = "particle-hole"
+    elseif obj.tsym == :pha
+        sym = "anti-particle-hole"
+    else
+        sym = "none"
+    end
+    print(io, (obj.isFermi ? "Fermionic " : "Bosonic ")
+              * "Green's function with beta = $(obj.β) and innerstate = $(obj.innerstate) \n"
+              * "- Mesh: shape = $(size(obj.mesh)), length = $(length(obj.mesh))\n"
+              * "- timeGrid: domain = $(obj.domain), symmetry = " * sym * ", length = $(size(obj.tgrid.grid)[1])\n"
+    )
 end
 
 function rank(obj::GreenDLR)
@@ -214,9 +225,22 @@ end
 #             raise NotImplemented
 #                     return self
 # """
-# function Base.:<<(obj::GreenDLR, objSrc::GreenDLR)
-#     return 1
-# end
+
+function check(objL::GreenDLR, objR::GreenDLR)
+    @assert objL.tgrid == objR.tgrid "Green's function time grids are not compatible:\n $(objL.tgrid)\nand\n $(objR.tgrid)"
+    @assert objL.mesh == objR.mesh "Green's function meshes are not compatible:\n $(objL.mesh)\nand\n $(objR.mesh)"
+    @assert objL.innerstate == objR.innerstate "Green's function innerstates are not compatible:\n $(objL.innerstate) and $(objR.innerstate)"
+end
+
+function Base.:<<(obj::GreenDLR, objSrc::GreenDLR)
+    check(obj, objSrc)
+    obj = deepcopy(objSrc)
+    return obj
+end
+
+function Base.:<<(Obj::GreenDLR, objSrc::Expr)
+    return 1
+end
 
 """
 TODO:Need to check objL and objR are on the same grid and has same innerstate
@@ -229,12 +253,14 @@ end
 
 
 function Base.:+(objL::GreenDLR, objR::GreenDLR)
+    # check(objL, objR)
     new = objL
     new.data = objL.data + objR.data
     return new
 end
 
 function Base.:-(objL::GreenDLR, objR::GreenDLR)
+    # check(objL, objR)
     new = objL
     new.data = objL.data - objR.data
     return new
@@ -242,6 +268,7 @@ function Base.:-(objL::GreenDLR, objR::GreenDLR)
 end
 
 function Base.:*(objL::GreenDLR, objR::GreenDLR)
+    # check(objL, objR)
     new = objL
     new.data = objL.data .* objR.data
     return new
@@ -267,8 +294,22 @@ end
 #         real-frequency, or Legendre mesh.
 # return gf_fnt.density(self, *args, **kwargs)
 # """
+
+#Density calculation only supports homogeneous system now.
 function density(obj::GreenDLR; kwargs...)
-    return 1
+    G_ins = toTau(obj, [obj.β,]).data .* (-1)
+
+    grid = zeros(length(obj.mesh))
+    for (ki, ind) in enumerate(linear_to_index(obj.mesh))
+        grid[ki] = norm(getindex(obj.mesh))
+    end
+    kgrid = CompositeGrids.AbstractGrid(grid)
+
+    d = rank(obj.mesh)
+    Ωd = d == 2 ? 1 : √π / 2
+    integrand = real(G_ins) .* kgrid.grid .^ d
+
+    return CompositeGrids.Interp.integrate1D(integrand, kgrid) * Ωd / 2 / (2π)^d
 end
 
 
@@ -292,7 +333,7 @@ end
 #         Notes
 #         -----
 #         Only implemented for Greens functions with a single mesh.
-       
+
 
 #         assert self.rank == 1, "Only implemented for Greens functions with one mesh"
 #         assert self.target_rank == 2, "Matrix transform only valid for matrix valued Greens functions"

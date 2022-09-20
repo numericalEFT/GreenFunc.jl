@@ -1,4 +1,4 @@
-SemiCircle(dlr, grid, type) = Sample.SemiCircle(dlr.Euv, dlr.β, dlr.isFermi, grid, type, dlr.symmetry; rtol = dlr.rtol, degree = 24, regularized = true)
+SemiCircle(dlr, grid, type) = Sample.SemiCircle(dlr.Euv, dlr.β, dlr.isFermi, grid, type, dlr.symmetry; rtol=dlr.rtol, degree=24, regularized=true)
 
 @testset "GreenFunc" begin
     @testset "GreenDLR" begin
@@ -12,35 +12,37 @@ SemiCircle(dlr, grid, type) = Sample.SemiCircle(dlr.Euv, dlr.β, dlr.isFermi, gr
         isFermi = true
         tsym = :none
         #data =  Array{ComplexF64, 2}[]
-        data = [1.0im,1.0im]
-        tgrid = [1,2]
+        data = [1.0im, 1.0im]
+        tgrid = [1, 2]
         DLR = DLRGrid(Euv, β, rtol, isFermi, tsym)
         #green_freq = GreenDLR{ComplexF64}(; domain=GreenFunc.IMFREQ, DLR = DLR, tgrid = tgrid, mesh = mesh, β=β , isFermi=isFermi, Euv=Euv, rtol=rtol, tsym=tsym, innerstate=innerstate, data = data)
         green_freq = GreenDLR(; mesh=mesh)
         rtol = green_freq.DLR.rtol
         println(typeof(green_freq))
         println("size of green_freq is $(size(green_freq.data))\n")
-        println("test getindex:\n",green_freq[1,2,3])
-        println("test view:\n",green_freq[:,1:2,1:3])
+        println("test getindex:\n", green_freq[1, 2, 3])
+        println("test view:\n", green_freq[:, 1:2, 1:3])
         println("size of green is", size(green_freq))
-        green_freq[1,1,1] = im*2.0
-        println("test setindex:",green_freq[1,1,1])
+        green_freq[1, 1, 1] = im * 2.0
+        println("test setindex:", green_freq[1, 1, 1])
         green_freq2 = deepcopy(green_freq)
         println("test math:$((green_freq+green_freq2)[1,1,1]), $((green_freq-green_freq2)[1,1,1]), $((green_freq*green_freq2)[1,1,1])")
         rank_var = GreenFunc.rank(green_freq)
         println("rank of green_freq is $rank_var")
+
+        show(green_freq)
         #     Gτ = SemiCircle(green_freq.DLR, green_freq.DLR.τ, :τ)
-    #     Gn = SemiCircle(green_freq.DLR, green_freq.DLR.n, :n)
-    #     green_dum = zeros(ComplexF64, (green_freq.color, green_freq.color, green_freq.spaceGrid.size, green_freq.timeGrid.size))
-    #     for (ti, t) in enumerate(green_freq.timeGrid)
-    #         for (qi, q) in enumerate(green_freq.spaceGrid)
-    #             for (c1i, c1) in enumerate(color_n)
-    #                 for (c2i, c2) in enumerate(color_n)
-    #                     green_dum[c1i, c2i, qi, ti] = Gn[ti]
-    #                 end
-    #             end
-    #         end
-    #     end
+        #     Gn = SemiCircle(green_freq.DLR, green_freq.DLR.n, :n)
+        #     green_dum = zeros(ComplexF64, (green_freq.color, green_freq.color, green_freq.spaceGrid.size, green_freq.timeGrid.size))
+        #     for (ti, t) in enumerate(green_freq.timeGrid)
+        #         for (qi, q) in enumerate(green_freq.spaceGrid)
+        #             for (c1i, c1) in enumerate(color_n)
+        #                 for (c2i, c2) in enumerate(color_n)
+        #                     green_dum[c1i, c2i, qi, ti] = Gn[ti]
+        #                 end
+        #             end
+        #         end
+        #     end
     end
 
     #     green_freq.dynamic = green_dum
