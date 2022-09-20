@@ -19,27 +19,15 @@ end
 
 
 #TODO:return the sum of length of all meshes
-function Base.length(obj::MeshProduct)
-    len = 1
-    for l in length.(obj.mlist)
-        len = len * l
-    end
-    return len
-end
+Base.length(obj::MeshProduct) = reduce(*, length(m) for m in obj.mlist)
 
 #TODO:return the size of Ith mesh in mlist 
-function Base.size(obj::MeshProduct, I::Int)
-    return length.(obj.mlist)[I]
-end
+Base.size(obj::MeshProduct, I::Int) = length(obj.mlist[I])
 
 #TODO:return the size of all meshes in a tuple 
-function Base.size(obj::MeshProduct)
-    return length.(obj.mlist)
-end
+Base.size(obj::MeshProduct)=Tuple(length.(obj.mlist))
 
-function rank(obj::MeshProduct)
-    return length(obj.mlist)
-end
+rank(obj::MeshProduct) = length(obj.mlist)
 
 #TODO: find the linearindex I corresponding to the given index
 function index_to_linear(obj::MeshProduct, index...)
@@ -66,9 +54,8 @@ end
 
 
 #TODO:for all n meshes in mlist, return [..., (mlist[i])[index[i]], ...] 
-function Base.getindex(obj::MeshProduct, index...)
-    return Tuple(obj.mlist[i][id] for (i,id) in enumerate(index))
-end
+Base.getindex(obj::MeshProduct, index...) = Tuple(obj.mlist[i][id] for (i,id) in enumerate(index))
+
 #TODO:find the index corresponds to linearindex I, then for all n meshes in mlist, return [..., (mlist[i])[index[i]], ...] 
 function Base.getindex(obj::MeshProduct, I::Int)
     index =linear_to_index(obj,I)
@@ -76,9 +63,11 @@ function Base.getindex(obj::MeshProduct, I::Int)
 end
 
 #TODO:return the sliced pieces of 
-function Base.view(obj::MeshProduct,inds...)
-    return 1
-end
+# function Base.view(obj::MeshProduct,inds...)
+#     return Tuple(view(obj, i) for i in inds)
+#     #return 1
+# end
+# t[1] --> view of the first mesh
 
 
 Base.firstindex(obj::MeshProduct) = 1
@@ -89,11 +78,7 @@ Base.iterate(obj::MeshProduct, state) = (state>=length(obj)) ? nothing : (obj[st
 
 
 #TODO:nice print
-function Base.show(obj::MeshProduct)
-    for item in (meshprod)
-        println(item)
-    end
-end
+Base.show(obj::MeshProduct)=string("MeshProduct of:\n",join((repr(x) for x in obj.mlist),",\n"))
 
 
 """
