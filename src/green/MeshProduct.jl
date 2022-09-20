@@ -54,7 +54,16 @@ end
 
 
 #TODO:for all n meshes in meshes, return [..., (meshes[i])[index[i]], ...] 
-Base.getindex(obj::MeshProduct, index...) = Tuple(obj.meshes[i][id] for (i, id) in enumerate(index))
+# Base.getindex(obj::MeshProduct, index...) = Tuple(obj.meshes[i][id] for (i, id) in enumerate(index))
+# Base.getindex(obj::MeshProduct, index...) = Tuple(m[index[i]] for (i, m) in enumerate(obj.meshes))
+# use generated function to make sure the return type is Tuple{eltype(obj.meshes[i]), eltype(obj.meshes[2]), ...}
+@generated function Base.getindex(obj::MeshProduct{MT,N}, index...) where {MT,N}
+    m = :(obj.meshes[1][index[1]])
+    for i in 2:N
+        m = :(($m, obj.meshes[$i][index[$i]]))
+    end
+    return :(tuple($m))
+end
 
 #TODO:find the index corresponds to linearindex I, then for all n meshes in meshes, return [..., (meshes[i])[index[i]], ...] 
 Base.getindex(obj::MeshProduct, I::Int) = Base.getindex(obj, linear_to_index(obj, I)...)
@@ -75,6 +84,7 @@ Base.lastindex(obj::MeshProduct) = length(obj)
 # iterator
 Base.iterate(obj::MeshProduct) = (obj[1], 1)
 Base.iterate(obj::MeshProduct, state) = (state >= length(obj)) ? nothing : (obj[state+1], state + 1)
+# Base.IteratorSize(obj)
 
 
 #TODO:nice print
