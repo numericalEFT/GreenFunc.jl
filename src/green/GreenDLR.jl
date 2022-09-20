@@ -171,9 +171,8 @@ function Base.getproperty(obj::GreenDLR{T,Domain,TGT,MT}, sym::Symbol) where {T,
     end
 end
 
-function Base.size(obj::GreenDLR)
-    return size(obj.data)
-end
+Base.size(obj::GreenDLR) = size(obj.data)
+
 #TODO:nice print
 #Kun: example from triqs: 
 #In [5]: gw
@@ -188,18 +187,22 @@ function Base.show(io::IO, obj::GreenDLR)
     end
     print(io, (obj.isFermi ? "Fermionic " : "Bosonic ")
               * "Green's function with beta = $(obj.β) and innerstate = $(obj.innerstate) \n"
-              * "- Mesh: shape = $(size(obj.mesh)), length = $(length(obj.mesh))\n"
-              * "- timeGrid: domain = $(obj.domain), symmetry = " * sym * ", length = $(size(obj.tgrid.grid)[1])\n"
+              * "- Mesh: $(typeof(obj.mesh)), shape = $(size(obj.mesh)), length = $(length(obj.mesh))\n"
+              * "- timeGrid: $(typeof(obj.tgrid)), domain = $(obj.domain), symmetry = " * sym * ", length = $(size(obj.tgrid.grid)[1])\n"
     )
 end
 
 function Base.similar(obj::GreenDLR)
-    return 1
+    new = GreenDLR()
+    new.innerstate = obj.innerstate
+    new.tgrid = obj.tgrid
+    new.mesh = obj.mesh
+    new.DLR = obj.DLR
+    new.data = similar(obj.data)
+    return new
 end
 
-function rank(obj::GreenDLR)
-    return length(obj.innerstate) + 2
-end
+rank(obj::GreenDLR) = length(obj.innerstate) + 2
 
 
 #TODO:Following triqs design, we want the following two things:
@@ -238,9 +241,14 @@ function _check(objL::GreenDLR, objR::GreenDLR)
     # first:  check typeof(objL.tgrid)==typeof(objR.tgrid) 
     # second: check length(objL.tgrid)
     # third:  hasmethod(objL.tgrid, isequal) --> assert
-    @assert objL.tgrid == objR.tgrid "Green's function time grids are not compatible:\n $(objL.tgrid)\nand\n $(objR.tgrid)"
-    @assert objL.mesh == objR.mesh "Green's function meshes are not compatible:\n $(objL.mesh)\nand\n $(objR.mesh)"
-    @assert objL.innerstate == objR.innerstate "Green's function innerstates are not compatible:\n $(objL.innerstate) and $(objR.innerstate)"
+    @assert objL.innerstate == objR.innerstate "Green's function innerstates are not inconsistent: $(objL.innerstate) and $(objR.innerstate)"
+    @assert typeof(objL.tgrid) == typeof(objR.tgrid) "Green's function time grids' types are inconsistent: $(typeof(objL.tgrid)) and $(typeof(objR.tgrid))"
+    @assert typeof(objL.mesh) == typeof(objR.mesh) "Green's function meshes' types are inconsistent: $(typeof(objL.mesh)) and $(typeof(objR.mesh))"
+    @assert objL.tgrid.size == objR.tgrid.size "Green's function time grids' length are inconsistent: $(objL.tgrid.size) and $(objR.tgrid.size)"
+    @assert size(objL.mesh) == size(objR.mesh) "Green's function meshes' shapes are inconsistent: $(size(objL.mesh)) and $(size(objR.mesh))"
+
+    # @assert objL.tgrid == objR.tgrid "Green's function time grids are not compatible:\n $(objL.tgrid)\nand\n $(objR.tgrid)"
+    # @assert objL.mesh == objR.mesh "Green's function meshes are not compatible:\n $(objL.mesh)\nand\n $(objR.mesh)"
 end
 
 function Base.:<<(Obj::GreenDLR, objSrc::Expr)
@@ -251,30 +259,30 @@ end
 TODO:Need to check objL and objR are on the same grid and has same innerstate
 """
 function Base.:-(obj::GreenDLR)
-    new = deepcopy(obj)
-    new.data = -new.data
+    new = similar(obj)
+    new.data = -obj.data
     return new
 end
 
 
 function Base.:+(objL::GreenDLR, objR::GreenDLR)
-    # check(objL, objR)
-    new = deepcopy(objL)
+    _check(objL, objR)
+    new = similar(objL)
     new.data = objL.data + objR.data
     return new
 end
 
 function Base.:-(objL::GreenDLR, objR::GreenDLR)
-    # check(objL, objR)
-    new = deepcopy(objL)
+    _check(objL, objR)
+    new = similar(objL)
     new.data = objL.data - objR.data
     return new
 
 end
 
 function Base.:*(objL::GreenDLR, objR::GreenDLR)
-    # check(objL, objR)
-    new = deepcopy(objL)
+    _check(objL, objR)
+    new = similar(objL)
     new.data = objL.data .* objR.data
     return new
 end
@@ -300,21 +308,9 @@ end
 # return gf_fnt.density(self, *args, **kwargs)
 # """
 
-#Density calculation only supports homogeneous system now.
 function density(obj::GreenDLR; kwargs...)
     G_ins = toTau(obj, [obj.β,]).data .* (-1)
-
-    grid = zeros(length(obj.mesh))
-    for (ki, ind) in enumerate(linear_to_index(obj.mesh))
-        grid[ki] = norm(getindex(obj.mesh))
-    end
-    kgrid = CompositeGrids.AbstractGrid(grid)
-
-    d = rank(obj.mesh)
-    Ωd = d == 2 ? 1 : √π / 2
-    integrand = real(G_ins) .* kgrid.grid .^ d
-
-    return CompositeGrids.Interp.integrate1D(integrand, kgrid) * Ωd / 2 / (2π)^d
+    return selectdim(G_ins, ndims(G_ins), 1)
 end
 
 

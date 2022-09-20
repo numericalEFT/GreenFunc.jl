@@ -5,8 +5,8 @@ SemiCircle(dlr, grid, type) = Sample.SemiCircle(dlr.Euv, dlr.β, dlr.isFermi, gr
         mesh = [0.0, 1.0]
         β = 10.0
         isFermi = true
-        Euv = 100.0
-        rtol = 1e-10
+        Euv = 80.0
+        rtol = 1e-9
         innerstate = (1,)
         #data = zeros()
         isFermi = true
@@ -16,21 +16,44 @@ SemiCircle(dlr, grid, type) = Sample.SemiCircle(dlr.Euv, dlr.β, dlr.isFermi, gr
         tgrid = [1, 2]
         DLR = DLRGrid(Euv, β, rtol, isFermi, tsym)
         #green_freq = GreenDLR{ComplexF64}(; domain=GreenFunc.IMFREQ, DLR = DLR, tgrid = tgrid, mesh = mesh, β=β , isFermi=isFermi, Euv=Euv, rtol=rtol, tsym=tsym, innerstate=innerstate, data = data)
-        green_freq = GreenDLR(; mesh=mesh)
+
+        green_freq = GreenDLR(; mesh=mesh, β=β, tsym=:ph, Euv=Euv, rtol=rtol)
         rtol = green_freq.DLR.rtol
         println(typeof(green_freq))
-        println("size of green_freq is $(size(green_freq.data))\n")
-        println("test getindex:\n", green_freq[1, 2, 3])
+        show(green_freq)
+
+        println("size of green_freq is $(size(green_freq))\n")
+        @test size(green_freq) == (1, 2, green_freq.DLR.size)
+        println("test getindex (1, 2, 3): ", green_freq[1, 2, 3])
+        @test green_freq[1, 2, 3] == 0
         println("test view:\n", green_freq[:, 1:2, 1:3])
-        println("size of green is", size(green_freq))
         green_freq[1, 1, 1] = im * 2.0
         println("test setindex:", green_freq[1, 1, 1])
-        green_freq2 = deepcopy(green_freq)
-        println("test math:$((green_freq+green_freq2)[1,1,1]), $((green_freq-green_freq2)[1,1,1]), $((green_freq*green_freq2)[1,1,1])")
+        @test green_freq[1, 1, 1] == 2.0im
         rank_var = GreenFunc.rank(green_freq)
         println("rank of green_freq is $rank_var")
+        @test rank_var == 3
+        # println("density matrix: ", GreenFunc.density(green_freq))  # Wait for toTau()
 
-        show(green_freq)
+        green_freq2 = deepcopy(green_freq)
+        g1, g2, g3, g4 = (-green_freq)[1, 1, 1], (green_freq+green_freq2)[1, 1, 1], (green_freq-green_freq2)[1, 1, 1], (green_freq*green_freq2)[1, 1, 1]
+        println("test math: $g1, $g2, $g3, $g4")
+        @test green_freq[1, 1, 1] == 2.0im && green_freq2[1, 1, 1] == 2.0im
+        @test g1 == -2.0im
+        @test g2 == 4.0im
+        @test g3 == 0
+        @test g4 == -4
+
+        green3 = similar(green_freq)
+        println("\nsimialr green:")
+        show(green3)
+        println("view similar green:\n", green3[:, 1:2, 1:3])
+        green3[1, 2, 3] = -1 - 2.0im
+        green_freq[1, 2, 3] = 1 + 2.0im
+        println("getindex (1, 2, 3): similar green $(green3[1, 2, 3]), original green $(green_freq[1, 2, 3])")
+        @test green3[1, 2, 3] == -1 - 2.0im && green_freq[1, 2, 3] == 1 + 2.0im
+
+
         #     Gτ = SemiCircle(green_freq.DLR, green_freq.DLR.τ, :τ)
         #     Gn = SemiCircle(green_freq.DLR, green_freq.DLR.n, :n)
         #     green_dum = zeros(ComplexF64, (green_freq.color, green_freq.color, green_freq.spaceGrid.size, green_freq.timeGrid.size))
