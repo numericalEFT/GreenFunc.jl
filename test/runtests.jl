@@ -6,6 +6,8 @@ using CodecZlib
 if isempty(ARGS)
     include("test_Green.jl")
     include("test_GreenDLR.jl")
+    #include("test_Green.jl")
+    include("test_Green_sym.jl")
     #include("interpolate.jl")
 else
     include(ARGS[1])
