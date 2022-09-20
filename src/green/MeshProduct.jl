@@ -8,52 +8,59 @@ Cartisian product of 1 dimensional meshes
 """
 struct MeshProduct{MT}
     mlist::MT
-
-
     function MeshProduct(vargs...
-    ) 
-        mprod = Tuple(vargs...)
-        mnew = new{typeof(mprod)}(
-        mprod)
+        )
+        #@assert all(v -> (v isa Mesh), vargs) "all arguments should variables"
+        mprod = Tuple(v for v in vargs)
+        mnew = new{typeof(mprod)}(mprod)
         return mnew
     end
 end
 
-function Base.length(obj::MeshProduct)
 
+#TODO:return the sum of length of all meshes
+function Base.length(obj::MeshProduct)
+    return 1
 end
 
+#TODO:return the size of Ith mesh in mlist 
+function Base.size(obj::MeshProduct, I::Int)
+    return 1
+end
 
-function Base.size(obj::MeshProduct, dim::Int)
-
-
+#TODO:return the size of all meshes in a tuple 
+function Base.size(obj::MeshProduct)
+    return 1
 end
 
 function rank(obj::MeshProduct)
+    return length(mlist)
+end
 
+#TODO: find the linearindex I corresponding to given index
+function index_to_linear(obj::MeshProduct, index...)
+    return 1
+end
 
+#TODO: find the index corresponding to linearindex I
+function linear_to_index(obj::MeshProduct)
+    return 1
 end
 
 
 
-function Base.getindex(obj::MeshProduct, indices...)
-
-
+#TODO:for all n meshes in mlist, return [..., (mlist[i])[index[i]], ...] 
+function Base.getindex(obj::MeshProduct, index...)
+    return 1
+end
+#TODO:find the index corresponds to linearindex I, then for all n meshes in mlist, return [..., (mlist[i])[index[i]], ...] 
+function Base.getindex(obj::MeshProduct, I::Int)
+    return 1
 end
 
-function Base.getindex(obj::MeshProduct, index::Int)
-
-
-end
-
+#TODO:return the sliced pieces of 
 function Base.view(obj::MeshProduct,inds...)
-    
-
-end
-
-function Base.setindex!(obj::MeshProduct, index::Int)
-
-
+    return 1
 end
 
 
@@ -64,40 +71,30 @@ Base.iterate(obj::MeshProduct) = (obj[1],1)
 Base.iterate(obj::MeshProduct, state) = (state>=length(obj)) ? nothing : (obj[state+1],state+1)
 
 
-function Base.iterate(obj::MeshProduct)
-    return Iterators.product(obj.mlist)
-end
-
-"""
-    def copy(self):
-        
-Deep copy
-
-        return self.__class__(*[x.copy() for x in self._mlist])
-"""
-
-function Base.deepcopy(obj::MeshProduct)
-
-end
-
-
-"""
-def copy_from(self, another):
-Deep copy
-
-        assert self.rank == another.rank, "copy_from requires the same rank for meshes"
-        return self.__class__(*[x.copy_from(y) for x,y in zip(self._mlist, another._mlist)])
-
-"""
-function copy_from(obj::MeshProduct, src::MeshProduct)
-
-end
-
-
-function index_to_linear(obj::MeshProduct)
-
-end
-
+#TODO:nice print
 function Base.show(obj::MeshProduct)
-
+    return 1
 end
+
+
+"""
+ All meshes in mlist should have locate and volume functions. Here in meshproduct we just delegate these functions to the meshes, and return the proper array of returned values.
+"""
+function locate(obj::MeshProduct, index...)
+    return Tuple(locate(obj, index[mi]) for (mi, m) in enumerate(obj))
+end
+
+function volume(obj::MeshProduct, index...)
+    return reduce(*, volume(obj, index[mi]) for (mi, m) in enumerate(obj))
+end
+
+function locate(obj::MeshProduct, I::Int)
+    index = linear_to_index(obj,I)
+    return (locate(obj, index[mi]) for (mi, m) in enumerate(obj))
+end
+
+function volume(obj::MeshProduct, I::Int)
+    index = linear_to_index(obj,I)
+    return reduce(*, volume(obj, index[mi]) for (mi, m) in enumerate(obj))
+end
+
