@@ -6,7 +6,7 @@ using CodecZlib
 if isempty(ARGS)
     include("test_Green.jl")
     include("test_GreenDLR.jl")
-    #include("interpolate.jl")
+    include("test_MeshProduct.jl")
 else
     include(ARGS[1])
 end
