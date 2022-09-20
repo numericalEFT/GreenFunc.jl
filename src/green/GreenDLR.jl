@@ -175,6 +175,9 @@ function Base.size(obj::GreenDLR)
     return size(obj.data)
 end
 #TODO:nice print
+#Kun: example from triqs: 
+#In [5]: gw
+#Out[5]: Matsubara Freq Mesh of size 200, Domain: Matsubara domain with beta = 1, statistic = Fermion, positive_only : 0
 function Base.show(io::IO, obj::GreenDLR)
     if obj.tsym == :ph
         sym = "particle-hole"
@@ -188,6 +191,10 @@ function Base.show(io::IO, obj::GreenDLR)
               * "- Mesh: shape = $(size(obj.mesh)), length = $(length(obj.mesh))\n"
               * "- timeGrid: domain = $(obj.domain), symmetry = " * sym * ", length = $(size(obj.tgrid.grid)[1])\n"
     )
+end
+
+function Base.similar(obj::GreenDLR)
+    return 1
 end
 
 function rank(obj::GreenDLR)
@@ -226,16 +233,14 @@ end
 #                     return self
 # """
 
-function check(objL::GreenDLR, objR::GreenDLR)
+function _check(objL::GreenDLR, objR::GreenDLR)
+    # KUN: check --> __check
+    # first:  check typeof(objL.tgrid)==typeof(objR.tgrid) 
+    # second: check length(objL.tgrid)
+    # third:  hasmethod(objL.tgrid, isequal) --> assert
     @assert objL.tgrid == objR.tgrid "Green's function time grids are not compatible:\n $(objL.tgrid)\nand\n $(objR.tgrid)"
     @assert objL.mesh == objR.mesh "Green's function meshes are not compatible:\n $(objL.mesh)\nand\n $(objR.mesh)"
     @assert objL.innerstate == objR.innerstate "Green's function innerstates are not compatible:\n $(objL.innerstate) and $(objR.innerstate)"
-end
-
-function Base.:<<(obj::GreenDLR, objSrc::GreenDLR)
-    check(obj, objSrc)
-    obj = deepcopy(objSrc)
-    return obj
 end
 
 function Base.:<<(Obj::GreenDLR, objSrc::Expr)
@@ -246,7 +251,7 @@ end
 TODO:Need to check objL and objR are on the same grid and has same innerstate
 """
 function Base.:-(obj::GreenDLR)
-    new = obj
+    new = deepcopy(obj)
     new.data = -new.data
     return new
 end
@@ -254,14 +259,14 @@ end
 
 function Base.:+(objL::GreenDLR, objR::GreenDLR)
     # check(objL, objR)
-    new = objL
+    new = deepcopy(objL)
     new.data = objL.data + objR.data
     return new
 end
 
 function Base.:-(objL::GreenDLR, objR::GreenDLR)
     # check(objL, objR)
-    new = objL
+    new = deepcopy(objL)
     new.data = objL.data - objR.data
     return new
 
@@ -269,7 +274,7 @@ end
 
 function Base.:*(objL::GreenDLR, objR::GreenDLR)
     # check(objL, objR)
-    new = objL
+    new = deepcopy(objL)
     new.data = objL.data .* objR.data
     return new
 end
