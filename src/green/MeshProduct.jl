@@ -89,8 +89,8 @@ function locate(obj::MeshProduct, index...)
 end
 
 function volume(obj::MeshProduct, index...)
-    return reduce(*, volume(obj, index[mi]) for (mi, m) in enumerate(obj))
-end
+     return reduce(*, volume(obj, index[mi]) for (mi, m) in enumerate(obj))
+ end
 
 function locate(obj::MeshProduct, I::Int)
     index = linear_to_index(obj,I)
