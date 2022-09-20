@@ -6,27 +6,28 @@ Cartisian product of 1 dimensional meshes
 
 #Members:
 """
-struct MeshProduct{MT}
+struct MeshProduct{MT,N}
     meshes::MT
+    dims::NTuple{N,Int}
     function MeshProduct(vargs...)
         #@assert all(v -> (v isa Mesh), vargs) "all arguments should variables"
         mprod = Tuple(v for v in vargs)
-        mnew = new{typeof(mprod)}(mprod)
+        mnew = new{typeof(mprod),length(mprod)}(mprod, Tuple(length(v) for v in vargs))
         return mnew
     end
 end
 
 
 #TODO:return the sum of length of all meshes
-Base.length(obj::MeshProduct) = reduce(*, length(m) for m in obj.meshes)
+Base.length(obj::MeshProduct) = reduce(*, obj.dims)
 
 #TODO:return the size of Ith mesh in meshes 
 Base.size(obj::MeshProduct, I::Int) = length(obj.meshes[I])
 
 #TODO:return the size of all meshes in a tuple 
-Base.size(obj::MeshProduct) = Tuple(length.(obj.meshes))
+Base.size(obj::MeshProduct) = obj.dims
 
-rank(obj::MeshProduct) = length(obj.meshes)
+rank(obj::MeshProduct{MT,N}) where {MT,N} = N
 
 #TODO: find the linearindex I corresponding to the given index
 function index_to_linear(obj::MeshProduct, index...)
