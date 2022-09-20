@@ -161,11 +161,11 @@ Base.iterate(obj::GreenDLR, state) = (state>=length(obj)) ? nothing : (obj[state
     return :($ex + 1)
 end
 @generated function ind2sub_gen(dims::NTuple{N}, I::Integer) where N
-    inds, quotion = :((I-1) % dims[1] + 1), :((I-1) ÷ dims[1])
+    inds, quotient = :((I-1) % dims[1] + 1), :((I-1) ÷ dims[1])
     for i = 2:N-1
-        inds, quotion = :($inds..., $quotion % dims[$i] + 1), :($quotion ÷ dims[$i])
+        inds, quotient = :($inds..., $quotient % dims[$i] + 1), :($quotient ÷ dims[$i])
     end
-    inds = :($inds..., $quotion + 1)
+    inds = :($inds..., $quotient + 1)
     return :($inds)
 end
 
