@@ -11,12 +11,16 @@ struct MeshProduct{MT,N}
     dims::NTuple{N,Int}
     function MeshProduct(vargs...)
         #@assert all(v -> (v isa Mesh), vargs) "all arguments should variables"
+        #make sure there are more than one mesh in the MeshProduct
+        if length(vargs) == 1
+            #MeshProduct of one mesh with be the mesh itself!
+            return vargs[1]
+        end
         mprod = Tuple(v for v in vargs)
         mnew = new{typeof(mprod),length(mprod)}(mprod, Tuple(length(v) for v in vargs))
         return mnew
     end
 end
-
 
 #TODO:return the sum of length of all meshes
 Base.length(obj::MeshProduct) = reduce(*, obj.dims)
@@ -62,7 +66,7 @@ end
     for i in 2:N
         m = :(($m, obj.meshes[$i][index[$i]]))
     end
-    return :(tuple($m))
+    return :($m)
 end
 
 #TODO:find the index corresponds to linearindex I, then for all n meshes in meshes, return [..., (meshes[i])[index[i]], ...] 
