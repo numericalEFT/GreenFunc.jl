@@ -10,4 +10,9 @@ include("green/GreenDLR.jl")
 export GreenDLR
 include("green/MeshProduct.jl")
 export MeshProduct
+
+include("green/GreenSym.jl")
+export GreenSym2DLR
+
+
 end
