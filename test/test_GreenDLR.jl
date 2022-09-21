@@ -8,22 +8,21 @@ SemiCircle(dlr, grid, type) = Sample.SemiCircle(dlr.Euv, dlr.β, dlr.isFermi, gr
         Euv = 80.0
         rtol = 1e-9
         innerstate = (1,)
-        #data = zeros()
         isFermi = true
-        tsym = :none
-        #data =  Array{ComplexF64, 2}[]
-        data = [1.0im, 1.0im]
-        tgrid = [1, 2]
+        tsym = :ph
+        # data = [1.0im, 1.0im]
+        data = zeros(ComplexF64, (1, 2, 3))
+        tgrid = [1, 2, 3]
         DLR = DLRGrid(Euv, β, rtol, isFermi, tsym)
-        #green_freq = GreenDLR{ComplexF64}(; domain=GreenFunc.IMFREQ, DLR = DLR, tgrid = tgrid, mesh = mesh, β=β , isFermi=isFermi, Euv=Euv, rtol=rtol, tsym=tsym, innerstate=innerstate, data = data)
-
-        green_freq = GreenDLR(; mesh=mesh, β=β, tsym=:ph, Euv=Euv, rtol=rtol)
-        rtol = green_freq.DLR.rtol
+        # green_freq = GreenDLR{ComplexF64}(; domain=GreenFunc.IMFREQ, DLR=DLR, tgrid=tgrid, mesh=mesh, β=β, isFermi=isFermi, Euv=Euv, rtol=rtol, tsym=tsym, innerstate=innerstate, data=data)
+        green_freq = GreenDLR(; domain=GreenFunc.IMFREQ, DLR=DLR, tgrid=tgrid, mesh=mesh, β=β, isFermi=isFermi, Euv=Euv, rtol=rtol, tsym=tsym, innerstate=innerstate, data=data)
+        # green_freq = GreenDLR(; mesh=mesh, β=β, tsym=tsym, Euv=Euv, rtol=rtol) 
         println(typeof(green_freq))
         show(green_freq)
 
         println("size of green_freq is $(size(green_freq))\n")
-        @test size(green_freq) == (1, 2, green_freq.DLR.size)
+        # @test size(green_freq) == (1, 2, green_freq.DLR.size)
+        @test size(green_freq) == (1, 2, length(tgrid))
         println("test getindex (1, 2, 3): ", green_freq[1, 2, 3])
         @test green_freq[1, 2, 3] == 0
         println("test view:\n", green_freq[:, 1:2, 1:3])
@@ -62,7 +61,7 @@ SemiCircle(dlr, grid, type) = Sample.SemiCircle(dlr.Euv, dlr.β, dlr.isFermi, gr
             @test d == green4[id]
             @test d == green4[inds...]
         end
-        green4 << :(1/(ωn^2 + p^4))
+        green4 << :(1 / (ωn^2 + p^4))
         for (id, d) in enumerate(green4)
             inds = GreenFunc.ind2sub_gen(size(green4), id)
             @test d == green4[id]
