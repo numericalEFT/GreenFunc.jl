@@ -4,9 +4,9 @@
         N1, N2 = 5, 7
         mesh1 = SimpleGrid.Uniform{Float64}([0.0, 1.0], N1)
         mesh2 = SimpleGrid.Uniform{Float64}([0.0, 1.0], N2)
-        X = 2
+        X = 3
         Y = 4
-        I = 9
+        I = 18
         X0 = 1
         Y0 = 1
         I0 = 1
@@ -23,9 +23,9 @@
         # @inferred meshprod[1]
         # @inferred meshprod[2]
 
-        function test_linear_index(mp, x, y, i)
-            @test GreenFunc.index_to_linear(meshprod, x, y) == i
-            @test GreenFunc.linear_to_index(meshprod, i) == (x, y)
+        function test_linear_index(mp::MeshProduct, x, y, i)
+            @test GreenFunc.index_to_linear(mp, x, y) == i
+            @test GreenFunc.linear_to_index(mp, i) == (x, y)
             @test mp[x, y] == mp[i]
             println(mp[i])
         end
