@@ -18,6 +18,11 @@ struct MeshProduct{MT,N}
     dims::NTuple{N,Int}
     function MeshProduct(vargs...)
         #@assert all(v -> (v isa Mesh), vargs) "all arguments should variables"
+        #make sure there are more than one mesh in the MeshProduct
+        if length(vargs) == 1
+            #MeshProduct of one mesh with be the mesh itself!
+            return vargs[1]
+        end
         mprod = Tuple(v for v in vargs)
         mnew = new{typeof(mprod),length(mprod)}(mprod, Tuple(length(v) for v in vargs))
         return mnew
