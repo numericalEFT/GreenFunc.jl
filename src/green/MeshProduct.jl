@@ -58,7 +58,7 @@ Convert a tuple of the indexes of each mesh to a single linear index of the Mesh
 - 'index...': N indexes of the mesh factor, where N is the number of mesh factor
 """
 function index_to_linear(obj::MeshProduct, index...)
-    bn = reverse(Tuple(prod(size(obj)[1:n-1]) for (n, sz) in enumerate(size(obj))))
+    bn = Tuple(prod(size(obj)[1:n-1]) for (n, sz) in enumerate(size(obj)))
     li = 1
     for (i, id) in enumerate(index)
         li = li + (id - 1) * bn[i]
@@ -82,7 +82,7 @@ function linear_to_index(obj::MeshProduct, I::Int)
     for k in 2:d
         index[k] = ((I - 1) % bn[k-1]) ÷ bn[k] + 1
     end
-    return Tuple(index)
+    return Tuple(reverse(index))
 end
 
 
@@ -101,7 +101,7 @@ Return a grid of the MeshProduct object specified by a set of indexes of each me
     for i in 2:N
         m = :(($m, obj.meshes[$i][index[$i]]))
     end
-    return :(tuple($m))
+    return :(Tuple($m))
 end
 Base.getindex(obj::MeshProduct, I::Int) = Base.getindex(obj, linear_to_index(obj, I)...)
 # return Tuple(obj.meshes[i][id] for (i, id) in enumerate(index))

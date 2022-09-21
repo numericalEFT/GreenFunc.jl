@@ -4,9 +4,12 @@
         N1, N2 = 5, 7
         mesh1 = SimpleGrid.Uniform{Float64}([0.0, 1.0], N1)
         mesh2 = SimpleGrid.Uniform{Float64}([0.0, 1.0], N2)
-        x = 3
-        y = 4
-        I = 14
+        X = 2
+        Y = 4
+        I = 9
+        X0 = 1
+        Y0 = 1
+        I0 = 1
         meshprod = MeshProduct(mesh1, mesh2)
 
         println("test meshprod: ", meshprod)
@@ -16,21 +19,29 @@
         @test size(meshprod, 1) == N1
         @test size(meshprod, 2) == N2
         @test size(meshprod) == (N1, N2)
-
+        @test length(meshprod) == N1*N2
         # @inferred meshprod[1]
         # @inferred meshprod[2]
 
         function test_linear_index(mp, x, y, i)
             @test GreenFunc.index_to_linear(meshprod, x, y) == i
-            @test GreenFunc.linear_to_index(meshprod, i) == (3, 4)
+            @test GreenFunc.linear_to_index(meshprod, i) == (x, y)
             @test mp[x, y] == mp[i]
             println(mp[i])
         end
 
-        test_linear_index(meshprod, x, y, I)
-        io = open("test_meshprod.txt", "w")
-        show(io,meshprod)
-        close(io)
+        test_linear_index(meshprod, X, Y, I)
+        test_linear_index(meshprod, X0, Y0, I0)
+        test_linear_index(meshprod, N1, N2, N1*N2)
+        #test iterator
+        @test (meshprod[I] in meshprod) == true
+        for item in meshprod
+            println(item)
+        end
+
+        # io = open("test_meshprod.txt", "w")
+        # show(io,meshprod)
+        # close(io)
         # println(typeof(meshprod))
         # println("rank of meshprod is $(GreenFunc.rank(meshprod))")
         # println("size of mesh1 is $(size(meshprod,1)), size of mesh2 is $(size(meshprod,2))")
