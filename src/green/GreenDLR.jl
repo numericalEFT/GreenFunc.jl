@@ -36,9 +36,6 @@ mutable struct GreenDLR{T,Domain<:TimeDomain,TGT,MT,Ndata}
     data::Array{T,Ndata}
 
     function GreenDLR{T}(; domain::Domain, DLR, tgrid::TGT, mesh::MT, β, isFermi, Euv, rtol, tsym, innerstate::Tuple, data::Array{T,Ndata}) where {T,Domain<:TimeDomain,TGT,MT,Ndata}
-        @assert tsym == :ph || tsym == :pha || tsym == :none        # data is initilized with zeros if not provided by user
-        @assert Ndata == length(innerstate) + 2
-
         gnew = new{T,Domain,typeof(tgrid),typeof(mesh),Ndata}(
             DLR,
             tgrid,
@@ -108,6 +105,7 @@ function GreenDLR(; kwargs...)
 
     if :tsym in keys(kwargs)
         tsym = kwargs[:tsym]
+        @assert tsym == :ph || tsym == :pha || tsym == :none "tsym must be :ph, :pha, or :none"
     else
         tsym = :none
     end
@@ -143,15 +141,16 @@ function GreenDLR(; kwargs...)
     end
     if :data in keys(kwargs)
         data = kwargs[:data]
+        @assert ndims(data) == length(innerstate) + 2 "ndims of data must be equal to length(innerstate) + 2"
     else
         # N = length(innerstate)+2
         # data = Array{datatype, N}[]
         datasize = collect(innerstate)
         datasize = push!(datasize, length(mesh))
-        datasize = push!(datasize, DLR.size)
+        datasize = push!(datasize, length(tgrid))
         datasize = tuple(datasize...)
 
-        data = zeros(datatype, datasize)
+        data = zeros(datatype, datasize)    # data is initilized with zeros if not provided by user
     end
 
 

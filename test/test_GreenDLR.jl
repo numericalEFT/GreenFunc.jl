@@ -16,13 +16,12 @@ SemiCircle(dlr, grid, type) = Sample.SemiCircle(dlr.Euv, dlr.β, dlr.isFermi, gr
         DLR = DLRGrid(Euv, β, rtol, isFermi, tsym)
         # green_freq = GreenDLR{ComplexF64}(; domain=GreenFunc.IMFREQ, DLR=DLR, tgrid=tgrid, mesh=mesh, β=β, isFermi=isFermi, Euv=Euv, rtol=rtol, tsym=tsym, innerstate=innerstate, data=data)
         green_freq = GreenDLR(; domain=GreenFunc.IMFREQ, DLR=DLR, tgrid=tgrid, mesh=mesh, β=β, isFermi=isFermi, Euv=Euv, rtol=rtol, tsym=tsym, innerstate=innerstate, data=data)
-        # green_freq = GreenDLR(; mesh=mesh, β=β, tsym=tsym, Euv=Euv, rtol=rtol) 
+        # green_freq = GreenDLR(; mesh=mesh, β=β, tsym=tsym, Euv=Euv, rtol=rtol)
         println(typeof(green_freq))
         show(green_freq)
 
         println("size of green_freq is $(size(green_freq))\n")
-        # @test size(green_freq) == (1, 2, green_freq.DLR.size)
-        @test size(green_freq) == (1, 2, length(tgrid))
+        @test size(green_freq) == (1, 2, length(green_freq.tgrid))
         println("test getindex (1, 2, 3): ", green_freq[1, 2, 3])
         @test green_freq[1, 2, 3] == 0
         println("test view:\n", green_freq[:, 1:2, 1:3])
