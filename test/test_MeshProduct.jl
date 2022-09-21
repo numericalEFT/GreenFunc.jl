@@ -32,6 +32,7 @@
         end
 
 <<<<<<< HEAD
+<<<<<<< HEAD
         test_linear_index(meshprod, X, Y, I)
         test_linear_index(meshprod, X0, Y0, I0)
         test_linear_index(meshprod, N1, N2, N1*N2)
@@ -41,6 +42,8 @@
             println(item)
         end
 =======
+=======
+>>>>>>> kun
         x = 3
         y = 4
         I = 14
