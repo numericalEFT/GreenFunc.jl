@@ -100,7 +100,7 @@ Return a grid of the MeshProduct object specified by a set of indexes of each me
     for i in 2:N
         m = :(($m, obj.meshes[$i][index[$i]]))
     end
-    return :(Tuple($m))
+    return :($m)
 end
 Base.getindex(obj::MeshProduct, I::Int) = Base.getindex(obj, linear_to_index(obj, I)...)
 # return Tuple(obj.meshes[i][id] for (i, id) in enumerate(index))
