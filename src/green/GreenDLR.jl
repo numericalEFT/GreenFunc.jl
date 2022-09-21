@@ -1,3 +1,6 @@
+include("./DictParser.jl")
+# using .DictParser
+
 """
 General Green's function. 
 """
@@ -277,8 +280,37 @@ function _check(objL::GreenDLR, objR::GreenDLR)
 end
 
 function Base.:<<(Obj::GreenDLR, objSrc::Expr)
+    # init version of <<
+    # more general version needed
+    for (id, d) in enumerate(Obj)
+        inds = ind2sub_gen(size(Obj), id)
+        p, ωn, n, τ= NaN, NaN, NaN, NaN
+        G = d
+        β = Obj.β
+        if Obj.domain == ImFreq
+            n = Obj.tgrid[inds[3]]
+            if Obj.isFermi
+                ωn = π*(2*n+1)/β
+            else
+                ωn = π*2*n*β
+            end
+        elseif Obj.domain == ImTime
+            τ = tgrid[inds[3]]
+        end
+        p = Obj.mesh[inds[2]]
 
-    return 1
+        m = Dict(
+            :G => G,
+            :p => p,
+            :ωn => ωn,
+            :n => n,
+            :τ => τ,
+            :β => β
+        )
+        Obj[id] = DictParser.evalwithdict(objSrc, m)
+    end
+
+    return nothing
 end
 
 """

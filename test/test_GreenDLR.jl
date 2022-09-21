@@ -54,11 +54,20 @@ SemiCircle(dlr, grid, type) = Sample.SemiCircle(dlr.Euv, dlr.β, dlr.isFermi, gr
         @test green3[1, 2, 3] == -1 - 2.0im && green_freq[1, 2, 3] == 1 + 2.0im
 
         # testing iteration
-        for (id, d) in enumerate(green3)
-            @test d == green3[id]
-            @test d == green3[GreenFunc.ind2sub_gen(size(green3), id)...]
-        end
+        green4 = similar(green_freq)
 
+        for (id, d) in enumerate(green4)
+            inds = GreenFunc.ind2sub_gen(size(green4), id)
+            # println("$id -> $inds")
+            @test d == green4[id]
+            @test d == green4[inds...]
+        end
+        green4 << :(1/(ωn^2 + p^4))
+        for (id, d) in enumerate(green4)
+            inds = GreenFunc.ind2sub_gen(size(green4), id)
+            @test d == green4[id]
+            @test d == green4[inds...]
+        end
 
         #     Gτ = SemiCircle(green_freq.DLR, green_freq.DLR.τ, :τ)
         #     Gn = SemiCircle(green_freq.DLR, green_freq.DLR.n, :n)
