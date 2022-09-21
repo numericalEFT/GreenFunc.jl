@@ -28,7 +28,9 @@
         end
 
         test_linear_index(meshprod, x, y, I)
-
+        io = open("test_meshprod.txt", "w")
+        show(io,meshprod)
+        close(io)
         # println(typeof(meshprod))
         # println("rank of meshprod is $(GreenFunc.rank(meshprod))")
         # println("size of mesh1 is $(size(meshprod,1)), size of mesh2 is $(size(meshprod,2))")
@@ -37,7 +39,8 @@
         # println("test linear_to_index for I=$(I):$(GreenFunc.index_to_linear(meshprod,I))")
         # println("test getindex with index input:\n", meshprod[x, y])
         # println("test getindex with linearindex input:\n", meshprod[I])
-        # println("Print test:\n", show(meshprod))
+
+        # io = open("myfile.txt", "r")
     end
 end
 
