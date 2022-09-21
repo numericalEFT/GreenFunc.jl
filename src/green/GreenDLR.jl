@@ -24,24 +24,25 @@ General Green's function on a multi-dimensional mesh plus one in-built Discrete 
 - `innerstate` (Tuple): innerstate saves the discrete inner dgrees of freedom of Green's function. 
 - `data` (Array{T,Ndata}): the data of the Green's function.
 """
-mutable struct GreenDLR{T,Domain<:TimeDomain,TGT,MT,Ndata}
+mutable struct GreenDLR{T,Domain<:TimeDomain,TGT,MT,Ninner,Ndata}
     DLR::DLRGrid
 
     #########   Mesh   ##############
 
     tgrid::TGT
     mesh::MT
-    innerstate::Tuple
+    innerstate::NTuple{Ninner,Int}
     ###########     data   ###########
     data::Array{T,Ndata}
 
-    function GreenDLR{T}(; domain::Domain, DLR, tgrid::TGT, mesh::MT, β, isFermi, Euv, rtol, tsym, innerstate::Tuple, data::Array{T,Ndata}) where {T,Domain<:TimeDomain,TGT,MT,Ndata}
-        @assert tsym == :ph || tsym == :pha || tsym == :none "tsym must be :ph, :pha, or :none"
+    function GreenDLR{T}(; domain::Domain, DLR::DLRGrid, tgrid::TGT, mesh::MT, innerstate, data::Array{T,Ndata}) where {T,Domain<:TimeDomain,TGT,MT,Ndata}
+        # @assert tsym == :ph || tsym == :pha || tsym == :none "tsym must be :ph, :pha, or :none"
         @assert Ndata == length(innerstate) + 2 "ndims of data must be equal to length(innerstate) + 2"
-        gnew = new{T,Domain,typeof(tgrid),typeof(mesh),Ndata}(
+        #TODO: assert data size
+        gnew = new{T,Domain,typeof(tgrid),typeof(mesh),Ndata - 2,Ndata}(
             DLR,
             tgrid,
-            mesh, innerstate,
+            mesh, Tuple(innerstate),
             data)
         return gnew
     end
@@ -65,18 +66,21 @@ Create a GreenDLR struct.
 - `innerstate`: innerstate saves the discrete inner dgrees of freedom of Green's function. By default, `innerstate` = (1,).
 - `data`: the data of the Green's function. By default, `data` = zeros(`datatype`, `Ndata`).
 """
-function GreenDLR(; kwargs...)
-    if :datatype in keys(kwargs)
-        datatype = kwargs[:datatype]
-    else
-        datatype = ComplexF64
-    end
+function GreenDLR(;
+    domain::Union{ImTime,ImFreq}=ImTime(), #....
+    datatype=(domain == ImTime() ? Float64 : ComplexF64), #...
+    kwargs...)
+    # if :datatype in keys(kwargs)
+    #     datatype = kwargs[:datatype]
+    # else
+    #     datatype = ComplexF64
+    # end
 
-    if :domain in keys(kwargs)
-        domain = kwargs[:domain]
-    else
-        domain = IMFREQ
-    end
+    # if :domain in keys(kwargs)
+    #     domain = kwargs[:domain]
+    # else
+    #     domain = IMFREQ
+    # end
     #TODO: after support from mesh is done, the default value of mesh has to be a structure with locate and volume function instead of an array.
     if :mesh in keys(kwargs)
         mesh = kwargs[:mesh]
@@ -175,6 +179,9 @@ Return a 2-tuple of the next element and the new iteration state. If no elements
 """
 Base.iterate(obj::GreenDLR) = (obj[1], 1)
 Base.iterate(obj::GreenDLR, state) = (state >= length(obj)) ? nothing : (obj[state+1], state + 1)
+# Base.IteratorSize(::Type{MeshProduct{MT,N}}) where {MT,N} = Base.HasLength()
+# Base.IteratorEltype(::Type{MeshProduct{MT,N}}) where {MT,N} = Base.HasEltype()
+# Base.eltype(::Type{MeshProduct{MT,N}}) where {MT,N} = tuple(eltype.(fieldtypes(MT))...) # 
 
 @generated function sub2ind_gen(dims::NTuple{N}, I::Integer...) where {N}
     ex = :(I[$N] - 1)
@@ -256,7 +263,7 @@ function Base.show(io::IO, obj::GreenDLR)
     print(io, (obj.isFermi ? "Fermionic " : "Bosonic ")
               * "Green's function with beta = $(obj.β) and innerstate = $(obj.innerstate) \n"
               * "- Mesh: $(typeof(obj.mesh)), shape = $(size(obj.mesh)), length = $(length(obj.mesh))\n"
-              * "- timeGrid: $(typeof(obj.tgrid)), domain = $(obj.domain), symmetry = " * sym * ", length = $(size(obj.tgrid.grid)[1])\n"
+              * "- timeGrid: $(typeof(obj.tgrid)), domain = $(obj.domain), symmetry = " * sym * ", length = $(length(obj.tgrid))\n"
     )
 end
 
