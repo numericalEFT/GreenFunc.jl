@@ -1,8 +1,6 @@
 module GreenFunc
-using StaticArrays, Lehmann, CompositeGrids
+using StaticArrays, Lehmann, CompositeGrids, BZMeshes
 # Write your package code here.
-import CompositeGrids.Interp.locate
-import CompositeGrids.Interp.volume
 
 
 include("green/Green.jl")
