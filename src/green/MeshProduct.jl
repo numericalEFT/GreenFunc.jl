@@ -3,8 +3,15 @@ Cartisian product of 1 dimensional meshes
 """
 
 """
+The cartesian Mesh product:
+
+#Parameters:
+- 'MT': Type of meshes 
+- 'N' : Number of meshes
 
 #Members:
+- 'meshes' : The list of Meshes in the MeshProduct
+- 'dims' : A tuple of the length of the mesh factors
 """
 struct MeshProduct{MT,N}
     meshes::MT
@@ -18,18 +25,38 @@ struct MeshProduct{MT,N}
 end
 
 
-#TODO:return the sum of length of all meshes
+"""
+    function Base.length(obj::MeshProduct)
+Return the number of grids of the MeshProduct.
+"""
 Base.length(obj::MeshProduct) = reduce(*, obj.dims)
 
-#TODO:return the size of Ith mesh in meshes 
-Base.size(obj::MeshProduct, I::Int) = length(obj.meshes[I])
+"""
+    function Base.size(obj::MeshProduct, I::Int)
+Return the length of the specifict Ith mesh factor of the MeshProduct.
+"""
+Base.size(obj::MeshProduct, I::Int) = obj.dims[I]
 
-#TODO:return the size of all meshes in a tuple 
+"""
+    function Base.size(obj::MeshProduct, I::Int)
+Return the length of the specifict Ith mesh factor of the MeshProduct.
+"""
 Base.size(obj::MeshProduct) = obj.dims
 
+"""
+    rank(obj::MeshProduct{MT,N})
+Return the number of the factor meshes.
+"""
 rank(obj::MeshProduct{MT,N}) where {MT,N} = N
 
-#TODO: find the linearindex I corresponding to the given index
+"""
+    function index_to_linear(obj::MeshProduct, index...)
+Convert a tuple of the indexes of each mesh to a single linear index of the MeshProduct.
+
+# Argument:
+- 'obj': The MeshProduct object
+- 'index...': N indexes of the mesh factor, where N is the number of mesh factor
+"""
 function index_to_linear(obj::MeshProduct, index...)
     bn = reverse(Tuple(prod(size(obj)[1:n-1]) for (n, sz) in enumerate(size(obj))))
     li = 1
@@ -39,7 +66,14 @@ function index_to_linear(obj::MeshProduct, index...)
     return li
 end
 
-#TODO: find the index corresponding to linearindex I
+"""
+    function index_to_linear(obj::MeshProduct, index...)
+Convert the single linear index of the MeshProduct to a tuple of indexes of each mesh. 
+
+# Argument:
+- 'obj': The MeshProduct object
+- 'I': The linear index of the MeshProduct 
+"""
 function linear_to_index(obj::MeshProduct, I::Int)
     d = rank(obj)
     bn = reverse(Tuple(prod(size(obj)[1:n-1]) for (n, sz) in enumerate(size(obj))))
@@ -56,7 +90,12 @@ end
 #TODO:for all n meshes in meshes, return [..., (meshes[i])[index[i]], ...] 
 # Base.getindex(obj::MeshProduct, index...) = Tuple(obj.meshes[i][id] for (i, id) in enumerate(index))
 # Base.getindex(obj::MeshProduct, index...) = Tuple(m[index[i]] for (i, m) in enumerate(obj.meshes))
-# use generated function to make sure the return type is Tuple{eltype(obj.meshes[i]), eltype(obj.meshes[2]), ...}
+
+"""
+    function index_to_linear(obj::MeshProduct, index...)
+Return a grid of the MeshProduct object specified by a set of indexes of each mesh or a single linear index I of the MeshProduct
+"""
+# use generated function to make sure the return type is Tuple{eltype(obj.meshes[1]), eltype(obj.meshes[2]), ...}
 @generated function Base.getindex(obj::MeshProduct{MT,N}, index...) where {MT,N}
     m = :(obj.meshes[1][index[1]])
     for i in 2:N
@@ -64,8 +103,6 @@ end
     end
     return :(tuple($m))
 end
-
-#TODO:find the index corresponds to linearindex I, then for all n meshes in meshes, return [..., (meshes[i])[index[i]], ...] 
 Base.getindex(obj::MeshProduct, I::Int) = Base.getindex(obj, linear_to_index(obj, I)...)
 # return Tuple(obj.meshes[i][id] for (i, id) in enumerate(index))
 # return Base.getindex(obj.meshes, I)
@@ -77,7 +114,6 @@ Base.getindex(obj::MeshProduct, I::Int) = Base.getindex(obj, linear_to_index(obj
 # end
 # t[1] --> view of the first mesh
 
-
 # Check https://docs.julialang.org/en/v1/manual/interfaces/ for details on how to implement the following functions:
 Base.firstindex(obj::MeshProduct) = 1
 Base.lastindex(obj::MeshProduct) = length(obj)
@@ -87,7 +123,10 @@ Base.iterate(obj::MeshProduct, state) = (state >= length(obj)) ? nothing : (obj[
 # Base.IteratorSize(obj)
 
 
-#TODO:nice print
+"""
+    function Base.show(io::IO, obj::MeshProduct)
+Print the MeshProduct.
+"""
 Base.show(io::IO, obj::MeshProduct) = print(io, "MeshProduct of: $(obj.meshes)")
 
 
