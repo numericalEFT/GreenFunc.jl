@@ -18,11 +18,6 @@ struct MeshProduct{MT,N}
     dims::NTuple{N,Int}
     function MeshProduct(vargs...)
         #@assert all(v -> (v isa Mesh), vargs) "all arguments should variables"
-        #make sure there are more than one mesh in the MeshProduct
-        if length(vargs) == 1
-            #MeshProduct of one mesh with be the mesh itself!
-            return vargs[1]
-        end
         mprod = Tuple(v for v in vargs)
         mnew = new{typeof(mprod),length(mprod)}(mprod, Tuple(length(v) for v in vargs))
         return mnew
@@ -62,33 +57,36 @@ Convert a tuple of the indexes of each mesh to a single linear index of the Mesh
 - 'obj': The MeshProduct object
 - 'index...': N indexes of the mesh factor, where N is the number of mesh factor
 """
-function index_to_linear(obj::MeshProduct, index...)
-    bn = Tuple((prod(size(obj)[1:n-1]) for (n, sz) in enumerate(size(obj))))
-    li = 1
-    for (i, id) in enumerate(index)
-        li = li + (id - 1) * bn[i]
-    end
-    return li
-end
+index_to_linear(obj::MeshProduct, index...) = sub2ind_gen(obj.dims, index...)
+# function index_to_linear(obj::MeshProduct, index...)
+#     bn = Tuple((prod(size(obj)[1:n-1]) for (n, sz) in enumerate(size(obj))))
+#     li = 1
+#     for (i, id) in enumerate(index)
+#         li = li + (id - 1) * bn[i]
+#     end
+#     return li
+# end
 
 """
-    function index_to_linear(obj::MeshProduct, index...)
+    function linear_to_index(obj::MeshProduct, I::Int)
 Convert the single linear index of the MeshProduct to a tuple of indexes of each mesh. 
 
 # Argument:
 - 'obj': The MeshProduct object
 - 'I': The linear index of the MeshProduct 
 """
-function linear_to_index(obj::MeshProduct, I::Int)
-    d = rank(obj)
-    bn = reverse(Tuple(prod(size(obj)[1:n-1]) for (n, sz) in enumerate(size(obj))))
-    index = zeros(Int32, d)
-    index[1] = (I - 1) ÷ bn[1] + 1
-    for k in 2:d
-        index[k] = ((I - 1) % bn[k-1]) ÷ bn[k] + 1
-    end
-    return Tuple(reverse(index))
-end
+linear_to_index(obj::MeshProduct, I::Int) = ind2sub_gen(obj.dims, I)
+
+# function linear_to_index(obj::MeshProduct, I::Int)
+#     d = rank(obj)
+#     bn = reverse(Tuple(prod(size(obj)[1:n-1]) for (n, sz) in enumerate(size(obj))))
+#     index = zeros(Int32, d)
+#     index[1] = (I - 1) ÷ bn[1] + 1
+#     for k in 2:d
+#         index[k] = ((I - 1) % bn[k-1]) ÷ bn[k] + 1
+#     end
+#     return Tuple(reverse(index))
+# end
 
 
 #TODO:for all n meshes in meshes, return [..., (meshes[i])[index[i]], ...] 
@@ -96,8 +94,9 @@ end
 # Base.getindex(obj::MeshProduct, index...) = Tuple(m[index[i]] for (i, m) in enumerate(obj.meshes))
 
 """
-    function index_to_linear(obj::MeshProduct, index...)
-Return a grid of the MeshProduct object specified by a set of indexes of each mesh or a single linear index I of the MeshProduct
+    function Base.getindex(mp::MeshProduct, index...)
+
+Get a mesh point of the MeshProduct at the given index. Return a tuple as `(mp.meshes[1], mp.meshes[2], ...)`.
 """
 # use generated function to make sure the return type is Tuple{eltype(obj.meshes[1]), eltype(obj.meshes[2]), ...}
 @generated function Base.getindex(obj::MeshProduct{MT,N}, index...) where {MT,N}
@@ -125,7 +124,9 @@ Base.lastindex(obj::MeshProduct) = length(obj)
 Base.iterate(obj::MeshProduct) = (obj[1], 1)
 Base.iterate(obj::MeshProduct, state) = (state >= length(obj)) ? nothing : (obj[state+1], state + 1)
 # Base.IteratorSize(obj)
-
+Base.IteratorSize(::Type{MeshProduct{MT,N}}) where {MT,N} = Base.HasLength()
+Base.IteratorEltype(::Type{MeshProduct{MT,N}}) where {MT,N} = Base.HasEltype()
+Base.eltype(::Type{MeshProduct{MT,N}}) where {MT,N} = tuple(eltype.(fieldtypes(MT))...) # fieldtypes (typeof(mesh1), typeoof(mesh2), ...)
 
 """
     function Base.show(io::IO, obj::MeshProduct)
@@ -137,21 +138,25 @@ Base.show(io::IO, obj::MeshProduct) = print(io, "MeshProduct of: $(obj.meshes)")
 """
  All meshes in meshes should have locate and volume functions. Here in meshproduct we just delegate these functions to the meshes, and return the proper array of returned values.
 """
-function locate(obj::MeshProduct, index...)
-    return Tuple(locate(obj, index[mi]) for (mi, m) in enumerate(obj))
+# function locate(obj::MeshProduct, index...)
+#     return Tuple(locate(obj, index[mi]) for (mi, m) in enumerate(obj))
+# end
+
+@generated function locate(obj::MeshProduct{MT,N}, pos...) where {MT,N}
+    m = :(locate(obj.meshes[1], pos[1]))
+    for i in 2:N
+        m = :($m, locate(obj.meshes[$i], pos[$i]))
+    end
+    return :($m)
 end
 
 function volume(obj::MeshProduct, index...)
-    return reduce(*, volume(obj, index[mi]) for (mi, m) in enumerate(obj))
+    return reduce(*, volume(m, index[mi]) for (mi, m) in enumerate(obj.meshes))
 end
 
-function locate(obj::MeshProduct, I::Int)
-    index = linear_to_index(obj, I)
-    return (locate(obj, index[mi]) for (mi, m) in enumerate(obj))
-end
+volume(obj::MeshProduct, I::Int) = volume(obj, linear_to_index(obj, I)...)
 
-function volume(obj::MeshProduct, I::Int)
-    index = linear_to_index(obj, I)
-    return reduce(*, volume(obj, index[mi]) for (mi, m) in enumerate(obj))
-end
-
+locate(m::AbstractGrid, pos) = CompositeGrids.Interp.locate(m, pos)
+volume(m::AbstractGrid, index) = CompositeGrids.Interp.volume(m, index)
+# locate(m::AbstractMesh, pos) = BZMeshes.BaseMesh.locate(m, pos)
+# volume(m::AbstractMesh, index) = BZMeshes.BaseMesh.locate(m, index)

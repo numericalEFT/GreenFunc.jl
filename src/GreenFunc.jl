@@ -1,5 +1,5 @@
 module GreenFunc
-using StaticArrays, Lehmann, CompositeGrids
+using StaticArrays, Lehmann, CompositeGrids#, BZMeshes
 # Write your package code here.
 
 
@@ -15,4 +15,6 @@ export GreenSym2DLR, dynamic, instant
 
 include("green/MeshProduct.jl")
 export MeshProduct
+export locate, volume
+
 end

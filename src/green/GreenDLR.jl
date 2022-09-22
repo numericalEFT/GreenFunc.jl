@@ -24,24 +24,32 @@ General Green's function on a multi-dimensional mesh plus one in-built Discrete 
 - `innerstate` (Tuple): innerstate saves the discrete inner dgrees of freedom of Green's function. 
 - `data` (Array{T,Ndata}): the data of the Green's function.
 """
-mutable struct GreenDLR{T,Domain<:TimeDomain,TGT,MT,Ndata}
+mutable struct GreenDLR{T,Domain<:TimeDomain,TGT,MT,Ninner,Ndata}
     DLR::DLRGrid
 
     #########   Mesh   ##############
 
     tgrid::TGT
     mesh::MT
-    innerstate::Tuple
+    innerstate::NTuple{Ninner,Int}
     ###########     data   ###########
     data::Array{T,Ndata}
 
-    function GreenDLR{T}(; domain::Domain, DLR, tgrid::TGT, mesh::MT, β, isFermi, Euv, rtol, tsym, innerstate::Tuple, data::Array{T,Ndata}) where {T,Domain<:TimeDomain,TGT,MT,Ndata}
-        @assert tsym == :ph || tsym == :pha || tsym == :none "tsym must be :ph, :pha, or :none"
+    function GreenDLR{T}(; domain::Domain, DLR::DLRGrid, tgrid::TGT, mesh::MT, innerstate, data::Array{T,Ndata}) where {T,Domain<:TimeDomain,TGT,MT,Ndata}
         @assert Ndata == length(innerstate) + 2 "ndims of data must be equal to length(innerstate) + 2"
-        gnew = new{T,Domain,typeof(tgrid),typeof(mesh),Ndata}(
+        @assert Tuple(size(data)[1:length(innerstate)])==innerstate
+        @assert size(data)[end]==length(tgrid)
+        @assert size(data)[end-1]==length(mesh)
+        if tgrid isa AbstractVector
+            tgrid = CompositeGrids.SimpleG.Arbitrary{eltype(tgrid)}(tgrid)
+        elseif !(tgrid isa CompositeGrids.AbstractGrid)
+            error("Input tgrid has to be Vector or Composite grid")
+        end
+
+        gnew = new{T,Domain,typeof(tgrid),typeof(mesh),Ndata - 2,Ndata}(
             DLR,
             tgrid,
-            mesh, innerstate,
+            mesh, Tuple(innerstate),
             data)
         return gnew
     end
@@ -57,7 +65,7 @@ Create a GreenDLR struct.
 - `domain`: domain of time grid, Domain<:TimeDomain. By default, `domain` = IMFREQ.
 - `tgrid`: time grid as a AbstractVector or CompositeGrids.AbstractGrid. By default, a optimized grid built in DLR is used.
 - `mesh`: direct product of grids of all other continuous degrees of freedom of Green's function. By default, `mesh` ...
-- `β`: inverse temperature. By default, `β` = 100.0.
+- `β`: inverse temperature. Must be input by user.
 - `isFermi` (bool): is the particle fermion or boson? By default, `isFermi` = true.
 - `Euv`: the UV energy scale of the spectral density. By default, `Euv` = 100.0.
 - `rtol`: tolerance absolute error. By default, `rtol` = 1e-10.
@@ -65,63 +73,51 @@ Create a GreenDLR struct.
 - `innerstate`: innerstate saves the discrete inner dgrees of freedom of Green's function. By default, `innerstate` = (1,).
 - `data`: the data of the Green's function. By default, `data` = zeros(`datatype`, `Ndata`).
 """
-function GreenDLR(; kwargs...)
-    if :datatype in keys(kwargs)
-        datatype = kwargs[:datatype]
-    else
-        datatype = ComplexF64
-    end
+function GreenDLR( β;
+    domain::Union{ImTime,ImFreq}=ImFreq(), #....
+                  datatype=(domain == ImTime() ? Float64 : ComplexF64), #...
+                   mesh = [0.0,1.0], isFermi=true, Euv=100.0, rtol=1e-10,tsym=:none, #...
+                   innerstate = (1,), #...
+                  kwargs...)
+    @assert tsym == :ph || tsym == :pha || tsym == :none "tsym must be :ph, :pha, or :none"
+    # if :datatype in keys(kwargs)
+    #     datatype = kwargs[:datatype]
+    # else
+    #     datatype = ComplexF64
+    # end
 
-    if :domain in keys(kwargs)
-        domain = kwargs[:domain]
-    else
-        domain = IMFREQ
-    end
+    # if :domain in keys(kwargs)
+    #     domain = kwargs[:domain]
+    # else
+    #     domain = IMFREQ
+    # end
     #TODO: after support from mesh is done, the default value of mesh has to be a structure with locate and volume function instead of an array.
-    if :mesh in keys(kwargs)
-        mesh = kwargs[:mesh]
-    else
-        mesh = [0.0, 1.0]
-    end
-    #TODO: in principle \beta and EUV should be in proper energy unit of EF, which comes from parameter. Should we make it globel?
-    if :β in keys(kwargs)
-        β = kwargs[:β]
-    else
-        β = 100.0
-    end
-    if :isFermi in keys(kwargs)
-        isFermi = kwargs[:isFermi]
-    else
-        isFermi = true
-    end
-    if :Euv in keys(kwargs)
-        Euv = kwargs[:Euv]
-    else
-        Euv = 100.0
-    end
-    if :rtol in keys(kwargs)
-        rtol = kwargs[:rtol]
-    else
-        rtol = 1e-10
-    end
+    # if :isFermi in keys(kwargs)
+    #     isFermi = kwargs[:isFermi]
+    # else
+    #     isFermi = true
+    # end
+    # if :Euv in keys(kwargs)
+    #     Euv = kwargs[:Euv]
+    # else
+    #     Euv = 100.0
+    # end
+    # if :rtol in keys(kwargs)
+    #     rtol = kwargs[:rtol]
+    # else
+    #     rtol = 1e-10
+    # end
 
-    if :tsym in keys(kwargs)
-        tsym = kwargs[:tsym]
-    else
-        tsym = :none
-    end
+    # if :tsym in keys(kwargs)
+    #     tsym = kwargs[:tsym]
+    # else
+    #     tsym = :none
+    # end
 
     DLR = DLRGrid(Euv, β, rtol, isFermi, tsym)
     Domain = typeof(domain)
     if :tgrid in keys(kwargs)
-        givenTimeGrid = kwargs[:tgrid]
-        if givenTimeGrid isa AbstractVector
-            tgrid = CompositeGrids.SimpleG.Arbitrary{eltype(givenTimeGrid)}(givenTimeGrid)
-        elseif givenTimeGrid isa CompositeGrids.AbstractGrid
-            tgrid = givenTimeGrid
-        else
-            error("Input tgrid has to be Vector or Composite grid")
-        end
+        tgrid = kwargs[:tgrid]
     else
         if Domain == ImFreq
             bareTimeGrid = DLR.n
@@ -135,11 +131,6 @@ function GreenDLR(; kwargs...)
         tgrid = CompositeGrids.SimpleG.Arbitrary{eltype(bareTimeGrid)}(bareTimeGrid)
     end
 
-    if :innerstate in keys(kwargs)
-        innerstate = kwargs[:innerstate]
-    else
-        innerstate = (1,)
-    end
     if :data in keys(kwargs)
         data = kwargs[:data]
     else
@@ -154,7 +145,7 @@ function GreenDLR(; kwargs...)
     end
 
 
-    return GreenDLR{datatype}(; domain=domain, DLR=DLR, tgrid=tgrid, mesh=mesh, β=β, isFermi=isFermi, Euv=Euv, rtol=rtol, tsym=tsym, innerstate=innerstate, data=data)
+    return GreenDLR{datatype}(; domain=domain, DLR=DLR, tgrid=tgrid, mesh=mesh, innerstate=innerstate, data=data)
 
 end
 
@@ -175,6 +166,9 @@ Return a 2-tuple of the next element and the new iteration state. If no elements
 """
 Base.iterate(obj::GreenDLR) = (obj[1], 1)
 Base.iterate(obj::GreenDLR, state) = (state >= length(obj)) ? nothing : (obj[state+1], state + 1)
+# Base.IteratorSize(::Type{MeshProduct{MT,N}}) where {MT,N} = Base.HasLength()
+# Base.IteratorEltype(::Type{MeshProduct{MT,N}}) where {MT,N} = Base.HasEltype()
+# Base.eltype(::Type{MeshProduct{MT,N}}) where {MT,N} = tuple(eltype.(fieldtypes(MT))...) # 
 
 @generated function sub2ind_gen(dims::NTuple{N}, I::Integer...) where {N}
     ex = :(I[$N] - 1)
@@ -256,7 +250,7 @@ function Base.show(io::IO, obj::GreenDLR)
     print(io, (obj.isFermi ? "Fermionic " : "Bosonic ")
               * "Green's function with beta = $(obj.β) and innerstate = $(obj.innerstate) \n"
               * "- Mesh: $(typeof(obj.mesh)), shape = $(size(obj.mesh)), length = $(length(obj.mesh))\n"
-              * "- timeGrid: $(typeof(obj.tgrid)), domain = $(obj.domain), symmetry = " * sym * ", length = $(size(obj.tgrid.grid)[1])\n"
+              * "- timeGrid: $(typeof(obj.tgrid)), domain = $(obj.domain), symmetry = " * sym * ", length = $(length(obj.tgrid))\n"
     )
 end
 
@@ -267,7 +261,7 @@ Create a data-uninitialized GreenDLR with the element type and size, based upon 
 Note that the elements `innerstate`, `tgrid`, `mesh`, and `DLR` are copied from `obj`.
 """
 function Base.similar(obj::GreenDLR)
-    new = GreenDLR()
+    new = GreenDLR(obj.β)
     new.innerstate = obj.innerstate
     new.tgrid = obj.tgrid
     new.mesh = obj.mesh
@@ -337,10 +331,30 @@ function _check(objL::GreenDLR, objR::GreenDLR)
 end
 
 """
+TODO:Reload Base.Broadcast.broadcast(f,obj...)
+Apply function f over the data of obj. There could be several situations:
+obj...  includes
+1. two green's function
+2. green's function and a scalar
+3. one Green's function
+"""
+Base.Broadcast.broadcast(f, obj::GreenDLR, I::Number) = Base.Broadcast.broadcast(f, obj.data,I::Number)
+Base.Broadcast.broadcast(f, obj::GreenDLR) = Base.Broadcast.broadcast(f, obj.data)
+Base.Broadcast.broadcast(f, objL::GreenDLR, objR::GreenDLR) = Base.Broadcast.broadcast(f, objL.data, objR.data)
+
+
+
+
+"""
     <<(Obj::GreenDLR, objSrc::Expr)
     Obj << objSrc
 
 Initiate the Green's function `Obj` with the given function expression `objSrc`.
+TODO: Add other behaviors including:
+1. Convert other type of GreenFunc to GreenDLR
+2. Assign a GreenDLR to another GreenDLR
+3. Convert triqs Green's function to GreenDLR
+4. First convert triqs object to triqs green's function, than to GreenDLR
 """
 function Base.:<<(Obj::GreenDLR, objSrc::Expr)
     # init version of <<
