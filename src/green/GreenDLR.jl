@@ -349,6 +349,16 @@ function _check(objL::GreenDLR, objR::GreenDLR)
     # @assert objL.mesh == objR.mesh "Green's function meshes are not compatible:\n $(objL.mesh)\nand\n $(objR.mesh)"
 end
 
+# struct GreenDLRStyle <: BroadcastStyle end
+Base.BroadcastStyle(::Type{<:GreenDLR}) = Broadcast.ArrayStyle{GreenDLR}()
+function Base.similar(bc::Broadcast.Broadcasted{Broadcast.ArrayStyle{GreenDLR}}, ::Type{ElType}) where {ElType}
+    # Scan the inputs for the ArrayAndChar:
+    A = find_aac(bc)
+    # Use the char field of A to create the output
+    GreenDLR(similar(Array{ElType}, axes(bc)), A.char)
+end
+
+
 """
 TODO:Reload Base.Broadcast.broadcast(f,obj...)
 Apply function f over the data of obj. There could be several situations:
@@ -357,10 +367,24 @@ obj...  includes
 2. green's function and a scalar
 3. one Green's function
 """
-Base.Broadcast.broadcast(f, obj::GreenDLR, I::Number) = Base.Broadcast.broadcast(f, obj.data, I::Number)
-Base.Broadcast.broadcast(f, obj::GreenDLR) = Base.Broadcast.broadcast(f, obj.data)
-Base.Broadcast.broadcast(f, objL::GreenDLR, objR::GreenDLR) = Base.Broadcast.broadcast(f, objL.data, objR.data)
-
+# Base.Broadcast.broadcast(f, obj::GreenDLR, I::Number) = Base.Broadcast.broadcast(f, obj.data, I::Number)
+function Base.Broadcast.broadcast(f, obj::GreenDLR, I::Number)
+    new = similar(obj)
+    new.data = Base.Broadcast.broadcast(f, obj.data, I)
+    return new
+end
+# Base.Broadcast.broadcast(f, obj::GreenDLR) = Base.Broadcast.broadcast(f, obj.data)
+function Base.Broadcast.broadcast(f, obj::GreenDLR)
+    new = similar(obj)
+    new.data = Base.Broadcast.broadcast(f, obj.data)
+    return new
+end
+# Base.Broadcast.broadcast(f, objL::GreenDLR, objR::GreenDLR) = Base.Broadcast.broadcast(f, objL.data, objR.data)
+function Base.Broadcast.broadcast(f, objL::GreenDLR, objR::GreenDLR)
+    new = similar(obj)
+    new.data = Base.Broadcast.broadcast(f, objL.data, objR.data)
+    return new
+end
 
 
 

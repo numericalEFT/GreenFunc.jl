@@ -1,23 +1,23 @@
 SemiCircle(dlr, grid, type) = Sample.SemiCircle(dlr.Euv, dlr.β, dlr.isFermi, grid, type, dlr.symmetry; rtol=dlr.rtol, degree=24, regularized=true)
 
-@testset "GreenFunc" begin
-    @testset "GreenDLR" begin
-        mesh = [0.0, 1.0]
-        β = 50.0
-        isFermi = true
-        Euv = 80.0
-        rtol = 1e-9
-        innerstate = (1,)
-        isFermi = true
-        tsym = :ph
-        # data = [1.0im, 1.0im]
-        data = zeros(ComplexF64, (1, 2, 3))
-        tgrid = [1, 2, 3]
+@testset "GreenDLR" begin
+    mesh = [0.0, 1.0]
+    β = 50.0
+    isFermi = true
+    Euv = 80.0
+    rtol = 1e-9
+    innerstate = (1,)
+    isFermi = true
+    tsym = :ph
+    # data = [1.0im, 1.0im]
+    data = zeros(ComplexF64, (1, 2, 3))
+    tgrid = [1, 2, 3]
 
-        # green_freq = GreenDLR{ComplexF64}(; domain=GreenFunc.IMFREQ, DLR=DLR, tgrid=tgrid, mesh=mesh, innerstate=innerstate, data=data)
-        green_freq = GreenDLR(β; domain=GreenFunc.IMFREQ, tgrid=tgrid, mesh=mesh, isFermi=isFermi, Euv=Euv, rtol=rtol, tsym=tsym, innerstate=innerstate, data=data)
-        # green_freq = GreenDLR(β; mesh=mesh, tsym=tsym, Euv=Euv, rtol=rtol)
-        println(typeof(green_freq))
+    # green_freq = GreenDLR{ComplexF64}(; domain=GreenFunc.IMFREQ, DLR=DLR, tgrid=tgrid, mesh=mesh, innerstate=innerstate, data=data)
+    green_freq = GreenDLR(β; domain=GreenFunc.IMFREQ, tgrid=tgrid, mesh=mesh, isFermi=isFermi, Euv=Euv, rtol=rtol, tsym=tsym, innerstate=innerstate, data=data)
+    # green_freq = GreenDLR(β; mesh=mesh, tsym=tsym, Euv=Euv, rtol=rtol)
+    println(typeof(green_freq))
+    @testset "Basic functions" begin
         show(green_freq)
 
         println("size of green_freq is $(size(green_freq))\n")
@@ -57,14 +57,14 @@ SemiCircle(dlr, grid, type) = Sample.SemiCircle(dlr.Euv, dlr.β, dlr.isFermi, gr
         for (id, d) in enumerate(green4)
             inds = GreenFunc.ind2sub_gen(size(green4), id)
             # println("$id -> $inds")
-            @test d == green4[id]
-            @test d == green4[inds...]
+            @test d ≈ green4[id]
+            @test d ≈ green4[inds...]
         end
         green4 << :(1 / (ωn^2 + p^4))
         for (id, d) in enumerate(green4)
             inds = GreenFunc.ind2sub_gen(size(green4), id)
-            @test d == green4[id]
-            @test d == green4[inds...]
+            @test d ≈ green4[id]
+            @test d ≈ green4[inds...]
         end
 
         #     Gτ = SemiCircle(green_freq.DLR, green_freq.DLR.τ, :τ)
@@ -79,6 +79,12 @@ SemiCircle(dlr, grid, type) = Sample.SemiCircle(dlr.Euv, dlr.β, dlr.isFermi, gr
         #             end
         #         end
         #     end
+    end
+
+    @testset "broadcast" begin
+        gf = green_freq .+ 1
+        show(gf)
+        println(gf.data)
     end
 
     #     green_freq.dynamic = green_dum
