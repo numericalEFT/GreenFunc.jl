@@ -31,8 +31,6 @@
             println(mp[i])
         end
 
-<<<<<<< HEAD
-<<<<<<< HEAD
         test_linear_index(meshprod, X, Y, I)
         test_linear_index(meshprod, X0, Y0, I0)
         test_linear_index(meshprod, N1, N2, N1*N2)
@@ -41,14 +39,6 @@
         for item in meshprod
             println(item)
         end
-=======
-=======
->>>>>>> kun
-        x = 3
-        y = 4
-        I = 14
-        test_linear_index(meshprod, x, y, I)
->>>>>>> 46b5bf3841abb008bfa73586df892e9be6502fe7
 
         # io = open("test_meshprod.txt", "w")
         # show(io,meshprod)
