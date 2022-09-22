@@ -75,7 +75,23 @@ function Base.similar(obj::GreenNew{T,MT,N,Ninner}, ::Type{T}, dims::Dims=obj.di
     return GreenNew{T}(obj.mesh...; innerstate=obj.innerstate, data=similar(obj.data))
 end
 
-# Base.BroadcastStyle(::Type{<:GreenNew}) = Broadcast.ArrayStyle{GreenNew}()
+Base.BroadcastStyle(::Type{<:GreenNew}) = Broadcast.ArrayStyle{GreenNew}()
+
+function Base.similar(bc::Base.Broadcast.Broadcasted{Broadcast.ArrayStyle{GreenNew}}, ::Type{ElType}) where {ElType}
+    # Scan the inputs for the ArrayAndChar:
+    A = find_gf(bc)
+    # Use the char field of A to create the output
+    GreenNew(A.mesh, A.innerstate, similar(Array{ElType}, axes(bc)), A.dims)
+end
+
+find_gf(bc::Broadcast.Broadcasted) = find_gf(bc.args)
+find_gf(args::Tuple) = find(find_gf(args[1]), Base.tail(args))
+find_gf(x) = x
+find_gf(::Tuple{}) = nothing
+find_gf(a::GreenNew, rest) = a
+find_gf(::Any, rest) = find_gf(rest)
+
+Base.eltype(::Type{GreenNew{T,MT,N,Ninner}}) where {T,MT,N,Ninner} = T
 
 # """
 #     iterate(obj::GreenDLR, state)
