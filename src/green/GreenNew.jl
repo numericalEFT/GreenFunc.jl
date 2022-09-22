@@ -39,7 +39,7 @@ function GreenNew{T}(mesh...;
     innerstate = tuple(collect(innerstate)...)
     Ninner = length(innerstate)
     N = length(mesh) + Ninner
-    dims = tuple([length(v) for v in mesh]..., innerstate...)
+    dims = tuple(innerstate..., [length(v) for v in mesh]...)
 
     if isnothing(data) == false
         @assert Tuple(size(data)[1:Ninner]) == innerstate
@@ -49,7 +49,7 @@ function GreenNew{T}(mesh...;
     end
 
     # meshes = tuple(mesh)
-    println(typeof(mesh))
+    # println(typeof(mesh))
 
     return GreenNew{T,typeof(mesh),N,Ninner}(mesh, innerstate, data, dims)
 end
@@ -62,18 +62,29 @@ Base.size(obj::GreenNew) = obj.dims
 
 Return a subset of `obj`'s data as specified by `inds`, where each `inds` may be, for example, an Int, an AbstractRange, or a Vector. 
 """
-# Base.getindex(obj::GreenNew, inds::Vararg{Int,N}) where {N} = Base.getindex(obj.data, inds...)
-Base.getindex(obj::GreenNew, inds...) where {N} = Base.getindex(obj.data, inds...)
-Base.getindex(obj::GreenNew, I::Int) = Base.getindex(obj.data, I)
-# Base.setindex!(obj::GreenNew, v, inds::Vararg{Int,N}) where {N} = Base.setindex!(obj.data, v, inds)
-Base.setindex!(obj::GreenNew, v, inds...) where {N} = Base.setindex!(obj.data, v, inds...)
-Base.setindex!(obj::GreenNew, v, I::Int) = Base.setindex!(obj.data, v, I)
+Base.getindex(obj::GreenNew{T,MT,N,Ninner}, inds::Vararg{Int,N}) where {T,MT,N,Ninner} = Base.getindex(obj.data, inds...)
+# Base.getindex(obj::GreenNew, I::Int) = Base.getindex(obj.data, I)
+Base.setindex!(obj::GreenNew{T,MT,N,Ninner}, v, inds::Vararg{Int,N}) where {T,MT,N,Ninner} = Base.setindex!(obj.data, v, inds...)
+# Base.setindex!(obj::GreenNew, v, I::Int) = Base.setindex!(obj.data, v, I)
 
-IndexStyle(::Type{<:GreenNew}) = IndexLinear()
+# IndexStyle(::Type{<:GreenNew}) = IndexCartesian() # by default, it is IndexCartesian
 
-function Base.similar(obj::GreenNew{T,MT,N,Ninner}, ::Type{T}, dims::Dims=obj.dims) where {T,MT,N,Ninner}
-    return GreenNew{T}(obj.mesh...; innerstate=obj.innerstate, data=similar(obj.data))
+"""
+    Base.similar(obj::GreenNew{T,MT,N,Ninner}, ::Type{S}) where {T,MT,N,Ninner,S}
+    Base.similar(obj::GreenNew{T,MT,N,Ninner}) where {T,MT,N,Ninner} = Base.similar(obj, T)
+
+# Return type:
+- `Base.similar(obj::GreenNew)`: Return a new GreenNew with the same mesh and innerstate, and a new data of the same type as obj.data.
+- `Base.similar(obj::GreenNew, ::Type{S})`: Return a new GreenNew with the same mesh and innerstate, but with a new data of type S.
+- `Base.similar(obj::GreenNew, ::Type{S}, inds)`: Return a slice of obj.data. (slice of GreeNew itself is not well defined, because it has meshes) 
+"""
+function Base.similar(obj::GreenNew{T,MT,N,Ninner}, ::Type{S}) where {T,MT,N,Ninner,S}
+    return GreenNew{S}(obj.mesh...; innerstate=obj.innerstate, data=similar(obj.data, S))
 end
+Base.similar(obj::GreenNew{T,MT,N,Ninner}) where {T,MT,N,Ninner} = Base.similar(obj, T)
+#By default, the following functions will all call Base.similar(obj::GreenNew, ::Type{S}, inds) 
+#as explained in https://docs.julialang.org/en/v1/manual/interfaces/#man-interface-array
+#However, we don't want that. What we want the following: 
 
 Base.BroadcastStyle(::Type{<:GreenNew}) = Broadcast.ArrayStyle{GreenNew}()
 
@@ -85,7 +96,7 @@ function Base.similar(bc::Base.Broadcast.Broadcasted{Broadcast.ArrayStyle{GreenN
 end
 
 find_gf(bc::Broadcast.Broadcasted) = find_gf(bc.args)
-find_gf(args::Tuple) = find(find_gf(args[1]), Base.tail(args))
+find_gf(args::Tuple) = find_gf(find_gf(args[1]), Base.tail(args))
 find_gf(x) = x
 find_gf(::Tuple{}) = nothing
 find_gf(a::GreenNew, rest) = a
@@ -93,80 +104,19 @@ find_gf(::Any, rest) = find_gf(rest)
 
 Base.eltype(::Type{GreenNew{T,MT,N,Ninner}}) where {T,MT,N,Ninner} = T
 
-# """
-#     iterate(obj::GreenDLR, state)
 
-# Return a 2-tuple of the next element and the new iteration state. If no elements remain, `nothing` will be returned.
-# """
-# Base.iterate(obj::GreenNew) = (obj[1], 1)
-# Base.iterate(obj::GreenNew, state) = (state >= length(obj)) ? nothing : (obj[state+1], state + 1)
-# Base.IteratorSize(::Type{MeshProduct{MT,N}}) where {MT,N} = Base.HasLength()
-# Base.IteratorEltype(::Type{MeshProduct{MT,N}}) where {MT,N} = Base.HasEltype()
-# Base.eltype(::Type{MeshProduct{MT,N}}) where {MT,N} = tuple(eltype.(fieldtypes(MT))...) # 
-
-# @generated function sub2ind_gen(dims::NTuple{N}, I::Integer...) where {N}
-#     ex = :(I[$N] - 1)
-#     for i = (N-1):-1:1
-#         ex = :(I[$i] - 1 + dims[$i] * $ex)
-#     end
-#     return :($ex + 1)
-# end
-# @generated function ind2sub_gen(dims::NTuple{N}, I::Integer) where {N}
-#     inds, quotient = :((I - 1) % dims[1] + 1), :((I - 1) ÷ dims[1])
-#     for i = 2:N-1
-#         inds, quotient = :($inds..., $quotient % dims[$i] + 1), :($quotient ÷ dims[$i])
-#     end
-#     inds = :($inds..., $quotient + 1)
-#     return :($inds)
-# end
-
-# """
-#     setindex!(obj::GreenDLR, X, inds...)
-#     obj[inds...] = X
-
-# Store values from array `X` within some subset of `obj.data` as specified by `inds`.
-# """
-# function Base.setindex!(obj::GreenNew, X, inds...)
-#     obj.data[inds...] = X
-# end
-# function Base.setindex!(obj::GreenNew, X, I::Int)
-#     obj.data[I] = X
-# end
-
-# """
-#     view(obj::GreenDLR, inds...)
-
-# Return a lightweight array that is effectively a _view_ into the parent array `obj.data` at the given index or indices `inds` instead of eagerly extracting elements or constructing a copied subset.
-# """
-# Base.view(obj::GreenNew, inds...) = Base.view(obj.data, inds...)
-
-# function Base.getproperty(obj::GreenDLR{T,Domain,TGT,MT}, sym::Symbol) where {T,Domain,TGT,MT}
-#     if sym === :isFermi
-#         return obj.DLR.isFermi
-#     elseif sym === :β
-#         return obj.DLR.β
-#     elseif sym === :domain
-#         return Domain
-#     elseif sym === :tsym
-#         return obj.DLR.symmetry
+# somehow, the following leads to stackoverflow due to some kind of infinite loop
+# function Base.getproperty(obj::GreenNew{T,MT,N,Ninner}, sym::Symbol) where {T,MT,N,Ninner}
+#     if sym === :N
+#         return N
+#     elseif sym === :Ninner
+#         return Ninner
+#     elseif sym === :dims
+#         return obj.dims
 #     else # fallback to getfield
 #         return getfield(obj, sym)
 #     end
 # end
-
-# """
-#     size(obj::GreenDLR)
-
-# Return a tuple containing the dimensions of `obj.data`.
-# """
-# Base.size(obj::GreenDLR) = size(obj.data)
-
-# """
-#     length(obj::GreenDLR)
-
-# Return the number of elements in `obj.data`.
-# """
-# Base.length(obj::GreenDLR) = length(obj.data)
 
 """
     show(io::IO, obj::GreenDLR)
@@ -248,8 +198,9 @@ function _check(objL::GreenNew, objR::GreenNew)
     # third:  hasmethod(objL.tgrid, isequal) --> assert
     @assert objL.innerstate == objR.innerstate "Green's function innerstates are not inconsistent: $(objL.innerstate) and $(objR.innerstate)"
     @assert typeof(objL.mesh) == typeof(objR.mesh) "Green's function meshes' types are inconsistent: $(typeof(objL.mesh)) and $(typeof(objR.mesh))"
-    @assert size(objL.mesh) == size(objR.mesh) "Green's function meshes' shapes are inconsistent: $(size(objL.mesh)) and $(size(objR.mesh))"
+    @assert objL.dims == objR.dims "Green's function dims are inconsistent: $(objL.dims) and $(objR.dims)"
 
+    return true
     # @assert objL.tgrid == objR.tgrid "Green's function time grids are not compatible:\n $(objL.tgrid)\nand\n $(objR.tgrid)"
     # @assert objL.mesh == objR.mesh "Green's function meshes are not compatible:\n $(objL.mesh)\nand\n $(objR.mesh)"
 end
@@ -299,87 +250,12 @@ end
 #     return nothing
 # end
 
-# """
-#     -(obj::GreenDLR)
-
-# Map elements of `obj.data` to their additive inverses.
-# """
-# function Base.:-(obj::GreenDLR)
-#     new = similar(obj)
-#     new.data = -obj.data
-#     return new
-# end
-
-# """
-#     +(objL::GreenDLR, objR::GreenDLR)
-#     objL + objR
-
-# Perform addition between `objL.data` and `objR.data`.
-# """
-# function Base.:+(objL::GreenDLR, objR::GreenDLR)
-#     _check(objL, objR)
-#     new = similar(objL)
-#     new.data = objL.data + objR.data
-#     return new
-# end
-
-# """
-#     -(objL::GreenDLR, objR::GreenDLR)
-#     objL - objR
-
-# Perform subtraction between `objL.data` and `objR.data`.
-# """
-# function Base.:-(objL::GreenDLR, objR::GreenDLR)
-#     _check(objL, objR)
-#     new = similar(objL)
-#     new.data = objL.data - objR.data
-#     return new
-
-# end
-
-# """
-#     *(objL::GreenDLR, objR::GreenDLR)
-#     objL * objR
-
-# Perform multiplication between `objL.data` and `objR.data`.
-# """
-# function Base.:*(objL::GreenDLR, objR::GreenDLR)
-#     _check(objL, objR)
-#     new = similar(objL)
-#     new.data = objL.data .* objR.data
-#     return new
-# end
-
-
-#TODO:return density matrix of the Green's function
-
-# """
-# def density(self, *args, **kwargs):
-#     rCompute the density matrix of the Greens function
-#         Parameters
-#         ----------
-#         beta : float, optional
-#             Used for finite temperature density calculation with ``MeshReFreq``.
-#         Returns
-#         -------
-#         density_matrix : ndarray
-#             Single particle density matrix with shape ``target_shape``.
-#         Notes
-#         -----
-#         Only works for single mesh Greens functions with a, Matsubara,
-#         real-frequency, or Legendre mesh.
-# return gf_fnt.density(self, *args, **kwargs)
-# """
-# """
-#     function density(obj::GreenDLR; kwargs...)
-
 # Return the single-particle density matrix of the Green's function `obj`.
 # """
 # function density(obj::GreenDLR; kwargs...)
 #     G_ins = toTau(obj, [obj.β,]).data .* (-1)
 #     return selectdim(G_ins, ndims(G_ins), 1)
 # end
-
 
 #rMatrix transform of the target space of a matrix valued Greens function.
 #Sets the current Greens function :math:`g_{ab}` to the matrix transform of :math:`G_{cd}`
@@ -426,9 +302,6 @@ end
 # function from_L_G_R(self,L,G::GreenDLR,R)
 #     return 1
 # end
-
-
-
 
 
 # """
