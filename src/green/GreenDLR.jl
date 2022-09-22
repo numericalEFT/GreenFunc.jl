@@ -1,6 +1,8 @@
 include("./DictParser.jl")
 # using .DictParser
 
+abstract type AbstractGreen{T,Ndata,Ninner} <: AbstractArray{T,Ndata} end
+
 """
     mutable struct GreenDLR{T,Domain<:TimeDomain,TGT,MT,Ndata}
 
@@ -25,7 +27,7 @@ General Green's function on a multi-dimensional mesh plus one in-built Discrete 
 - `innerstate` (Tuple): innerstate saves the discrete inner dgrees of freedom of Green's function. 
 - `data` (Array{T,Ndata}): the data of the Green's function.
 """
-mutable struct GreenDLR{T,Domain<:TimeDomain,TGT,MT,Ninner,Ndata}
+mutable struct GreenDLR{T,Domain<:TimeDomain,TGT,MT,Ninner,Ndata} <: AbstractGreen{T,Ndata,Ninner}
     DLR::DLRGrid
     domain::Domain
 
@@ -84,7 +86,6 @@ Create a GreenDLR struct.
 - `tgrid`: time grid as a AbstractVector or CompositeGrids.AbstractGrid. By default, a optimized grid built in DLR is used.
 - `data`: the data of the Green's function. By default, `data` = zeros(`datatype`, `Ndata`).
 """
-# function GreenDLR(; β::Real,
 function GreenDLR(β::Real;
     domain::Union{ImTime,ImFreq}=ImFreq(), #....
     datatype=(domain == ImTime() ? Float64 : ComplexF64), #...
@@ -167,8 +168,24 @@ end
 
 Return a subset of `obj`'s data as specified by `inds`, where each `inds` may be, for example, an Int, an AbstractRange, or a Vector. 
 """
-Base.getindex(obj::GreenDLR, inds...) = Base.getindex(obj.data, inds...)
-Base.getindex(obj::GreenDLR, I::Int) = Base.getindex(obj.data, I)
+Base.getindex(obj::GreenDLR{T,Domain,TGT,MT,Ninner,Ndata}, inds::Vararg{Int,Ndata}) where {T,Domain,TGT,MT,Ninner,Ndata} = obj.data[inds...]
+# Base.getindex(obj::GreenDLR, inds...) = Base.getindex(obj.data, inds...)
+# Base.getindex(obj::GreenDLR, I::Int) = Base.getindex(obj.data, I)
+
+"""
+    setindex!(obj::GreenDLR, X, inds...)
+    obj[inds...] = X
+
+Store values from array `X` within some subset of `obj.data` as specified by `inds`.
+"""
+Base.setindex!(obj::GreenDLR{T,Domain,TGT,MT,Ninner,Ndata}, val, inds::Vararg{Int,Ndata}) where {T,Domain,TGT,MT,Ninner,Ndata} = obj.data[inds...] = val
+# function Base.setindex!(obj::GreenDLR, X, inds...)
+#     obj.data[inds...] = X
+# end
+# function Base.setindex!(obj::GreenDLR, X, I::Int)
+#     obj.data[I] = X
+# end
+
 Base.firstindex(obj::GreenDLR) = 1
 Base.lastindex(obj::GreenDLR) = length(obj)
 
@@ -197,19 +214,6 @@ end
     end
     inds = :($inds..., $quotient + 1)
     return :($inds)
-end
-
-"""
-    setindex!(obj::GreenDLR, X, inds...)
-    obj[inds...] = X
-
-Store values from array `X` within some subset of `obj.data` as specified by `inds`.
-"""
-function Base.setindex!(obj::GreenDLR, X, inds...)
-    obj.data[inds...] = X
-end
-function Base.setindex!(obj::GreenDLR, X, I::Int)
-    obj.data[I] = X
 end
 
 """
@@ -248,6 +252,13 @@ Return the number of elements in `obj.data`.
 Base.length(obj::GreenDLR) = length(obj.data)
 
 """
+    eltype(obj::GreenDLR)
+
+Return the type of `obj.data`.
+"""
+Base.eltype(::Type{GreenDLR{T,Domain,TGT,MT}}) where {T,Domain,TGT,MT} = T
+
+"""
     show(io::IO, obj::GreenDLR)
 
 Write a text representation of the Green's function `obj` to the output stream `io`.
@@ -274,19 +285,9 @@ end
 Create a data-uninitialized GreenDLR with the element type and size, based upon the given `obj`.
 Note that the elements `domain`, `innerstate`, `tgrid`, `mesh`, and `DLR` are copied from `obj`.
 """
-function Base.similar(obj::GreenDLR)
-    type = eltype(obj.data)
-    return GreenDLR{type}(; domain=obj.domain, DLR=obj.DLR, tgrid=obj.tgrid, mesh=obj.mesh, innerstate=obj.innerstate, data=zeros(type, size(obj.data)))
+function Base.similar(obj::GreenDLR{T,Domain,TGT,MT}) where {T,Domain,TGT,MT}
+    return GreenDLR{T}(; domain=obj.domain, DLR=obj.DLR, tgrid=obj.tgrid, mesh=obj.mesh, innerstate=obj.innerstate, data=similar(obj.data))
 end
-# function Base.similar(obj::GreenDLR)
-#     new = GreenDLR(β=obj.β)
-#     new.innerstate = obj.innerstate
-#     new.tgrid = obj.tgrid
-#     new.mesh = obj.mesh
-#     new.DLR = obj.DLR
-#     new.data = similar(obj.data)
-#     return new
-# end
 
 """
     function rank(obj::GreenDLR)
@@ -349,16 +350,6 @@ function _check(objL::GreenDLR, objR::GreenDLR)
     # @assert objL.mesh == objR.mesh "Green's function meshes are not compatible:\n $(objL.mesh)\nand\n $(objR.mesh)"
 end
 
-# struct GreenDLRStyle <: BroadcastStyle end
-Base.BroadcastStyle(::Type{<:GreenDLR}) = Broadcast.ArrayStyle{GreenDLR}()
-function Base.similar(bc::Broadcast.Broadcasted{Broadcast.ArrayStyle{GreenDLR}}, ::Type{ElType}) where {ElType}
-    # Scan the inputs for the ArrayAndChar:
-    A = find_aac(bc)
-    # Use the char field of A to create the output
-    GreenDLR(similar(Array{ElType}, axes(bc)), A.char)
-end
-
-
 """
 TODO:Reload Base.Broadcast.broadcast(f,obj...)
 Apply function f over the data of obj. There could be several situations:
@@ -367,26 +358,22 @@ obj...  includes
 2. green's function and a scalar
 3. one Green's function
 """
-# Base.Broadcast.broadcast(f, obj::GreenDLR, I::Number) = Base.Broadcast.broadcast(f, obj.data, I::Number)
-function Base.Broadcast.broadcast(f, obj::GreenDLR, I::Number)
-    new = similar(obj)
-    new.data = Base.Broadcast.broadcast(f, obj.data, I)
-    return new
-end
-# Base.Broadcast.broadcast(f, obj::GreenDLR) = Base.Broadcast.broadcast(f, obj.data)
-function Base.Broadcast.broadcast(f, obj::GreenDLR)
-    new = similar(obj)
-    new.data = Base.Broadcast.broadcast(f, obj.data)
-    return new
-end
-# Base.Broadcast.broadcast(f, objL::GreenDLR, objR::GreenDLR) = Base.Broadcast.broadcast(f, objL.data, objR.data)
-function Base.Broadcast.broadcast(f, objL::GreenDLR, objR::GreenDLR)
-    new = similar(obj)
-    new.data = Base.Broadcast.broadcast(f, objL.data, objR.data)
-    return new
+Base.BroadcastStyle(::Type{<:GreenDLR}) = Broadcast.ArrayStyle{GreenDLR}()
+
+function Base.similar(bc::Base.Broadcast.Broadcasted{Broadcast.ArrayStyle{GreenDLR}}, ::Type{ElType}) where {ElType}
+    # Scan the inputs for the GreenDLR:
+    obj = find_gdlr(bc)
+    # Use the fields of obj to create the output
+    GreenDLR{eltype(obj)}(; domain=obj.domain, DLR=obj.DLR, tgrid=obj.tgrid, mesh=obj.mesh, innerstate=obj.innerstate, data=similar(Array{ElType}, axes(bc)))
 end
 
-
+"`A = find_gdlr(As)` returns the first GreenDLR among the arguments."
+find_gdlr(bc::Broadcast.Broadcasted) = find_gdlr(bc.args)
+find_gdlr(args::Tuple) = find_gdlr(find_gdlr(args[1]), Base.tail(args))
+find_gdlr(x) = x
+find_gdlr(::Tuple{}) = nothing
+find_gdlr(a::GreenDLR, rest) = a
+find_gdlr(::Any, rest) = find_gdlr(rest)
 
 """
     <<(Obj::GreenDLR, objSrc::Expr)
@@ -433,56 +420,56 @@ function Base.:<<(Obj::GreenDLR, objSrc::Expr)
     return nothing
 end
 
-"""
-    -(obj::GreenDLR)
+# """
+#     -(obj::GreenDLR)
 
-Map elements of `obj.data` to their additive inverses.
-"""
-function Base.:-(obj::GreenDLR)
-    new = similar(obj)
-    new.data = -obj.data
-    return new
-end
+# Map elements of `obj.data` to their additive inverses.
+# """
+# function Base.:-(obj::GreenDLR)
+#     new = similar(obj)
+#     new.data = -obj.data
+#     return new
+# end
 
-"""
-    +(objL::GreenDLR, objR::GreenDLR)
-    objL + objR
+# """
+#     +(objL::GreenDLR, objR::GreenDLR)
+#     objL + objR
 
-Perform addition between `objL.data` and `objR.data`.
-"""
-function Base.:+(objL::GreenDLR, objR::GreenDLR)
-    _check(objL, objR)
-    new = similar(objL)
-    new.data = objL.data + objR.data
-    return new
-end
+# Perform addition between `objL.data` and `objR.data`.
+# """
+# function Base.:+(objL::GreenDLR, objR::GreenDLR)
+#     _check(objL, objR)
+#     new = similar(objL)
+#     new.data = objL.data + objR.data
+#     return new
+# end
 
-"""
-    -(objL::GreenDLR, objR::GreenDLR)
-    objL - objR
+# """
+#     -(objL::GreenDLR, objR::GreenDLR)
+#     objL - objR
 
-Perform subtraction between `objL.data` and `objR.data`.
-"""
-function Base.:-(objL::GreenDLR, objR::GreenDLR)
-    _check(objL, objR)
-    new = similar(objL)
-    new.data = objL.data - objR.data
-    return new
+# Perform subtraction between `objL.data` and `objR.data`.
+# """
+# function Base.:-(objL::GreenDLR, objR::GreenDLR)
+#     _check(objL, objR)
+#     new = similar(objL)
+#     new.data = objL.data - objR.data
+#     return new
 
-end
+# end
 
-"""
-    *(objL::GreenDLR, objR::GreenDLR)
-    objL * objR
+# """
+#     *(objL::GreenDLR, objR::GreenDLR)
+#     objL * objR
 
-Perform multiplication between `objL.data` and `objR.data`.
-"""
-function Base.:*(objL::GreenDLR, objR::GreenDLR)
-    _check(objL, objR)
-    new = similar(objL)
-    new.data = objL.data .* objR.data
-    return new
-end
+# Perform multiplication between `objL.data` and `objR.data`.
+# """
+# function Base.:*(objL::GreenDLR, objR::GreenDLR)
+#     _check(objL, objR)
+#     new = similar(objL)
+#     new.data = objL.data .* objR.data
+#     return new
+# end
 
 
 #TODO:return density matrix of the Green's function

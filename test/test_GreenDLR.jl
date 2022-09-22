@@ -34,7 +34,7 @@ SemiCircle(dlr, grid, type) = Sample.SemiCircle(dlr.Euv, dlr.β, dlr.isFermi, gr
         # println("density matrix: ", GreenFunc.density(green_freq))  # Wait for toTau()
 
         green_freq2 = deepcopy(green_freq)
-        g1, g2, g3, g4 = (-green_freq)[1, 1, 1], (green_freq+green_freq2)[1, 1, 1], (green_freq-green_freq2)[1, 1, 1], (green_freq*green_freq2)[1, 1, 1]
+        g1, g2, g3, g4 = (-green_freq)[1, 1, 1], (green_freq.+green_freq2)[1, 1, 1], (green_freq.-green_freq2)[1, 1, 1], (green_freq.*green_freq2)[1, 1, 1]
         println("test math: $g1, $g2, $g3, $g4")
         @test green_freq[1, 1, 1] == 2.0im && green_freq2[1, 1, 1] == 2.0im
         @test g1 == -2.0im
@@ -42,7 +42,7 @@ SemiCircle(dlr, grid, type) = Sample.SemiCircle(dlr.Euv, dlr.β, dlr.isFermi, gr
         @test g3 == 0
         @test g4 == -4
 
-        @time green3 = similar(green_freq)
+        green3 = similar(green_freq)
         println("\nsimialr green:")
         show(green3)
         println("view similar green:\n", green3[:, 1:2, 1:3])
@@ -52,7 +52,7 @@ SemiCircle(dlr, grid, type) = Sample.SemiCircle(dlr.Euv, dlr.β, dlr.isFermi, gr
         @test green3[1, 2, 3] == -1 - 2.0im && green_freq[1, 2, 3] == 1 + 2.0im
 
         # testing iteration
-        green4 = similar(green_freq)
+        green4 = GreenDLR(β; tgrid=tgrid, mesh=mesh, isFermi=isFermi, tsym=tsym, data=data)
 
         for (id, d) in enumerate(green4)
             inds = GreenFunc.ind2sub_gen(size(green4), id)
@@ -82,9 +82,12 @@ SemiCircle(dlr, grid, type) = Sample.SemiCircle(dlr.Euv, dlr.β, dlr.isFermi, gr
     end
 
     @testset "broadcast" begin
-        gf = green_freq .+ 1
-        show(gf)
-        println(gf.data)
+        gf0 = GreenDLR(β)
+        @time gf1 = gf0 .+ 1
+        @test typeof(gf1) == typeof(gf0)
+        @time gfdata = gf0.data .+ 1
+        @time gf0 .+= 1
+        @test gf0.data == gf1.data == gfdata
     end
 
     #     green_freq.dynamic = green_dum
