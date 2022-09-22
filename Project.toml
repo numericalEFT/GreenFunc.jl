@@ -4,7 +4,6 @@ authors = ["Tao Wang", "Xiansheng Cai"]
 version = "0.1.2"
 
 [deps]
-BZMeshes = "d3690ab3-6367-44d6-ab08-b07ed981380e"
 CompositeGrids = "b5136c89-beeb-4521-9139-60d2cac8be56"
 DelimitedFiles = "8bb1440f-4735-579b-a4ab-409b98df4dab"
 FileIO = "5789e2e9-d7fb-5bc7-8068-2c6fae9b9549"
