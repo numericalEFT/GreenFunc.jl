@@ -70,6 +70,21 @@ Base.setindex!(obj::GreenNew, v, I::Int) = Base.setindex!(obj.data, v, I)
 
 IndexStyle(::Type{<:GreenNew}) = IndexCartesian()
 
+Base.BroadcastStyle(::Type{<:GreenNew}) = Broadcast.ArrayStyle{GreenNew}()
+
+function Base.similar(bc::Broadcast.Broadcasted{Broadcast.ArrayStyle{GreenNew}}, ::Type{ElType}) where {ElType}
+    # Scan the inputs for the ArrayAndChar:
+    A = find(bc)
+    # Use the char field of A to create the output
+    GreenNew(A.mesh, A.innerstate, similar(Array{ElType}, axes(bc)), A.dims)
+end
+
+find(bc::Broadcast.Broadcasted) = find(bc.args)
+find(args::Tuple) = find(find(args[1]), Base.tail(args))
+find(x) = x
+find(::Tuple{}) = nothing
+find(a::GreenNew, rest) = a
+find(::Any, rest) = find(rest)
 
 # """
 #     iterate(obj::GreenDLR, state)
