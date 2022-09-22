@@ -6,7 +6,7 @@ include("./DictParser.jl")
 
 General Green's function on a multi-dimensional mesh plus one in-built Discrete Lehmann Representation.
 
-# Parameters:
+# Parameters
 - `T`: type of data
 - `Domain`: type of time domain, `Domain`<:`TimeDomain`.
 - `TGT`: type of time grid
@@ -14,8 +14,9 @@ General Green's function on a multi-dimensional mesh plus one in-built Discrete 
 - `N`: number of internal degrees of freedom
 - `Ndata`: rank of Green's function data, which always equals to N+2, 2 stands for the mesh and the extra dimension that has built-in DLR grid.
 
-# Members:
+# Members
 - `DLR`: built-in DLR grid. Only one-dimensional DLR is available currently.
+- `domain` (Domain): domain of time grid.
 - `tgrid` (TGT): the imaginary-time or Matsubara-frequency grid of dimension with built in DLR . If not provided by user, the optimized grid from DLR is used.
 - `mesh` (MT): the mesh is a direct product of grids of all other continuous degrees of freedom of Green's function, other than the one with DLR. The mesh has to support all standard Base functions of AbstractArray, plus the following two:
     - locate(`mesh`, value): find the index of the closest grid point for given value;
@@ -26,6 +27,7 @@ General Green's function on a multi-dimensional mesh plus one in-built Discrete 
 """
 mutable struct GreenDLR{T,Domain<:TimeDomain,TGT,MT,Ninner,Ndata}
     DLR::DLRGrid
+    domain::Domain
 
     #########   Mesh   ##############
 
@@ -37,9 +39,9 @@ mutable struct GreenDLR{T,Domain<:TimeDomain,TGT,MT,Ninner,Ndata}
 
     function GreenDLR{T}(; domain::Domain, DLR::DLRGrid, tgrid::TGT, mesh::MT, innerstate, data::Array{T,Ndata}) where {T,Domain<:TimeDomain,TGT,MT,Ndata}
         @assert Ndata == length(innerstate) + 2 "ndims of data must be equal to length(innerstate) + 2"
-        @assert Tuple(size(data)[1:length(innerstate)])==innerstate
-        @assert size(data)[end]==length(tgrid)
-        @assert size(data)[end-1]==length(mesh)
+        @assert Tuple(size(data)[1:length(innerstate)]) == innerstate
+        @assert size(data)[end] == length(tgrid)
+        @assert size(data)[end-1] == length(mesh)
         if tgrid isa AbstractVector
             tgrid = CompositeGrids.SimpleG.Arbitrary{eltype(tgrid)}(tgrid)
         elseif !(tgrid isa CompositeGrids.AbstractGrid)
@@ -48,6 +50,7 @@ mutable struct GreenDLR{T,Domain<:TimeDomain,TGT,MT,Ninner,Ndata}
 
         gnew = new{T,Domain,typeof(tgrid),typeof(mesh),Ndata - 2,Ndata}(
             DLR,
+            domain,
             tgrid,
             mesh, Tuple(innerstate),
             data)
@@ -56,29 +59,39 @@ mutable struct GreenDLR{T,Domain<:TimeDomain,TGT,MT,Ninner,Ndata}
 end
 
 """
-    function GreenDLR(; kwargs...)
+    function GreenDLR(β::Real;
+        domain::Union{ImTime,ImFreq}=ImFreq(), 
+        datatype=(domain == ImTime() ? Float64 : ComplexF64), 
+        mesh=[0.0, 1.0], isFermi=true, Euv=100.0, rtol=1e-10, tsym=:none, 
+        innerstate=(1,),
+        kwargs...
+    )
     
 Create a GreenDLR struct. 
 
-# Optional Arguments
-- `datatype`: data type of Green's function's value. By default, `datatype` = ComplexF64.
+# Arguments
+- `β`: inverse temperature. Must be input by the user.
 - `domain`: domain of time grid, Domain<:TimeDomain. By default, `domain` = IMFREQ.
-- `tgrid`: time grid as a AbstractVector or CompositeGrids.AbstractGrid. By default, a optimized grid built in DLR is used.
+- `datatype`: data type of Green's function's value. By default, `datatype` = (domain == IMTIME ? Float64 : ComplexF64)`.
 - `mesh`: direct product of grids of all other continuous degrees of freedom of Green's function. By default, `mesh` ...
-- `β`: inverse temperature. Must be input by user.
-- `isFermi` (bool): is the particle fermion or boson? By default, `isFermi` = true.
+- `isFermi` (Bool): is the particle fermion or boson? By default, `isFermi` = true.
 - `Euv`: the UV energy scale of the spectral density. By default, `Euv` = 100.0.
 - `rtol`: tolerance absolute error. By default, `rtol` = 1e-10.
 - `tsym`: whether the Green's function has particle-hole symmetry (:ph), anti-particle-hole symmetry (:pha) or none of them (:none). By default, `tsym` = :none.
 - `innerstate`: innerstate saves the discrete inner dgrees of freedom of Green's function. By default, `innerstate` = (1,).
+
+# Optional Arguments
+- `tgrid`: time grid as a AbstractVector or CompositeGrids.AbstractGrid. By default, a optimized grid built in DLR is used.
 - `data`: the data of the Green's function. By default, `data` = zeros(`datatype`, `Ndata`).
 """
-function GreenDLR( β;
+# function GreenDLR(; β::Real,
+function GreenDLR(β::Real;
     domain::Union{ImTime,ImFreq}=ImFreq(), #....
-                  datatype=(domain == ImTime() ? Float64 : ComplexF64), #...
-                   mesh = [0.0,1.0], isFermi=true, Euv=100.0, rtol=1e-10,tsym=:none, #...
-                   innerstate = (1,), #...
-                  kwargs...)
+    datatype=(domain == ImTime() ? Float64 : ComplexF64), #...
+    mesh=[0.0, 1.0], isFermi=true, Euv=100.0, rtol=1e-10, tsym=:none, #...
+    innerstate=(1,), #...
+    kwargs...
+)
     @assert tsym == :ph || tsym == :pha || tsym == :none "tsym must be :ph, :pha, or :none"
     # if :datatype in keys(kwargs)
     #     datatype = kwargs[:datatype]
@@ -211,8 +224,8 @@ function Base.getproperty(obj::GreenDLR{T,Domain,TGT,MT}, sym::Symbol) where {T,
         return obj.DLR.isFermi
     elseif sym === :β
         return obj.DLR.β
-    elseif sym === :domain
-        return Domain
+        # elseif sym === :domain
+        #     return Domain
     elseif sym === :tsym
         return obj.DLR.symmetry
     else # fallback to getfield
@@ -249,8 +262,9 @@ function Base.show(io::IO, obj::GreenDLR)
     end
     print(io, (obj.isFermi ? "Fermionic " : "Bosonic ")
               * "Green's function with beta = $(obj.β) and innerstate = $(obj.innerstate) \n"
-              * "- Mesh: $(typeof(obj.mesh)), shape = $(size(obj.mesh)), length = $(length(obj.mesh))\n"
-              * "- timeGrid: $(typeof(obj.tgrid)), domain = $(obj.domain), symmetry = " * sym * ", length = $(length(obj.tgrid))\n"
+              * "- mesh: $(typeof(obj.mesh)), shape = $(size(obj.mesh)), length = $(length(obj.mesh))\n"
+              * "- time grid: $(typeof(obj.tgrid)), domain = $(obj.domain), symmetry = " * sym * ", length = $(length(obj.tgrid))\n"
+              * "- data: $(typeof(obj.data)), shape = $(size(obj))\n"
     )
 end
 
@@ -258,17 +272,21 @@ end
     similar(obj::GreenDLR)
 
 Create a data-uninitialized GreenDLR with the element type and size, based upon the given `obj`.
-Note that the elements `innerstate`, `tgrid`, `mesh`, and `DLR` are copied from `obj`.
+Note that the elements `domain`, `innerstate`, `tgrid`, `mesh`, and `DLR` are copied from `obj`.
 """
 function Base.similar(obj::GreenDLR)
-    new = GreenDLR(obj.β)
-    new.innerstate = obj.innerstate
-    new.tgrid = obj.tgrid
-    new.mesh = obj.mesh
-    new.DLR = obj.DLR
-    new.data = similar(obj.data)
-    return new
+    type = eltype(obj.data)
+    return GreenDLR{type}(; domain=obj.domain, DLR=obj.DLR, tgrid=obj.tgrid, mesh=obj.mesh, innerstate=obj.innerstate, data=zeros(type, size(obj.data)))
 end
+# function Base.similar(obj::GreenDLR)
+#     new = GreenDLR(β=obj.β)
+#     new.innerstate = obj.innerstate
+#     new.tgrid = obj.tgrid
+#     new.mesh = obj.mesh
+#     new.DLR = obj.DLR
+#     new.data = similar(obj.data)
+#     return new
+# end
 
 """
     function rank(obj::GreenDLR)
@@ -313,7 +331,7 @@ rank(obj::GreenDLR) = length(obj.innerstate) + 2
 """
     function _check(objL::GreenDLR, objR::GreenDLR)
 
-Check if the Green's functions `objL` and `objR` are on the same `innerstate`, `tgrid`, and `mesh`. Throw an AssertionError if any check is false.
+Check if the Green's functions `objL` and `objR` are on the same `innerstate`, `domain`, `tgrid`, and `mesh`. Throw an AssertionError if any check is false.
 """
 function _check(objL::GreenDLR, objR::GreenDLR)
     # KUN: check --> __check
@@ -321,6 +339,7 @@ function _check(objL::GreenDLR, objR::GreenDLR)
     # second: check length(objL.tgrid)
     # third:  hasmethod(objL.tgrid, isequal) --> assert
     @assert objL.innerstate == objR.innerstate "Green's function innerstates are not inconsistent: $(objL.innerstate) and $(objR.innerstate)"
+    @assert objL.domain == objR.domain "Green's function domains are inconsistent: $(objL.domain) and $(objR.domain)"
     @assert typeof(objL.tgrid) == typeof(objR.tgrid) "Green's function time grids' types are inconsistent: $(typeof(objL.tgrid)) and $(typeof(objR.tgrid))"
     @assert typeof(objL.mesh) == typeof(objR.mesh) "Green's function meshes' types are inconsistent: $(typeof(objL.mesh)) and $(typeof(objR.mesh))"
     @assert objL.tgrid.size == objR.tgrid.size "Green's function time grids' length are inconsistent: $(objL.tgrid.size) and $(objR.tgrid.size)"
@@ -338,7 +357,7 @@ obj...  includes
 2. green's function and a scalar
 3. one Green's function
 """
-Base.Broadcast.broadcast(f, obj::GreenDLR, I::Number) = Base.Broadcast.broadcast(f, obj.data,I::Number)
+Base.Broadcast.broadcast(f, obj::GreenDLR, I::Number) = Base.Broadcast.broadcast(f, obj.data, I::Number)
 Base.Broadcast.broadcast(f, obj::GreenDLR) = Base.Broadcast.broadcast(f, obj.data)
 Base.Broadcast.broadcast(f, objL::GreenDLR, objR::GreenDLR) = Base.Broadcast.broadcast(f, objL.data, objR.data)
 
@@ -364,14 +383,14 @@ function Base.:<<(Obj::GreenDLR, objSrc::Expr)
         p, ωn, n, τ = NaN, NaN, NaN, NaN
         G = d
         β = Obj.β
-        if Obj.domain == ImFreq
+        if Obj.domain == IMFREQ
             n = Obj.tgrid[inds[3]]
             if Obj.isFermi
                 ωn = π * (2 * n + 1) / β
             else
                 ωn = π * 2 * n * β
             end
-        elseif Obj.domain == ImTime
+        elseif Obj.domain == IMTIME
             τ = tgrid[inds[3]]
         end
         p = Obj.mesh[inds[2]]

@@ -3,7 +3,7 @@ SemiCircle(dlr, grid, type) = Sample.SemiCircle(dlr.Euv, dlr.β, dlr.isFermi, gr
 @testset "GreenFunc" begin
     @testset "GreenDLR" begin
         mesh = [0.0, 1.0]
-        β = 10.0
+        β = 50.0
         isFermi = true
         Euv = 80.0
         rtol = 1e-9
@@ -13,10 +13,10 @@ SemiCircle(dlr, grid, type) = Sample.SemiCircle(dlr.Euv, dlr.β, dlr.isFermi, gr
         # data = [1.0im, 1.0im]
         data = zeros(ComplexF64, (1, 2, 3))
         tgrid = [1, 2, 3]
-        DLR = DLRGrid(Euv, β, rtol, isFermi, tsym)
-        # green_freq = GreenDLR{ComplexF64}(; domain=GreenFunc.IMFREQ, DLR=DLR, tgrid=tgrid, mesh=mesh, β=β, isFermi=isFermi, Euv=Euv, rtol=rtol, tsym=tsym, innerstate=innerstate, data=data)
-        green_freq = GreenDLR{ComplexF64}(; domain=GreenFunc.IMFREQ, DLR=DLR, tgrid=tgrid, mesh=mesh, innerstate=innerstate, data=data)
-        # green_freq = GreenDLR(; mesh=mesh, β=β, tsym=tsym, Euv=Euv, rtol=rtol)
+
+        # green_freq = GreenDLR{ComplexF64}(; domain=GreenFunc.IMFREQ, DLR=DLR, tgrid=tgrid, mesh=mesh, innerstate=innerstate, data=data)
+        green_freq = GreenDLR(β; domain=GreenFunc.IMFREQ, tgrid=tgrid, mesh=mesh, isFermi=isFermi, Euv=Euv, rtol=rtol, tsym=tsym, innerstate=innerstate, data=data)
+        # green_freq = GreenDLR(β; mesh=mesh, tsym=tsym, Euv=Euv, rtol=rtol)
         println(typeof(green_freq))
         show(green_freq)
 
@@ -42,7 +42,7 @@ SemiCircle(dlr, grid, type) = Sample.SemiCircle(dlr.Euv, dlr.β, dlr.isFermi, gr
         @test g3 == 0
         @test g4 == -4
 
-        green3 = similar(green_freq)
+        @time green3 = similar(green_freq)
         println("\nsimialr green:")
         show(green3)
         println("view similar green:\n", green3[:, 1:2, 1:3])
