@@ -57,6 +57,8 @@ end
 ########## Array Interface: https://docs.julialang.org/en/v1/manual/interfaces/#man-interface-array #############
 Base.size(obj::GreenNew) = obj.dims
 
+Base.eltype(::Type{GreenNew{T,MT,N,Ninner}}) where {T,MT,N,Ninner} = T
+
 """
     getindex(obj::GreenDLR, inds...)
 
@@ -86,9 +88,11 @@ Base.similar(obj::GreenNew{T,MT,N,Ninner}) where {T,MT,N,Ninner} = Base.similar(
 #as explained in https://docs.julialang.org/en/v1/manual/interfaces/#man-interface-array
 #However, we don't want that. What we want the following: 
 
+################################ broadcast interface ###############################################
 Base.BroadcastStyle(::Type{<:GreenNew}) = Broadcast.ArrayStyle{GreenNew}()
 
 function Base.similar(bc::Base.Broadcast.Broadcasted{Broadcast.ArrayStyle{GreenNew}}, ::Type{ElType}) where {ElType}
+    # println("get called")
     # Scan the inputs for the ArrayAndChar:
     A = find_gf(bc)
     # Use the char field of A to create the output
@@ -102,7 +106,16 @@ find_gf(::Tuple{}) = nothing
 find_gf(a::GreenNew, rest) = a
 find_gf(::Any, rest) = find_gf(rest)
 
-Base.eltype(::Type{GreenNew{T,MT,N,Ninner}}) where {T,MT,N,Ninner} = T
+function Base.copyto!(dest::GreenNew{T,MT,N,Ninner}, bc::Base.Broadcast.Broadcasted{Nothing}) where {T,MT,N,Ninner}
+    # don't why, but this function make no allocations anymore
+    # see the post https://discourse.julialang.org/t/help-implementing-copyto-for-broadcasting/51204/3
+    bcf = Base.Broadcast.flatten(bc)
+    bcf2 = Base.Broadcast.preprocess(dest, bcf)
+    for I in CartesianIndices(dest)
+        dest[I] = bcf2[I]
+    end
+    return dest
+end
 
 
 # somehow, the following leads to stackoverflow due to some kind of infinite loop
