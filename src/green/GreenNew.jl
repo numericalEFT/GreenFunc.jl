@@ -32,7 +32,8 @@ mutable struct GreenNew{T,MT,N,Ninner} <: AbstractGreen{T,N,Ninner}
     dims::NTuple{N,Int}
 end
 
-function GreenNew{T}(mesh...; innerstate::Union{AbstractVector{Int},Tuple{Vararg{Int}}}=(),
+function GreenNew{T}(mesh...;
+    innerstate::Union{AbstractVector{Int},Tuple{Vararg{Int}}}=(),
     data::Union{Nothing,AbstractArray}=nothing) where {T}
 
     innerstate = tuple(collect(innerstate)...)
@@ -68,8 +69,13 @@ Base.getindex(obj::GreenNew, I::Int) = Base.getindex(obj.data, I)
 Base.setindex!(obj::GreenNew, v, inds...) where {N} = Base.setindex!(obj.data, v, inds...)
 Base.setindex!(obj::GreenNew, v, I::Int) = Base.setindex!(obj.data, v, I)
 
-IndexStyle(::Type{<:GreenNew}) = IndexCartesian()
+IndexStyle(::Type{<:GreenNew}) = IndexLinear()
 
+function Base.similar(obj::GreenNew{T,MT,N,Ninner}, ::Type{T}, dims::Dims=obj.dims) where {T,MT,N,Ninner}
+    return GreenNew{T}(obj.mesh...; innerstate=obj.innerstate, data=similar(obj.data))
+end
+
+# Base.BroadcastStyle(::Type{<:GreenNew}) = Broadcast.ArrayStyle{GreenNew}()
 
 # """
 #     iterate(obj::GreenDLR, state)
