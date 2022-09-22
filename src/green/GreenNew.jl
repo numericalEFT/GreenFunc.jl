@@ -1,28 +1,31 @@
 abstract type AbstractGreen{T,N,NINNER} <: AbstractArray{T,N} end
 
-"""
-    mutable struct GreenDLR{T,Domain<:TimeDomain,TGT,MT,Ndata}
+isiterable(::Type{T}) where {T} = hasmethod(iterate, (T,))
+# isiterable(T) = hasmethod(iterate, (typeof(T),))
 
-General Green's function on a multi-dimensional mesh plus one in-built Discrete Lehmann Representation.
+# """
+#     mutable struct GreenDLR{T,Domain<:TimeDomain,TGT,MT,Ndata}
 
-# Parameters:
-- `T`: type of data
-- `Domain`: type of time domain, `Domain`<:`TimeDomain`.
-- `TGT`: type of time grid
-- `MT`: type of mesh
-- `N`: number of internal degrees of freedom
-- `Ndata`: rank of Green's function data, which always equals to N+2, 2 stands for the mesh and the extra dimension that has built-in DLR grid.
+# General Green's function on a multi-dimensional mesh plus one in-built Discrete Lehmann Representation.
 
-# Members:
-- `DLR`: built-in DLR grid. Only one-dimensional DLR is available currently.
-- `tgrid` (TGT): the imaginary-time or Matsubara-frequency grid of dimension with built in DLR . If not provided by user, the optimized grid from DLR is used.
-- `mesh` (MT): the mesh is a direct product of grids of all other continuous degrees of freedom of Green's function, other than the one with DLR. The mesh has to support all standard Base functions of AbstractArray, plus the following two:
-    - locate(`mesh`, value): find the index of the closest grid point for given value;
-    - volume(`mesh`, index): find the volume of grid space near the point at griven index.
-    - volume(`mesh`, gridvalue): locate the corresponding index of a given value and than find the volume of grid space. 
-- `innerstate` (Tuple): innerstate saves the discrete inner dgrees of freedom of Green's function. 
-- `data` (Array{T,Ndata}): the data of the Green's function.
-"""
+# # Parameters:
+# - `T`: type of data
+# - `Domain`: type of time domain, `Domain`<:`TimeDomain`.
+# - `TGT`: type of time grid
+# - `MT`: type of mesh
+# - `N`: number of internal degrees of freedom
+# - `Ndata`: rank of Green's function data, which always equals to N+2, 2 stands for the mesh and the extra dimension that has built-in DLR grid.
+
+# # Members:
+# - `DLR`: built-in DLR grid. Only one-dimensional DLR is available currently.
+# - `tgrid` (TGT): the imaginary-time or Matsubara-frequency grid of dimension with built in DLR . If not provided by user, the optimized grid from DLR is used.
+# - `mesh` (MT): the mesh is a direct product of grids of all other continuous degrees of freedom of Green's function, other than the one with DLR. The mesh has to support all standard Base functions of AbstractArray, plus the following two:
+#     - locate(`mesh`, value): find the index of the closest grid point for given value;
+#     - volume(`mesh`, index): find the volume of grid space near the point at griven index.
+#     - volume(`mesh`, gridvalue): locate the corresponding index of a given value and than find the volume of grid space. 
+# - `innerstate` (Tuple): innerstate saves the discrete inner dgrees of freedom of Green's function. 
+# - `data` (Array{T,Ndata}): the data of the Green's function.
+# """
 mutable struct GreenNew{T,MT,N,Ninner} <: AbstractGreen{T,N,Ninner}
     #########   Mesh   ##############
     mesh::MT
@@ -32,9 +35,24 @@ mutable struct GreenNew{T,MT,N,Ninner} <: AbstractGreen{T,N,Ninner}
     dims::NTuple{N,Int}
 end
 
+"""
+    function GreenNew{T}(mesh...;
+        innerstate::Union{AbstractVector{Int},Tuple{Vararg{Int}}}=(),
+        data::Union{Nothing,AbstractArray}=nothing) where {T}
+    
+Create a Green struct. 
+
+# Arguments
+- `T`: data type of Green's function's value.
+- `mesh`: meshes of Green's function. Mesh could be any iterable object, examples are vector, tuple, array, number, UnitRange (say, 1:5).
+- `innerstate`: innerstate saves the discrete inner dgrees of freedom of Green's function. By default, `innerstate` = (1,).
+- `data`: the data of the Green's function. By default, `data` = zeros(`datatype`, `Ndata`).
+"""
 function GreenNew{T}(mesh...;
     innerstate::Union{AbstractVector{Int},Tuple{Vararg{Int}}}=(),
     data::Union{Nothing,AbstractArray}=nothing) where {T}
+
+    @assert all(x -> isiterable(typeof(x)), mesh) "all meshes should be iterable"
 
     innerstate = tuple(collect(innerstate)...)
     Ninner = length(innerstate)
