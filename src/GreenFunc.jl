@@ -17,4 +17,7 @@ include("green/MeshProduct.jl")
 export MeshProduct
 export locate, volume
 
+include("green/GreenNew.jl")
+export GreenNew
+
 end
