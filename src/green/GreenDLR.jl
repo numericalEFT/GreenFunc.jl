@@ -4,9 +4,10 @@ include("./DictParser.jl")
 abstract type AbstractGreen{T,Ndata,Ninner} <: AbstractArray{T,Ndata} end
 
 """
-    mutable struct GreenDLR{T,Domain<:TimeDomain,TGT,MT,Ndata}
+    mutable struct GreenDLR{T,Domain<:TimeDomain,TGT,MT,Ndata} <: AbstractGreen{T,Ndata,Ninner}
 
-General Green's function on a multi-dimensional mesh plus one in-built Discrete Lehmann Representation.
+General Green's function on a multi-dimensional mesh plus one in-built Discrete Lehmann Representation. 
+`AbstractGreen` is a subtype of `AbstractArray`. Hence, `GreenDLR` supports rich behaviors including iteration, multidimensional indexing, and broadcasting, where the data of the Green's function is the actual operation object.
 
 # Parameters
 - `T`: type of data
@@ -254,7 +255,7 @@ Base.length(obj::GreenDLR) = length(obj.data)
 """
     eltype(obj::GreenDLR)
 
-Return the type of `obj.data`.
+Return the type of the elements contained in `obj.data`.
 """
 Base.eltype(::Type{GreenDLR{T,Domain,TGT,MT}}) where {T,Domain,TGT,MT} = T
 
@@ -280,14 +281,22 @@ function Base.show(io::IO, obj::GreenDLR)
 end
 
 """
+    similar(obj::GreenDLR, ::Type{S})
+
+Create a data-uninitialized GreenDLR with the same size based upon the given `obj` and the specified element type `S`.
+Note that the elements `domain`, `innerstate`, `tgrid`, `mesh`, and `DLR` are copied from `obj`.
+"""
+function Base.similar(obj::GreenDLR{T,Domain,TGT,MT}, ::Type{S}) where {T,Domain,TGT,MT,S}
+    return GreenDLR{S}(; domain=obj.domain, DLR=obj.DLR, tgrid=obj.tgrid, mesh=obj.mesh, innerstate=obj.innerstate, data=similar(obj.data, S))
+end
+
+"""
     similar(obj::GreenDLR)
 
 Create a data-uninitialized GreenDLR with the element type and size, based upon the given `obj`.
 Note that the elements `domain`, `innerstate`, `tgrid`, `mesh`, and `DLR` are copied from `obj`.
 """
-function Base.similar(obj::GreenDLR{T,Domain,TGT,MT}) where {T,Domain,TGT,MT}
-    return GreenDLR{T}(; domain=obj.domain, DLR=obj.DLR, tgrid=obj.tgrid, mesh=obj.mesh, innerstate=obj.innerstate, data=similar(obj.data))
-end
+Base.similar(obj::GreenDLR{T,Domain,TGT,MT}) where {T,Domain,TGT,MT} = Base.similar(obj, T)
 
 """
     function rank(obj::GreenDLR)
@@ -374,6 +383,17 @@ find_gdlr(x) = x
 find_gdlr(::Tuple{}) = nothing
 find_gdlr(a::GreenDLR, rest) = a
 find_gdlr(::Any, rest) = find_gdlr(rest)
+
+function Base.copyto!(dest::GreenDLR{T,Domain,TGT,MT}, bc::Base.Broadcast.Broadcasted{Nothing}) where {T,Domain,TGT,MT}
+    # don't why, but this function make no allocations anymore
+    # see the post https://discourse.julialang.org/t/help-implementing-copyto-for-broadcasting/51204/3
+    bcf = Base.Broadcast.flatten(bc)
+    bcf2 = Base.Broadcast.preprocess(dest, bcf)
+    for I in CartesianIndices(dest)
+        dest[I] = bcf2[I]
+    end
+    return dest
+end
 
 """
     <<(Obj::GreenDLR, objSrc::Expr)
