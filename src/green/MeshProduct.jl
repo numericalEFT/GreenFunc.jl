@@ -155,8 +155,11 @@ function volume(obj::MeshProduct, index...)
 end
 
 volume(obj::MeshProduct, I::Int) = volume(obj, linear_to_index(obj, I)...)
+#Note: this should be implemented to obtain the total volume
+volume(obj::MeshProduct) = reduce(*, volume(m) for m in obj.meshes)
 
 locate(m::AbstractGrid, pos) = CompositeGrids.Interp.locate(m, pos)
 volume(m::AbstractGrid, index) = CompositeGrids.Interp.volume(m, index)
+volume(m::AbstractGrid) = CompositeGrids.Interp.volume(m)
 # locate(m::AbstractMesh, pos) = BZMeshes.BaseMesh.locate(m, pos)
 # volume(m::AbstractMesh, index) = BZMeshes.BaseMesh.locate(m, index)
