@@ -4,7 +4,7 @@
     isFermi = true
     Euv = 80.0
     rtol = 1e-9
-    tsym = :ph
+    tsym = :none
 
     DLR = DLRGrid(Euv, β, rtol, isFermi, tsym)
 
@@ -45,7 +45,7 @@
 
     # end
 
-    @testset "TimeGrid" begin
+    @testset "ImTime Grid" begin
         tg2 = MeshGrids.ImTime(β; grid=DLR.τ)
 
         @test length(tg2) == length(DLR)
@@ -60,8 +60,28 @@
 
         for (ti, t) in enumerate(tg2)
             @test t == DLR.τ[ti]
-            MeshGrids.locate(tg2, t) == ti
+            @test MeshGrids.locate(tg2, t) == ti
         end
-        volume(tg2) == sum(volume(tg2, i) for i in 1:length(tg2))
+        @test volume(tg2) ≈ sum(volume(tg2, i) for i in 1:length(tg2))
+    end
+
+    @testset "ImFreq Grid" begin
+        tg2 = MeshGrids.ImFreq(β, MeshGrids.FERMI; grid=DLR.n)
+        println(tg2)
+
+        @test length(tg2) == length(DLR)
+        # @test size(tg2) == size(DLR)
+        # TODO: seems size(DLR) = N instead of (N, ), while size(Vector{N})=(N, )
+        @test tg2[1] == DLR.ωn[1]
+
+        # eltype
+        @test eltype(typeof(tg2)) == Int
+
+        for (ti, t) in enumerate(tg2)
+            @test tg2.grid[ti] == DLR.n[ti]
+            @test tg2[ti] ≈ DLR.ωn[ti] #DLR.ωn is read from files, cannot exactly match (2n+1)/β exactly
+            # @test MeshGrids.locate(tg2, t) == ti
+        end
+        @test volume(tg2) == sum(volume(tg2, i) for i in 1:length(tg2))
     end
 end
