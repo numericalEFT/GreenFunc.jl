@@ -45,10 +45,24 @@ function ImFreq(beta, statistics::Statistics=UNKNOWN;
     return ImFreq{dtype,typeof(grid)}(grid, beta, Euv, statistics)
 end
 
-Base.getindex(tg::ImFreq, I::Int) = (tg.statistics isa Fermi) ? π / tg.beta * (2 * tg.grid[I] + 1) : 2 * π / tg.beta * tg.grid[I]
+matfreq_to_int(tg::ImFreq, ωn) = (tg.statistics isa Fermi) ? Int(round((ωn * tg.beta / π - 1) / 2)) : Int(round((ωn * tg.beta / π) / 2))
+int_to_matfreq(tg::ImFreq, n::Int) = (tg.statistics isa Fermi) ? (2n + 1) * π / tg.beta : 2n * π / tg.beta
 
+"""
+    Base.getindex(g::ImFreq, I::Int)
+
+Equivalent to `g[I]`, get the __real-valued__ Matsubara frequency of the Ith point in the grid. 
+For fermion, return (2g[I]+1)π/β, for boson, return 2g[I]*π/β.
+
+If you need the __integer-valued__ frequency, use `g.grid[I]` instead.
+"""
+Base.getindex(tg::ImFreq, I::Int) = int_to_matfreq(tg, tg.grid[I])
 Base.show(io::IO, tg::ImFreq) = print(io, "Matsubara frequency grid with $(length(tg)) points, inverse temperature = $(tg.beta), UV Energy scale = $(tg.Euv), statistics = $(tg.statistics): $(_grid(tg.grid))")
 
 
-# ωn(tg::ImFreq{GT}, I::Int) where {GT} = (tg.statistics isa Fermi) ? π / tg.beta * (2 * tg[I] + 1) : 2 * π / tg.beta * tg[I]
-# matfreq(tg::ImFreq, I::Int) = ωn(tg, I)
+GreenFunc.locate(tg::ImFreq, n::Int) = locate(tg.grid, n)
+
+function GreenFunc.locate(tg::ImFreq, ωn)
+    n = matfreq_to_int(tg, ωn)
+    return locate(tg.grid, n)
+end
