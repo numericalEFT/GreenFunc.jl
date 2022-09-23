@@ -13,14 +13,14 @@ export GreenDLR
 include("green/GreenSym.jl")
 export GreenSym2DLR, dynamic, instant
 
-include("green/MeshProduct.jl")
+include("green/meshgrids/MeshProduct.jl")
 export MeshProduct
 export locate, volume
 
 include("green/GreenNew.jl")
 export GreenNew
 
-include("green/MeshGrids.jl")
+include("green/meshgrids/MeshGrids.jl")
 export MeshGrids
 
 end
