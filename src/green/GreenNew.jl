@@ -1,4 +1,4 @@
-abstract type AbstractGreen{T,N,NINNER} <: AbstractArray{T,N} end
+# abstract type AbstractGreen{T,N,NINNER} <: AbstractArray{T,N} end
 
 isiterable(::Type{T}) where {T} = hasmethod(iterate, (T,))
 # isiterable(T) = hasmethod(iterate, (typeof(T),))
