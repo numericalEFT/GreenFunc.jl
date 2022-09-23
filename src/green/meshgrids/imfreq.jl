@@ -1,10 +1,10 @@
 """
-    struct ImFreq{Grid} <: TemporalGrid{Int}
+    struct ImFreq{T, Grid} <: TemporalGrid{Int}
 
 Time grid for Green's functions. An 1D grid wrapped with TimeDomain tpye.
 
 # Parameters
-- `Grid{T}`: type of 1D grid with T as the grid point type
+- `Grid`: type of 1D grid with T as the grid point type
 
 # Members
 - `grid`: 1D grid of time axis, with locate, volume, 
@@ -32,12 +32,11 @@ Constructor of TimeGrid.
 """
 function ImFreq(beta, statistics::Statistics=UNKNOWN;
     dtype=Float64,
-    Euv=128 / beta,
+    Euv=1000 / beta,
     grid::Union{AbstractGrid,AbstractVector,Nothing}=nothing
 )
     if isnothing(grid)
         dlr = DLRGrid(Euv, beta, rtol, statistics isa Fermi, :none)
-        println(dlr)
         grid = SimpleG.Arbitrary{Int}(dlr.n)
     elseif (grid isa AbstractVector)
         grid = SimpleG.Arbitrary{Int}(Int.(grid))

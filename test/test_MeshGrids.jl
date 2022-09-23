@@ -85,4 +85,24 @@
         end
         @test volume(tg2) == sum(volume(tg2, i) for i in 1:length(tg2))
     end
+
+    @testset "DLRFreq Grid" begin
+        tg2 = MeshGrids.DLRFreq(β, MeshGrids.FERMI; dlr=DLR)
+        println(tg2)
+
+        @test length(tg2) == length(DLR)
+        # @test size(tg2) == size(DLR)
+        # TODO: seems size(DLR) = N instead of (N, ), while size(Vector{N})=(N, )
+        @test tg2[1] == DLR.ω[1]
+
+        # eltype
+        @test eltype(typeof(tg2)) == Int
+
+        for (ti, t) in enumerate(tg2)
+            @test tg2.grid[ti] ≈ DLR.ω[ti]
+            @test tg2[ti] ≈ DLR.ω[ti] #DLR.ωn is read from files, cannot exactly match (2n+1)/β exactly
+            @test MeshGrids.locate(tg2, t) == ti
+        end
+        @test volume(tg2) ≈ sum(volume(tg2, i) for i in 1:length(tg2))
+    end
 end

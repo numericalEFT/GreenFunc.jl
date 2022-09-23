@@ -7,7 +7,6 @@ using ..CompositeGrids
 
 abstract type TemporalGrid{T} <: AbstractGrid{T} end
 
-export TimeGrid
 
 abstract type Statistics end
 struct UnKnown <: Statistics end
@@ -17,6 +16,16 @@ const UNKNOWN = UnKnown()
 const FERMI = Fermi()
 const BOSE = Bose()
 
+include("imtime.jl")
+# export ImTime
+
+include("imfreq.jl")
+# export ImFreq
+
+include("dlrfreq.jl")
+export DLRFreq
+
+################# common interface for TemporalGrid  ################
 Base.print(io::IO, s::UnKnown) = print(io, "UnKnown")
 Base.print(io::IO, s::Fermi) = print(io, "Fermi")
 Base.print(io::IO, s::Bose) = print(io, "Bose")
@@ -77,12 +86,7 @@ Base.show(io::IO, ::MIME"text/html", tg::TemporalGrid) = Base.show(io, tg)
 
 #TODO: more functions from CompositeGrids
 
-include("imtime.jl")
-# export ImTime
-
-include("imfreq.jl")
-# export ImFreq
-
+# export TimeGrid
 
 # meshgrids for green functions
 # implement timegrids for time and frequency
