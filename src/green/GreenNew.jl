@@ -26,11 +26,10 @@ isiterable(::Type{T}) where {T} = hasmethod(iterate, (T,))
 # - `innerstate` (Tuple): innerstate saves the discrete inner dgrees of freedom of Green's function. 
 # - `data` (Array{T,Ndata}): the data of the Green's function.
 # """
-mutable struct GreenNew{T,MT,N,Ninner} <: AbstractGreen{T,N,Ninner}
+# mutable struct GreenNew{T,MT,N} <: AbstractGreen{T,N}
+mutable struct GreenNew{T,N,MT} <: AbstractArray{T,N}
     #########   Mesh   ##############
     mesh::MT
-    innerstate::NTuple{Ninner,Int}
-    ###########     data   ###########
     data::Array{T,N}
     dims::NTuple{N,Int}
 end
@@ -48,43 +47,37 @@ Create a Green struct.
 - `innerstate`: innerstate saves the discrete inner dgrees of freedom of Green's function. By default, `innerstate` = (1,).
 - `data`: the data of the Green's function. By default, `data` = zeros(`datatype`, `Ndata`).
 """
-function GreenNew{T}(mesh...;
-    innerstate::Union{AbstractVector{Int},Tuple{Vararg{Int}}}=(),
-    data::Union{Nothing,AbstractArray}=nothing) where {T}
+function GreenNew(mesh...;
+    dtype=Float64,
+    data::Union{Nothing,AbstractArray}=nothing)
 
     @assert all(x -> isiterable(typeof(x)), mesh) "all meshes should be iterable"
 
-    innerstate = tuple(collect(innerstate)...)
-    Ninner = length(innerstate)
-    N = length(mesh) + Ninner
-    dims = tuple(innerstate..., [length(v) for v in mesh]...)
+    N = length(mesh)
+    dims = tuple([length(v) for v in mesh]...)
 
     if isnothing(data) == false
-        @assert Tuple(size(data)[1:Ninner]) == innerstate
         @assert length(size(data)) == N
     else
-        data = Array{T,N}(undef, dims...)
+        data = Array{dtype,N}(undef, dims...)
     end
 
-    # meshes = tuple(mesh)
-    # println(typeof(mesh))
-
-    return GreenNew{T,typeof(mesh),N,Ninner}(mesh, innerstate, data, dims)
+    return GreenNew{dtype,N,typeof(mesh)}(mesh, data, dims)
 end
 
 ########## Array Interface: https://docs.julialang.org/en/v1/manual/interfaces/#man-interface-array #############
 Base.size(obj::GreenNew) = obj.dims
 
-Base.eltype(::Type{GreenNew{T,MT,N,Ninner}}) where {T,MT,N,Ninner} = T
+Base.eltype(::Type{GreenNew{T,N,MT}}) where {T,N,MT} = T
 
 """
     getindex(obj::GreenDLR, inds...)
 
 Return a subset of `obj`'s data as specified by `inds`, where each `inds` may be, for example, an Int, an AbstractRange, or a Vector. 
 """
-Base.getindex(obj::GreenNew{T,MT,N,Ninner}, inds::Vararg{Int,N}) where {T,MT,N,Ninner} = Base.getindex(obj.data, inds...)
+Base.getindex(obj::GreenNew{T,N,MT}, inds::Vararg{Int,N}) where {T,MT,N} = Base.getindex(obj.data, inds...)
 # Base.getindex(obj::GreenNew, I::Int) = Base.getindex(obj.data, I)
-Base.setindex!(obj::GreenNew{T,MT,N,Ninner}, v, inds::Vararg{Int,N}) where {T,MT,N,Ninner} = Base.setindex!(obj.data, v, inds...)
+Base.setindex!(obj::GreenNew{T,N,MT}, v, inds::Vararg{Int,N}) where {T,MT,N} = Base.setindex!(obj.data, v, inds...)
 # Base.setindex!(obj::GreenNew, v, I::Int) = Base.setindex!(obj.data, v, I)
 
 # IndexStyle(::Type{<:GreenNew}) = IndexCartesian() # by default, it is IndexCartesian
@@ -98,10 +91,10 @@ Base.setindex!(obj::GreenNew{T,MT,N,Ninner}, v, inds::Vararg{Int,N}) where {T,MT
 - `Base.similar(obj::GreenNew, ::Type{S})`: Return a new GreenNew with the same mesh and innerstate, but with a new data of type S.
 - `Base.similar(obj::GreenNew, ::Type{S}, inds)`: Return a slice of obj.data. (slice of GreeNew itself is not well defined, because it has meshes) 
 """
-function Base.similar(obj::GreenNew{T,MT,N,Ninner}, ::Type{S}) where {T,MT,N,Ninner,S}
-    return GreenNew{S}(obj.mesh...; innerstate=obj.innerstate, data=similar(obj.data, S))
+function Base.similar(obj::GreenNew{T,N,MT}, ::Type{S}) where {T,MT,N,S}
+    return GreenNew(obj.mesh...; dtype=S, data=similar(obj.data, S))
 end
-Base.similar(obj::GreenNew{T,MT,N,Ninner}) where {T,MT,N,Ninner} = Base.similar(obj, T)
+Base.similar(obj::GreenNew{T,N,MT}) where {T,MT,N} = Base.similar(obj, T)
 #By default, the following functions will all call Base.similar(obj::GreenNew, ::Type{S}, inds) 
 #as explained in https://docs.julialang.org/en/v1/manual/interfaces/#man-interface-array
 #However, we don't want that. What we want the following: 
@@ -114,7 +107,7 @@ function Base.similar(bc::Base.Broadcast.Broadcasted{Broadcast.ArrayStyle{GreenN
     # Scan the inputs for the ArrayAndChar:
     A = find_gf(bc)
     # Use the char field of A to create the output
-    GreenNew(A.mesh, A.innerstate, similar(Array{ElType}, axes(bc)), A.dims)
+    GreenNew(A.mesh, similar(Array{ElType}, axes(bc)), A.dims)
 end
 
 find_gf(bc::Broadcast.Broadcasted) = find_gf(bc.args)
@@ -124,7 +117,7 @@ find_gf(::Tuple{}) = nothing
 find_gf(a::GreenNew, rest) = a
 find_gf(::Any, rest) = find_gf(rest)
 
-function Base.copyto!(dest::GreenNew{T,MT,N,Ninner}, bc::Base.Broadcast.Broadcasted{Nothing}) where {T,MT,N,Ninner}
+function Base.copyto!(dest::GreenNew{T,N,MT}, bc::Base.Broadcast.Broadcasted{Nothing}) where {T,MT,N}
     # don't why, but this function make no allocations anymore
     # see the post https://discourse.julialang.org/t/help-implementing-copyto-for-broadcasting/51204/3
     bcf = Base.Broadcast.flatten(bc)
@@ -183,7 +176,7 @@ end
 Return the rank of Green's function data, which always equals to N+2. 
 N stands for the number of internal degrees of freedom; 2 stands for the mesh and the extra dimension that has built-in DLR grid.
 """
-rank(obj::GreenNew{T,MT,N,Ninner}) where {T,MT,N,Ninner} = N
+rank(obj::GreenNew{T,N,MT}) where {T,MT,N} = N
 
 
 #TODO:Following triqs design, we want the following two things:
@@ -227,7 +220,7 @@ function _check(objL::GreenNew, objR::GreenNew)
     # first:  check typeof(objL.tgrid)==typeof(objR.tgrid) 
     # second: check length(objL.tgrid)
     # third:  hasmethod(objL.tgrid, isequal) --> assert
-    @assert objL.innerstate == objR.innerstate "Green's function innerstates are not inconsistent: $(objL.innerstate) and $(objR.innerstate)"
+    # @assert objL.innerstate == objR.innerstate "Green's function innerstates are not inconsistent: $(objL.innerstate) and $(objR.innerstate)"
     @assert typeof(objL.mesh) == typeof(objR.mesh) "Green's function meshes' types are inconsistent: $(typeof(objL.mesh)) and $(typeof(objR.mesh))"
     @assert objL.dims == objR.dims "Green's function dims are inconsistent: $(objL.dims) and $(objR.dims)"
 

@@ -43,11 +43,11 @@ Return the length of the specifict Ith mesh factor of the MeshProduct.
 """
 Base.size(obj::MeshProduct) = obj.dims
 
-"""
-    rank(obj::MeshProduct{MT,N})
-Return the number of the factor meshes.
-"""
-rank(obj::MeshProduct{MT,N}) where {MT,N} = N
+# """
+#     rank(obj::MeshProduct{MT,N})
+# Return the number of the factor meshes.
+# """
+# rank(obj::MeshProduct{MT,N}) where {MT,N} = N
 
 """
     function index_to_linear(obj::MeshProduct, index...)
@@ -57,7 +57,13 @@ Convert a tuple of the indexes of each mesh to a single linear index of the Mesh
 - 'obj': The MeshProduct object
 - 'index...': N indexes of the mesh factor, where N is the number of mesh factor
 """
-index_to_linear(obj::MeshProduct, index...) = sub2ind_gen(obj.dims, index...)
+@generated function index_to_linear(obj::MeshProduct{MT,N}, I...) where {MT,N}
+    ex = :(I[$N] - 1)
+    for i = (N-1):-1:1
+        ex = :(I[$i] - 1 + obj.dims[$i] * $ex)
+    end
+    return :($ex + 1)
+end
 # function index_to_linear(obj::MeshProduct, index...)
 #     bn = Tuple((prod(size(obj)[1:n-1]) for (n, sz) in enumerate(size(obj))))
 #     li = 1
@@ -75,7 +81,14 @@ Convert the single linear index of the MeshProduct to a tuple of indexes of each
 - 'obj': The MeshProduct object
 - 'I': The linear index of the MeshProduct 
 """
-linear_to_index(obj::MeshProduct, I::Int) = ind2sub_gen(obj.dims, I)
+@generated function linear_to_index(obj::MeshProduct{MT,N}, I::Int) where {MT,N}
+    inds, quotient = :((I - 1) % obj.dims[1] + 1), :((I - 1) ÷ obj.dims[1])
+    for i = 2:N-1
+        inds, quotient = :($inds..., $quotient % obj.dims[$i] + 1), :($quotient ÷ obj.dims[$i])
+    end
+    inds = :($inds..., $quotient + 1)
+    return :($inds)
+end
 
 # function linear_to_index(obj::MeshProduct, I::Int)
 #     d = rank(obj)
@@ -158,8 +171,5 @@ volume(obj::MeshProduct, I::Int) = volume(obj, linear_to_index(obj, I)...)
 #Note: this should be implemented to obtain the total volume
 volume(obj::MeshProduct) = reduce(*, volume(m) for m in obj.meshes)
 
-locate(m::AbstractGrid, pos) = CompositeGrids.Interp.locate(m, pos)
-volume(m::AbstractGrid, index) = CompositeGrids.Interp.volume(m, index)
-volume(m::AbstractGrid) = CompositeGrids.Interp.volume(m)
 # locate(m::AbstractMesh, pos) = BZMeshes.BaseMesh.locate(m, pos)
 # volume(m::AbstractMesh, index) = BZMeshes.BaseMesh.locate(m, index)
