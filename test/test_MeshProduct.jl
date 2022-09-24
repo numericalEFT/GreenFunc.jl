@@ -15,7 +15,7 @@
         println("test meshprod: ", meshprod)
 
         @test meshprod isa MeshProduct{Tuple{typeof(mesh1),typeof(mesh2)}}
-        @test GreenFunc.rank(meshprod) == 2
+        # @test GreenFunc.rank(meshprod) == 2
         @test size(meshprod, 1) == N1
         @test size(meshprod, 2) == N2
         @test size(meshprod) == (N1, N2)
@@ -27,13 +27,13 @@
 
         function test_linear_index(mp::MeshProduct, x, y, i)
             #make sure return type is stable
-            @inferred GreenFunc.index_to_linear(mp, x, y)
-            @inferred GreenFunc.linear_to_index(mp, i) == (x, y)
+            @inferred MeshGrids.index_to_linear(mp, x, y)
+            @inferred MeshGrids.linear_to_index(mp, i) == (x, y)
             @inferred mp[x, y]
             @inferred mp[i]
 
-            @test GreenFunc.index_to_linear(mp, x, y) == i
-            @test GreenFunc.linear_to_index(mp, i) == (x, y)
+            @test MeshGrids.index_to_linear(mp, x, y) == i
+            @test MeshGrids.linear_to_index(mp, i) == (x, y)
             @test mp[x, y] == mp[i]
             @test mp[x, y] == (mesh1[x], mesh2[y])
             # println(mp[i])
