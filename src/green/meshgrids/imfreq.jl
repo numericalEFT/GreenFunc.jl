@@ -59,9 +59,9 @@ Base.getindex(tg::ImFreq, I::Int) = int_to_matfreq(tg, tg.grid[I])
 Base.show(io::IO, tg::ImFreq) = print(io, "Matsubara frequency grid with $(length(tg)) points, inverse temperature = $(tg.beta), UV Energy scale = $(tg.Euv), statistics = $(tg.statistics): $(_grid(tg.grid))")
 
 
-GreenFunc.locate(tg::ImFreq, n::Int) = locate(tg.grid, n)
+locate(tg::ImFreq, n::Int) = locate(tg.grid, n)
 
-function GreenFunc.locate(tg::ImFreq, ωn)
+function locate(tg::ImFreq, ωn)
     n = matfreq_to_int(tg, ωn)
     return locate(tg.grid, n)
 end
