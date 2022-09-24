@@ -16,7 +16,7 @@ Discrete-Lehmann-representation grid for Green's functions.
 - `sym`: the symmetry of `dlr`.
 - `statistics`: type of statistics for particles. It can be `FERMI`, `BOSE`, and `UNKNOWN`.
 """
-struct DLRFreq{T<:Real} <: TemporalGrid{Int}
+struct DLRFreq{T<:Real} <: TemporalGrid{T}
     dlr::DLRGrid
     grid::SimpleG.Arbitrary{T}
     β::T
