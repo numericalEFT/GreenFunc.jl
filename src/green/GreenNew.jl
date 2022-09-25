@@ -127,16 +127,30 @@ find_gf(::Tuple{}) = nothing
 find_gf(a::GreenNew, rest) = a
 find_gf(::Any, rest) = find_gf(rest)
 
-function Base.copyto!(dest::GreenNew{T,N,MT}, bc::Base.Broadcast.Broadcasted{Nothing}) where {T,MT,N}
-    # don't why, but this function make no allocations anymore
-    # see the post https://discourse.julialang.org/t/help-implementing-copyto-for-broadcasting/51204/3
-    bcf = Base.Broadcast.flatten(bc)
-    bcf2 = Base.Broadcast.preprocess(dest, bcf)
+function Base.copyto!(dest, bc::Base.Broadcast.Broadcasted{GreenNew{T,N,MT}}) where {T,MT,N}
+    # without this function, inplace operation like g1 .+= g2 will make a lot of allocations
+    # Please refer to the following posts for more details:
+    # 1. manual on the interface: https://docs.julialang.org/en/v1/manual/interfaces/#extending-in-place-broadcast-2
+    # 2. see the post: https://discourse.julialang.org/t/help-implementing-copyto-for-broadcasting/51204/3
+    # 3. example from DataFrames.jl: https://github.com/JuliaData/DataFrames.jl/blob/main/src/other/broadcasting.jl#L193
+
+    ######## approach 2: use materialize ########
+    bcf = Base.Broadcast.materialize(bc)
     for I in CartesianIndices(dest)
-        dest[I] = bcf2[I]
+        dest[I] = bcf[I]
     end
     return dest
 end
+
+########### alternative approach ######################
+# function Base.copyto!(dest::GreenNew{T, N, MT}, bc::Base.Broadcast.Broadcasted{Nothing}) where {T,MT,N}
+#     _bcf = Base.Broadcast.flatten(bc)
+#     bcf = Base.Broadcast.preprocess(dest, _bcf)
+#     for I in CartesianIndices(dest)
+#         dest[I] = bcf[I]
+#     end
+#     return dest
+# end
 
 
 # somehow, the following leads to stackoverflow due to some kind of infinite loop
@@ -163,22 +177,6 @@ function Base.show(io::IO, obj::GreenNew)
               "- Mesh: $(typeof(obj.mesh)) \n"
     )
 end
-
-# """
-#     similar(obj::GreenDLR)
-
-# Create a data-uninitialized GreenDLR with the element type and size, based upon the given `obj`.
-# Note that the elements `innerstate`, `tgrid`, `mesh`, and `DLR` are copied from `obj`.
-# """
-# function Base.similar(obj::GreenDLR)
-#     new = GreenDLR(obj.β)
-#     new.innerstate = obj.innerstate
-#     new.tgrid = obj.tgrid
-#     new.mesh = obj.mesh
-#     new.DLR = obj.DLR
-#     new.data = similar(obj.data)
-#     return new
-# end
 
 """
     function rank(obj::GreenNew{T,N,MT})
@@ -334,201 +332,4 @@ end
 # """
 # function from_L_G_R(self,L,G::GreenDLR,R)
 #     return 1
-# end
-
-
-# """
-#     function toTau(obj::Green2DLR, targetGrid =  obj.DLR.τ)
-# Convert Green's function to τ space by Fourier transform.
-# If green is already in τ space then it will be interpolated to the new grid.
-
-# #Arguements
-# - 'green': Original Green's function
-# - 'targetGrid': Grid of outcome Green's function. Default: DLR τ grid
-# """
-# function toimtime(obj::Green2DLR, targetGrid = obj.DLR.τ)
-
-#     if targetGrid isa AbstractVector
-#         targetGrid = CompositeGrids.SimpleG.Arbitrary{eltype(targetGrid)}(targetGrid)
-#     end
-
-#     # do nothing if the domain and the grid remain the same
-#     if obj.domain == ImTime && length(obj.tgrid.grid) ≈ length(targetGrid.grid) && obj.tgrid.grid ≈ targetGrid.grid
-#         return obj
-#     end
-#     if isempty(obj.dynamic) # if dynamic data has not yet been initialized, there is nothing to do
-#         return obj
-#     end
-
-
-#     if (obj.domain == ImTime)
-#         dynamic = tau2tau(obj.DLR, obj.dynamic, targetGrid.grid, obj.tgrid.grid; axis = 4)
-#     elseif (obj.domain == ImFreq)
-#         dynamic = matfreq2tau(obj.DLR, obj.dynamic, targetGrid.grid, obj.tgrid.grid; axis = 4)
-#     elseif (obj.domain == DLRFreq)
-#         dynamic = dlr2tau(obj.DLR, obj.dynamic, targetGrid.grid; axis = 4)
-#     end
-
-#     return Green2DLR{eltype(dynamic)}(
-#         green.name, IMTIME, green.β, green.isFermi, green.DLR.Euv, green.spaceGrid, green.color;
-#         tsym = green.tsym, tgrid = targetGrid, rtol = green.DLR.rtol,
-#         dynamic = dynamic, instant = green.instant)
-# end
-
-# """
-#     function toMatFreq(green::Green2DLR, targetGrid =  green.DLR.n)
-# Convert Green's function to matfreq space by Fourier transform.
-# If green is already in matfreq space then it will be interpolated to the new grid.
-
-# #Arguements
-# - 'green': Original Green's function
-# - 'targetGrid': Grid of outcome Green's function. Default: DLR n grid
-# """
-# function toimfreq(green::Green2DLR, targetGrid = green.DLR.n)
-
-#     if targetGrid isa AbstractVector
-#         targetGrid = CompositeGrids.SimpleG.Arbitrary{eltype(targetGrid)}(targetGrid)
-#     end
-
-#     # do nothing if the domain and the grid remain the same
-#     if green.domain == ImFreq && length(green.tgrid.grid) ≈ length(targetGrid.grid) && green.tgrid.grid ≈ targetGrid.grid
-#         return green
-#     end
-#     if isempty(green.dynamic) # if dynamic data has not yet been initialized, there is nothing to do
-#         return green
-#     end
-
-
-#     if (green.domain == ImFreq)
-#         dynamic = matfreq2matfreq(green.DLR, green.dynamic, targetGrid.grid, green.tgrid.grid; axis = 4)
-#     elseif (green.domain == ImTime)
-#         dynamic = tau2matfreq(green.DLR, green.dynamic, targetGrid.grid, green.tgrid.grid; axis = 4)
-#     elseif (green.domain == DLRFreq)
-#         dynamic = dlr2matfreq(green.DLR, green.dynamic, targetGrid.grid; axis = 4)
-#     end
-
-#     return Green2DLR{eltype(dynamic)}(
-#         green.name, IMFREQ, green.β, green.isFermi, green.DLR.Euv, green.spaceGrid, green.color;
-#         tsym = green.tsym, tgrid = targetGrid, rtol = green.DLR.rtol,
-#         dynamic = dynamic, instant = green.instant)
-
-# end
-
-# """
-#     function toDLR(green::Green2DLR)
-# Convert Green's function to dlr space.
-
-# #Arguements
-# - 'green': Original Green's function
-# """
-# function toDLR(green::Green2DLR)
-
-#     # do nothing if the domain and the grid remain the same
-#     if green.domain == DLRFreq
-#         return green
-#     end
-#     if isempty(green.dynamic) # if dynamic data has not yet been initialized, there is nothing to do
-#         return green
-#     end
-
-
-#     if (green.domain == ImTime)
-#         dynamic = tau2dlr(green.DLR, green.dynamic, green.tgrid.grid; axis = 4)
-#     elseif (green.domain == ImFreq)
-#         dynamic = matfreq2dlr(green.DLR, green.dynamic, green.tgrid.grid; axis = 4)
-#     end
-
-#     return Green2DLR{eltype(dynamic)}(
-#         green.name, DLRFREQ, green.β, green.isFermi, green.DLR.Euv, green.spaceGrid, green.color;
-#         tsym = green.tsym, tgrid = green.DLR.ω, rtol = green.DLR.rtol,
-#         dynamic = dynamic, instant = green.instant)
-
-# end
-
-
-
-# """
-#     function dynamic(green::Union{Green2DLR{DT,Domain,TGT,MT},GreenSym2DLR{DT,Domain,TGT,MT}}, time, space, color1::Int, color2::Int, timeMethod::TM , spaceMethod::SM) where {DT,Domain,TGT<:CompositeGrids.AbstractGrid,MT<:CompositeGrids.AbstractGrid,TM,SM}
-# Find value of Green's function's dynamic part at given color and k/x by interpolation.
-# Interpolation method is by default depending on the grid, but could also be chosen to be linear.
-# #Argument
-# - 'green': Green's function
-# - 'time': Target τ/ω_n point
-# - 'space': Target k/x point
-# - 'color1': Target color1
-# - 'color2': Target color2
-# - 'timeMethod': Method of interpolation for time
-# - 'spaceMethod': Method of interpolation for space 
-# """
-# function _interpolation(TIM, SIM; green::Union{Green2DLR{DT,Domain,TGT,MT},GreenSym2DLR{DT,Domain,TGT,MT}}, time, space, color1::Int, color2::Int) where {DT,Domain,TGT<:CompositeGrids.AbstractGrid,MT<:CompositeGrids.AbstractGrid}
-#     # for double composite
-#     if isempty(green.data)
-#         error("Dynamic Green's function can not be empty!")
-#     else
-#         spaceNeighbor = CompositeGrids.Interp.findneighbor(SIM, green.spaceGrid, space)
-#         println(TIM)
-#         if green.domain == ImFreq && TIM != DLRInterp
-#             tgrid = (green.tgrid.grid * 2 .+ 1) * π / green.β
-#             comTimeGrid = CompositeGrids.SimpleG.Arbitrary{eltype(tgrid)}(tgrid)
-#             comTime = (2*time+1)*π/green.β
-#         else
-#             comTimeGrid = green.tgrid
-#             comTime = time
-#         end
-
-#         timeNeighbor = CompositeGrids.Interp.findneighbor(TIM, comTimeGrid, comTime)
-#         data_slice = view(green.data, color1, color2, spaceNeighbor.index, timeNeighbor.index)
-#         data_slice_xint = CompositeGrids.Interp.interpsliced(spaceNeighbor,data_slice, axis=1)
-#         result = CompositeGrids.Interp.interpsliced(timeNeighbor,data_slice_xint, axis=1)
-#     end
-#     return result
-# end
-
-# function _interpolation( ::LinearInterp , ::LinearInterp
-#     ;green::Union{Green2DLR{DT,Domain,TGT,MT},GreenSym2DLR{DT,Domain,TGT,MT}}, time, space, color1::Int, color2::Int,
-#     ) where {DT,Domain,TGT<:CompositeGrids.AbstractGrid,MT<:CompositeGrids.AbstractGrid}
-#     # for double composite and double linear
-#     if isempty(green.data)
-#         error("Dynamic Green's function can not be empty!")
-#     else
-#         if green.domain == ImFreq
-#             tgrid = (green.tgrid.grid * 2 .+ 1) * π / green.β
-#             comTimeGrid = CompositeGrids.SimpleG.Arbitrary{eltype(tgrid)}(tgrid)            
-#             comTime = (2*time+1)*π/green.β
-#         else
-#             comTimeGrid = green.tgrid
-#             comTime = time
-#         end
-#         data_slice = view(green.data, color1, color2, :,:)
-#         result = CompositeGrids.Interp.linear2D(data_slice, green.spaceGrid, comTimeGrid,space,comTime)
-#     end
-#     return result
-# end
-
-
-# function _interpolation(::DLRInterp, SIM; green::Union{Green2DLR{DT,Domain,TGT,MT},GreenSym2DLR{DT,Domain,TGT,MT}}, time, space, color1::Int, color2::Int) where {DT,Domain,TGT<:CompositeGrids.AbstractGrid,MT<:CompositeGrids.AbstractGrid}
-#     # for composite space and dlr time
-#     if isempty(green.data)
-#         error("Dynamic Green's function can not be empty!")
-#     else
-#         spaceNeighbor = CompositeGrids.Interp.findneighbor(SIM, green.spaceGrid, space)
-#         data_slice = view(green.data, color1, color2, spaceNeighbor.index,:)
-#         data_slice_xint = CompositeGrids.Interp.interpsliced(spaceNeighbor,data_slice, axis=1)
-#         if green.domain == ImFreq
-#             result = (matfreq2matfreq(green.DLR, data_slice_xint, [time,], green.tgrid.grid))[1]
-#         elseif green.domain == ImTime
-#             result = (tau2tau(green.DLR, data_slice_xint, [time,], green.tgrid.grid))[1]
-#         end
-#     end
-#     return result
-# end
-
-# interpolation(;timeMethod::TM, spaceMethod::SM ,green::Union{Green2DLR{DT,Domain,TGT,MT},GreenSym2DLR{DT,Domain,TGT,MT}}, time, space , color1::Int, color2::Int) where {TM,SM,TGT<:CompositeGrids.AbstractGrid,MT<:CompositeGrids.AbstractGrid,DT,Domain} = _interpolation(InterpMethod(TGT,TM), InterpMethod(MT, SM); green, time, space, color1, color2)
-
-# function interpolation(green::Union{Green2DLR{DT,Domain,TGT,MT},GreenSym2DLR{DT,Domain,TGT,MT}}, time, space, color1::Int=1, color2::Int=color1, timeMethod::TM=DEFAULTINTERP , spaceMethod::SM=DEFAULTINTERP) where {DT,Domain,TGT<:CompositeGrids.AbstractGrid,MT<:CompositeGrids.AbstractGrid,TM,SM}
-#     return  interpolation(; timeMethod = timeMethod, spaceMethod = spaceMethod, green = green, time=time, space=space, color1=color1, color2 =color2)
-# end
-
-# function interpolation(green::Union{Green2DLR{DT,Domain,TGT,MT},GreenSym2DLR{DT,Domain,TGT,MT}}, time, space, timeMethod::TM, spaceMethod::SM) where {DT,Domain,TGT<:CompositeGrids.AbstractGrid,MT<:CompositeGrids.AbstractGrid,TM,SM}
-#     return  interpolation(; timeMethod = timeMethod, spaceMethod = spaceMethod, green = green, time=time, space=space, color1=1, color2 =1)
 # end
