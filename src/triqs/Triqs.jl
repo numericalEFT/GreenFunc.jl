@@ -4,7 +4,8 @@ import ..GreenNew
 import ..MeshGrids
 
 using PythonCall
-gf = pyimport("triqs.gf")
+# gf = pyimport("triqs.gf")
+# sys = pyimport("sys")
 
 function _get_statistics(mesh)
     statis = pyconvert(String, mesh.statistic)
@@ -19,6 +20,7 @@ function _get_statistics(mesh)
 end
 
 function _get_mesh_from_triqs(triqs_mesh)
+    gf = pyimport("triqs.gf")
     ############ load time/freq mesh #############
     if pyisinstance(triqs_mesh, gf.meshes.MeshImTime)
         β = pyconvert(Float64, triqs_mesh.beta)
@@ -40,9 +42,10 @@ function _get_mesh_from_triqs(triqs_mesh)
 end
 
 function GreenNew(objSrc::Py)
+
     innerstate = pyconvert(Tuple, objSrc.target_shape)
     # @assert innerstate == dims[1:length(innerstate)] "Inner state dimensions do not match!"
-    mesh = (1:state for state in innerstate)
+    mesh = (1:state for state in innerstate[end:-1:1])
     mesh = (mesh..., _get_mesh_from_triqs(objSrc.mesh))
     _data = PyArray(objSrc.data, copy=false) #no copy is made, but PyArray will be in column-major 
     g = GreenNew(mesh...; dtype=Float64)
@@ -53,9 +56,9 @@ function GreenNew(objSrc::Py)
 end
 
 function Base.:<<(obj::GreenNew{T,N,MT}, objSrc::Py) where {T,MT,N}
-    @assert dims == pyconvert(Tuple, objSrc.shape) "Dimensions do not match!"
+    @assert obj.dims[end:-1:1] == pyconvert(Tuple, objSrc.data.shape) "Dimensions do not match!"
     _data = PyArray(objSrc.data, copy=false) #no copy is made, but PyArray will be in column-major 
-    for i in 1:length(g)
+    for i in 1:length(obj)
         obj.data[i] = unsafe_load(_data.ptr, i) #read data from pointer
     end
     return obj
