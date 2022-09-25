@@ -96,7 +96,7 @@
         @test tg2[1] == DLR.ω[1]
 
         # eltype
-        @test eltype(typeof(tg2)) == Int
+        @test eltype(typeof(tg2)) == Float64
 
         for (ti, t) in enumerate(tg2)
             @test tg2.grid[ti] ≈ DLR.ω[ti]

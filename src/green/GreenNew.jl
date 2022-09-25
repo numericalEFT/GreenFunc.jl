@@ -3,30 +3,24 @@
 isiterable(::Type{T}) where {T} = hasmethod(iterate, (T,))
 # isiterable(T) = hasmethod(iterate, (typeof(T),))
 
-# """
-#     mutable struct GreenDLR{T,Domain<:TimeDomain,TGT,MT,Ndata}
+"""
+    mutable struct GreenNew{T,N,MT} <: AbstractArray{T,N}
 
-# General Green's function on a multi-dimensional mesh plus one in-built Discrete Lehmann Representation.
+General Green's function on a multi-dimensional mesh.
 
-# # Parameters:
-# - `T`: type of data
-# - `Domain`: type of time domain, `Domain`<:`TimeDomain`.
-# - `TGT`: type of time grid
-# - `MT`: type of mesh
-# - `N`: number of internal degrees of freedom
-# - `Ndata`: rank of Green's function data, which always equals to N+2, 2 stands for the mesh and the extra dimension that has built-in DLR grid.
+# Parameters:
+- `T`: data type of the Green's function's value.
+- `N`: dimension of `data`.
+- `MT`: type of mesh.
 
-# # Members:
-# - `DLR`: built-in DLR grid. Only one-dimensional DLR is available currently.
-# - `tgrid` (TGT): the imaginary-time or Matsubara-frequency grid of dimension with built in DLR . If not provided by user, the optimized grid from DLR is used.
-# - `mesh` (MT): the mesh is a direct product of grids of all other continuous degrees of freedom of Green's function, other than the one with DLR. The mesh has to support all standard Base functions of AbstractArray, plus the following two:
-#     - locate(`mesh`, value): find the index of the closest grid point for given value;
-#     - volume(`mesh`, index): find the volume of grid space near the point at griven index.
-#     - volume(`mesh`, gridvalue): locate the corresponding index of a given value and than find the volume of grid space. 
-# - `innerstate` (Tuple): innerstate saves the discrete inner dgrees of freedom of Green's function. 
-# - `data` (Array{T,Ndata}): the data of the Green's function.
-# """
-# mutable struct GreenNew{T,MT,N} <: AbstractGreen{T,N}
+# Members:
+- `mesh` (MT): a direct product of grids of all degrees of freedom of Green's function. The mesh has to support all standard Base functions of AbstractArray, plus the following two:
+    - locate(`mesh`, value): find the index of the closest grid point for given value;
+    - volume(`mesh`, index): find the volume of grid space near the point at griven index.
+    - volume(`mesh`, gridvalue): locate the corresponding index of a given value and then find the volume of grid space. 
+- `data` (Array{T,N}): the data of the Green's function.
+- `dims` (NTuple{N,Int}): the tuple consisting of the lengths of all meshes. Its integer arguments must be equal to the lengths in each dimension of `data`.
+"""
 mutable struct GreenNew{T,N,MT} <: AbstractArray{T,N}
     #########   Mesh   ##############
     mesh::MT
@@ -35,17 +29,16 @@ mutable struct GreenNew{T,N,MT} <: AbstractArray{T,N}
 end
 
 """
-    function GreenNew{T}(mesh...;
-        innerstate::Union{AbstractVector{Int},Tuple{Vararg{Int}}}=(),
-        data::Union{Nothing,AbstractArray}=nothing) where {T}
+    function GreenNew(mesh...;
+        dtype=Float64,
+        data::Union{Nothing,AbstractArray}=nothing)
     
-Create a Green struct. 
+Create a Green struct. Its memeber `dims` is setted as the tuple consisting of the length of all meshes.
 
 # Arguments
-- `T`: data type of Green's function's value.
 - `mesh`: meshes of Green's function. Mesh could be any iterable object, examples are vector, tuple, array, number, UnitRange (say, 1:5).
-- `innerstate`: innerstate saves the discrete inner dgrees of freedom of Green's function. By default, `innerstate` = (1,).
-- `data`: the data of the Green's function. By default, `data` = zeros(`datatype`, `Ndata`).
+- `dtype`: data type of Green's function's value.
+- `data`: the data of the Green's function. By default, `data` is constructed to an unintialized Array with the `dims` size containing elements of `dtype`.
 """
 function GreenNew(mesh...;
     dtype=Float64,
@@ -57,7 +50,8 @@ function GreenNew(mesh...;
     dims = tuple([length(v) for v in mesh]...)
 
     if isnothing(data) == false
-        @assert length(size(data)) == N
+        # @assert length(size(data)) == N
+        @assert size(data) == dims
     else
         data = Array{dtype,N}(undef, dims...)
     end
@@ -66,47 +60,63 @@ function GreenNew(mesh...;
 end
 
 ########## Array Interface: https://docs.julialang.org/en/v1/manual/interfaces/#man-interface-array #############
+"""
+    size(obj::GreenNew)
+
+Return a tuple containing the dimensions of `obj.data` (`obj.dims`).
+"""
 Base.size(obj::GreenNew) = obj.dims
 
+"""
+    eltype(obj::GreenNew)
+
+Return the type of the elements contained in `obj.data`.
+"""
 Base.eltype(::Type{GreenNew{T,N,MT}}) where {T,N,MT} = T
 
 """
-    getindex(obj::GreenDLR, inds...)
+    getindex(obj::GreenNew, inds...)
 
 Return a subset of `obj`'s data as specified by `inds`, where each `inds` may be, for example, an Int, an AbstractRange, or a Vector. 
 """
 Base.getindex(obj::GreenNew{T,N,MT}, inds::Vararg{Int,N}) where {T,MT,N} = Base.getindex(obj.data, inds...)
 # Base.getindex(obj::GreenNew, I::Int) = Base.getindex(obj.data, I)
+
+"""
+    setindex!(obj::GreenNew, v, inds...)
+    obj[inds...] = v
+
+Store values from array `v` within some subset of `obj.data` as specified by `inds`.
+"""
 Base.setindex!(obj::GreenNew{T,N,MT}, v, inds::Vararg{Int,N}) where {T,MT,N} = Base.setindex!(obj.data, v, inds...)
 # Base.setindex!(obj::GreenNew, v, I::Int) = Base.setindex!(obj.data, v, I)
 
 # IndexStyle(::Type{<:GreenNew}) = IndexCartesian() # by default, it is IndexCartesian
 
 """
-    Base.similar(obj::GreenNew{T,MT,N,Ninner}, ::Type{S}) where {T,MT,N,Ninner,S}
-    Base.similar(obj::GreenNew{T,MT,N,Ninner}) where {T,MT,N,Ninner} = Base.similar(obj, T)
+    Base.similar(obj::GreenNew{T,N,MT}, ::Type{S}) where {T,MT,N,S}
+    Base.similar(obj::GreenNew{T,N,MT}) where {T,MT,N} = Base.similar(obj, T)
 
 # Return type:
-- `Base.similar(obj::GreenNew)`: Return a new GreenNew with the same mesh and innerstate, and a new data of the same type as obj.data.
-- `Base.similar(obj::GreenNew, ::Type{S})`: Return a new GreenNew with the same mesh and innerstate, but with a new data of type S.
-- `Base.similar(obj::GreenNew, ::Type{S}, inds)`: Return a slice of obj.data. (slice of GreeNew itself is not well defined, because it has meshes) 
+- `Base.similar(obj::GreenNew)`: Return a new GreenNew with the same meshes, and the uninitialized data of the same type as `obj.data`.
+- `Base.similar(obj::GreenNew, ::Type{S})`: Return a new GreenNew with the same meshes, but with the uninitialized data of type `S`.
 """
 function Base.similar(obj::GreenNew{T,N,MT}, ::Type{S}) where {T,MT,N,S}
     return GreenNew(obj.mesh...; dtype=S, data=similar(obj.data, S))
 end
 Base.similar(obj::GreenNew{T,N,MT}) where {T,MT,N} = Base.similar(obj, T)
-#By default, the following functions will all call Base.similar(obj::GreenNew, ::Type{S}, inds) 
-#as explained in https://docs.julialang.org/en/v1/manual/interfaces/#man-interface-array
-#However, we don't want that. What we want the following: 
+#By default, the following functions will all call Base.similar(obj::GreenNew, ::Type{S}, inds) as explained in https://docs.julialang.org/en/v1/manual/interfaces/#man-interface-array
+#`Base.similar(obj::GreenNew, ::Type{S}, inds)`: Return a slice of obj.data.
+#However, we don't want that since slice of GreeNew itself is not well defined with meshes.
 
 ################################ broadcast interface ###############################################
 Base.BroadcastStyle(::Type{<:GreenNew}) = Broadcast.ArrayStyle{GreenNew}()
 
 function Base.similar(bc::Base.Broadcast.Broadcasted{Broadcast.ArrayStyle{GreenNew}}, ::Type{ElType}) where {ElType}
     # println("get called")
-    # Scan the inputs for the ArrayAndChar:
+    # Scan the inputs for the GreenNew:
     A = find_gf(bc)
-    # Use the char field of A to create the output
+    # Use other fields of A to create the output
     GreenNew(A.mesh, similar(Array{ElType}, axes(bc)), A.dims)
 end
 
@@ -143,14 +153,14 @@ end
 # end
 
 """
-    show(io::IO, obj::GreenDLR)
+    show(io::IO, obj::GreenNew)
 
 Write a text representation of the Green's function `obj` to the output stream `io`.
 """
 function Base.show(io::IO, obj::GreenNew)
-    print(io, "Green's function with dims = $(obj.dims) and innerstate = $(obj.innerstate), total length = $(length(obj.data))\n"
+    print(io, "Green's function with dims = $(obj.dims) and total length = $(length(obj.data))\n"
               *
-              "- Mesh: $(typeof(obj.mesh)), \n"
+              "- Mesh: $(typeof(obj.mesh)) \n"
     )
 end
 
@@ -171,12 +181,11 @@ end
 # end
 
 """
-    function rank(obj::GreenDLR)
+    function rank(obj::GreenNew{T,N,MT})
 
-Return the rank of Green's function data, which always equals to N+2. 
-N stands for the number of internal degrees of freedom; 2 stands for the mesh and the extra dimension that has built-in DLR grid.
+Return the dimension of `obj.data` (`N`).
 """
-rank(obj::GreenNew{T,N,MT}) where {T,MT,N} = N
+rank(::Type{GreenNew{T,N,MT}}) where {T,MT,N} = N
 
 
 #TODO:Following triqs design, we want the following two things:
@@ -211,9 +220,9 @@ rank(obj::GreenNew{T,N,MT}) where {T,MT,N} = N
 # """
 
 """
-    function _check(objL::GreenDLR, objR::GreenDLR)
+    function _check(objL::GreenNew, objR::GreenNew)
 
-Check if the Green's functions `objL` and `objR` are on the same `innerstate`, `tgrid`, and `mesh`. Throw an AssertionError if any check is false.
+Check if the Green's functions `objL` and `objR` are on the same meshes. Throw an AssertionError if any check is false.
 """
 function _check(objL::GreenNew, objR::GreenNew)
     # KUN: check --> __check
