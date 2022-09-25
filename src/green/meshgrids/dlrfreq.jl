@@ -1,20 +1,25 @@
 """
-    struct DLRFreq{T, Grid} <: TemporalGrid{Int}
+    struct DLRFreq{T<:Real} <: TemporalGrid{Int}
 
-Time grid for Green's functions. An 1D grid wrapped with TimeDomain tpye.
+Discrete-Lehmann-representation grid for Green's functions. 
 
 # Parameters
-- `Grid`: type of 1D grid with T as the grid point type
+- `T`: type of the `grid` point, `β` and `Euv`.
 
 # Members
-- `grid`: 1D grid of time axis, with locate, volume, 
-and AbstractArray interface implemented.
-grid should be grid of Int for ImFreq, and DLRGrid for DLRFreq.
+- `dlr`: built-in DLR grid.
+- `grid`: 1D grid of time axis, with locate, volume, and AbstractArray interface implemented.
+  It should be grid of Int for ImFreq, and DLRGrid for DLRFreq.
+- `β`: inverse temperature.
+- `Euv`:  the UV energy scale of the spectral density.
+- `rtol`: tolerance absolute error.
+- `sym`: the symmetry of `dlr`.
+- `statistics`: type of statistics for particles. It can be `FERMI`, `BOSE`, and `UNKNOWN`.
 """
-struct DLRFreq{T<:Real} <: TemporalGrid{Int}
+struct DLRFreq{T<:Real} <: TemporalGrid{T}
     dlr::DLRGrid
     grid::SimpleG.Arbitrary{T}
-    beta::T
+    β::T
     Euv::T
     rtol::Float64
     sym::Symbol
@@ -22,29 +27,42 @@ struct DLRFreq{T<:Real} <: TemporalGrid{Int}
 end
 
 """
-    function TimeGrid(domain::Type{D<:TimeDomain};
-         grid::GT, β, isFermi) where {D,GT}
+    function DLRFreq(β, statistics::Statistics=UNKNOWN;
+        dtype=Float64,
+        rtol=1e-12,
+        Euv=1000 / β,
+        sym=:none,
+        dlr::Union{DLRGrid,Nothing}=nothing
+    )
 
-Constructor of TimeGrid.
+Create a `DLRFreq` struct.
 
 # Arguments
-- `domain`: domain of time grid, Domain<:TimeDomain. By default, `domain` = IMFREQ.
-- `grid`: time grid. All domain available for DLRGrid.
-- `β`: Inverse temperature.
-- `isFermi`: true if fermion, false if boson.
+- `β`: inverse temperature.
+- `statistics`: type of statistics for particles, including `FERMI`, `BOSE`, and `UNKNOWN`. By default, `statistics = UNKNOWN`.
+- `dtype`: type of `β` and `Euv`.
+- `rtol`: tolerance absolute error. By default, `rtol` = 1e-12.
+- `Euv`: the UV energy scale of the spectral density. By default, `Euv = 1000 / β`.
+- `sym`: the symmetry of `dlr`. By default, `sym = :none`.
+- `dlr`: 1D DLR grid. By default, a DLR grid with input arguments is used.
 """
-function DLRFreq(beta, statistics::Statistics=UNKNOWN;
+function DLRFreq(β, statistics::Statistics=UNKNOWN;
     dtype=Float64,
     rtol=1e-12,
-    Euv=1000 / beta,
+    Euv=1000 / β,
     sym=:none,
     dlr::Union{DLRGrid,Nothing}=nothing
 )
     if isnothing(dlr)
-        dlr = DLRGrid(Euv, beta, rtol, statistics isa Fermi, sym)
+        dlr = DLRGrid(Euv, β, rtol, statistics isa Fermi, sym)
     end
     grid = SimpleG.Arbitrary{dtype}(dlr.ω)
-    return DLRFreq{dtype}(dlr, grid, beta, Euv, rtol, sym, statistics)
+    return DLRFreq{dtype}(dlr, grid, β, Euv, rtol, sym, statistics)
 end
 
-Base.show(io::IO, tg::DLRFreq) = print(io, "DLR frequency grid with $(length(tg)) points, inverse temperature = $(tg.beta), UV Energy scale = $(tg.Euv), rtol = $(tg.rtol), sym = $(tg.sym), statistics = $(tg.statistics): $(_grid(tg.grid))")
+"""
+    show(io::IO, tg::DLRFreq)
+
+Write a text representation of the DLR grid `tg` to the output stream `io`.
+"""
+Base.show(io::IO, tg::DLRFreq) = print(io, "DLR frequency grid with $(length(tg)) points, inverse temperature = $(tg.β), UV Energy scale = $(tg.Euv), rtol = $(tg.rtol), sym = $(tg.sym), statistics = $(tg.statistics): $(_grid(tg.grid))")
