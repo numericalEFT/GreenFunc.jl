@@ -117,16 +117,41 @@ find_gf(::Tuple{}) = nothing
 find_gf(a::GreenNew, rest) = a
 find_gf(::Any, rest) = find_gf(rest)
 
-function Base.copyto!(dest::GreenNew{T,N,MT}, bc::Base.Broadcast.Broadcasted{Nothing}) where {T,MT,N}
-    # don't why, but this function make no allocations anymore
-    # see the post https://discourse.julialang.org/t/help-implementing-copyto-for-broadcasting/51204/3
-    bcf = Base.Broadcast.flatten(bc)
-    bcf2 = Base.Broadcast.preprocess(dest, bcf)
+# function Base.copyto!(dest::GreenNew{T,N,MT}, bc::Base.Broadcast.Broadcasted{Nothing}) where {T,MT,N}
+#     # don't why, but this function make no allocations anymore
+#     # see the post https://discourse.julialang.org/t/help-implementing-copyto-for-broadcasting/51204/3
+#     bcf = Base.Broadcast.flatten(bc)
+#     bcf2 = Base.Broadcast.preprocess(dest, bcf)
+#     for I in CartesianIndices(dest)
+#         dest[I] = bcf2[I]
+#     end
+#     return dest
+# end
+
+function Base.copyto!(dest, bc::Base.Broadcast.Broadcasted{GreenNew{T,N,MT}}) where {T,MT,N}
+    # without this function, inplace operation like g1 .+= g2 will make a lot of allocations
+    # Please refer to the following posts for more details:
+    # 1. manual on the interface: https://docs.julialang.org/en/v1/manual/interfaces/#extending-in-place-broadcast-2
+    # 2. see the post: https://discourse.julialang.org/t/help-implementing-copyto-for-broadcasting/51204/3
+    # 3. example from DataFrames.jl: https://github.com/JuliaData/DataFrames.jl/blob/main/src/other/broadcasting.jl#L193
+
+    ######## approach 2: use materialize ########
+    bcf = Base.Broadcast.materialize(bc)
     for I in CartesianIndices(dest)
-        dest[I] = bcf2[I]
+        dest[I] = bcf[I]
     end
     return dest
 end
+
+########### alternative approach ######################
+# function Base.copyto!(dest::GreenNew{T, N, MT}, bc::Base.Broadcast.Broadcasted{Nothing}) where {T,MT,N}
+#     _bcf = Base.Broadcast.flatten(bc)
+#     bcf = Base.Broadcast.preprocess(dest, _bcf)
+#     for I in CartesianIndices(dest)
+#         dest[I] = bcf[I]
+#     end
+#     return dest
+# end
 
 
 # somehow, the following leads to stackoverflow due to some kind of infinite loop
