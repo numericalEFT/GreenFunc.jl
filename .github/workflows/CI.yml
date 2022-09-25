@@ -46,7 +46,7 @@ jobs:
             ${{ runner.os }}-
       - uses: julia-actions/julia-buildpkg@v1
       - name: Install libpython3.8 for `find_libpython` test
-        run: sudo apt-get install python3.8
+        run: sudo apt-get install python3.8-dev
         # if: ${{ matrix.python-version != '2.7' && matrix.os == 'ubuntu-latest' }}
       - uses: julia-actions/julia-runtest@v1
       - uses: julia-actions/julia-processcoverage@v1
