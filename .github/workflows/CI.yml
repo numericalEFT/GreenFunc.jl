@@ -16,6 +16,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     env:
       JULIA_PYTHONCALL_EXE: "/usr/bin/python3"
+      # test for PythonCall needs python, solution from https://github.com/cjdoris/PythonCall.jl/issues/120
     strategy:
       fail-fast: false
       matrix:
@@ -44,6 +45,9 @@ jobs:
             ${{ runner.os }}-test-
             ${{ runner.os }}-
       - uses: julia-actions/julia-buildpkg@v1
+      - name: Install libpython3.8 for `find_libpython` test
+        run: sudo apt-get install python3.8
+        # if: ${{ matrix.python-version != '2.7' && matrix.os == 'ubuntu-latest' }}
       - uses: julia-actions/julia-runtest@v1
       - uses: julia-actions/julia-processcoverage@v1
       - uses: codecov/codecov-action@v2
