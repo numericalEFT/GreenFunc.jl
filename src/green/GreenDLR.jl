@@ -70,7 +70,7 @@ end
         kwargs...
     )
     
-Create a GreenDLR struct. 
+Create a `GreenDLR` struct. 
 
 # Arguments
 - `β`: inverse temperature. Must be input by the user.

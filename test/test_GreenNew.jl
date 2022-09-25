@@ -1,22 +1,28 @@
 @testset "GreenNew" begin
-    function test_shape(N1, N2, innerstate)
+    function test_shape(N1, N2, innermesh)
         ############# basic test ################
         mesh1 = SimpleGrid.Uniform{Float64}([0.0, 1.0], N1)
         mesh2 = SimpleGrid.Uniform{Float64}([0.0, 1.0], N2)
-        g = GreenNew{Float64}(mesh1, mesh2; innerstate=innerstate)
-        if isempty(innerstate)
+        if isempty(innermesh)
+            g = GreenNew(mesh1, mesh2)
             @test length(g) == N1 * N2
         else
-            @test length(g) == N1 * N2 * reduce(*, innerstate)
+            g = GreenNew(innermesh..., mesh1, mesh2)
+            @test length(g) == N1 * N2 * reduce(*, length.(innermesh))
         end
-        @test size(g) == (innerstate..., N1, N2)
+        show(g)
+        @test size(g) == (length.(innermesh)..., N1, N2)
         @test eltype(typeof(g)) == Float64
         gc = similar(g, ComplexF64)
         @test eltype(typeof(gc)) == ComplexF64
 
         ############ broadcast test ###################
         g.data = rand(g.dims...)
-        g2 = GreenNew{Float64}(mesh1, mesh2; innerstate=innerstate, data=rand(g.dims...))
+        if isempty(innermesh)
+            g2 = GreenNew(mesh1, mesh2; data=rand(g.dims...))
+        else
+            g2 = GreenNew(innermesh..., mesh1, mesh2; data=rand(g.dims...))
+        end
 
         GreenFunc._check(g, g2) #check if the two GreenFuncs have the same shape
 
@@ -59,6 +65,6 @@
     end
 
     test_shape(5, 7, ())
-    test_shape(5, 7, (2, 3))
+    test_shape(5, 7, (1:2, 1:3))
 
 end
