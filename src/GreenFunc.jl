@@ -1,5 +1,7 @@
 module GreenFunc
 using StaticArrays, Lehmann, CompositeGrids#, BZMeshes
+using PythonCall
+gf = pyimport("triqs.gf")
 # Write your package code here.
 
 include("green/meshgrids/MeshGrids.jl")

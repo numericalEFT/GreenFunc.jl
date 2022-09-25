@@ -238,6 +238,36 @@ function _check(objL::GreenNew, objR::GreenNew)
     # @assert objL.mesh == objR.mesh "Green's function meshes are not compatible:\n $(objL.mesh)\nand\n $(objR.mesh)"
 end
 
+ """
+    <<(Obj::GreenDLR, objSrc::Py)
+    Converts the green function from triqs to GreenNew.
+"""
+    
+
+function Base.:<<(Obj::GreenNew, objSrc::Py)
+    β= pyconvert(Float64,objSrc.mesh.beta)
+    Sta_t = pyconvert(String,objSrc.mesh.statistic)
+    if (Sta_t == "Fermion")
+        stat = FERMI
+    elseif(Sta_t == "Boson")
+        stat = BOSE
+    else stat = UNKNOWN
+    end
+    if pyisinstance(objSrc.mesh,gf.meshes.MeshImTime)
+        grid_t = pyconvert(Vector,objSrc.mesh.values())
+        tgrid = GreenFunc.MeshGrids.ImTime(β,stat,grid=grid_t)
+    elseif pyisinstance(objSrc.mesh,gf.meshes.MeshImFreq)
+        grid_first_index = pyconvert(Int32,objSrc.mesh.first_index())
+        grid_last_index = pyconvert(Int32,objSrc.mesh.last_index())
+        grid_t = [grid_first_index:grid_last_index;]
+        tgrid = GreenFunc.MeshGrids.ImFreq(β,stat,grid=grid_t)
+    else
+        return error
+    end
+    tar_sh = pyconvert(Tuple,objSrc.target_shape)
+    data_t =  pyconvert(Array,objSrc.data)
+    return Obj=GreenFunc.GreenNew(tgrid,1:tar_sh[1],1:tar_sh[2],dtype=eltype(data_t),data = data_t)
+end
 # """
 #     <<(Obj::GreenDLR, objSrc::Expr)
 #     Obj << objSrc
