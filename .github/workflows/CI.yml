@@ -25,10 +25,10 @@ jobs:
           - "nightly"
         os:
           - ubuntu-latest
-        python-version: ["3.7"]
+        # python-version: ["3.7"]
         arch:
           - x64
-          - x86
+          # - x86
     steps:
       - uses: actions/checkout@v2
       - uses: julia-actions/setup-julia@v1
