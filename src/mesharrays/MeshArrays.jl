@@ -9,4 +9,22 @@ include("dense.jl")
 
 export MeshArray
 
+########## Array Interface: https://docs.julialang.org/en/v1/manual/interfaces/#man-interface-array #############
+
+"""
+    size(obj::AbstractMeshArray)
+
+Return a tuple containing the dimensions of `obj.data` (`obj.dims`).
+"""
+Base.size(obj::AbstractMeshArray) = obj.dims
+
+"""
+    eltype(obj::AbstractMeshArray)
+
+Return the type of the elements contained in `obj.data`.
+"""
+Base.eltype(::Type{AbstractMeshArray{T,N}}) where {T,N} = T
+
+
+
 end

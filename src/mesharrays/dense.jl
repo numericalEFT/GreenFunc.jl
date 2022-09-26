@@ -63,22 +63,18 @@ function MeshArray(mesh...;
     return MeshArray{dtype,N,typeof(mesh)}(mesh, data, dims)
 end
 
-########## Array Interface: https://docs.julialang.org/en/v1/manual/interfaces/#man-interface-array #############
-
-"""
-    size(obj::MeshArray)
-
-Return a tuple containing the dimensions of `obj.data` (`obj.dims`).
-"""
-Base.size(obj::MeshArray) = obj.dims
-
-"""
-    eltype(obj::MeshArray)
-
-Return the type of the elements contained in `obj.data`.
-"""
-Base.eltype(::Type{MeshArray{T,N,MT}}) where {T,N,MT} = T
-
+# somehow, the following leads to stackoverflow due to some kind of infinite loop
+# function Base.getproperty(obj::MeshArray{T,MT,N,Ninner}, sym::Symbol) where {T,MT,N,Ninner}
+#     if sym === :N
+#         return N
+#     elseif sym === :Ninner
+#         return Ninner
+#     elseif sym === :dims
+#         return obj.dims
+#     else # fallback to getfield
+#         return getfield(obj, sym)
+#     end
+# end
 
 """
     getindex(obj::MeshArray, inds...)
@@ -158,27 +154,8 @@ end
 #     return dest
 # end
 
-
-# somehow, the following leads to stackoverflow due to some kind of infinite loop
-# function Base.getproperty(obj::MeshArray{T,MT,N,Ninner}, sym::Symbol) where {T,MT,N,Ninner}
-#     if sym === :N
-#         return N
-#     elseif sym === :Ninner
-#         return Ninner
-#     elseif sym === :dims
-#         return obj.dims
-#     else # fallback to getfield
-#         return getfield(obj, sym)
-#     end
-# end
-
-"""
-    show(io::IO, obj::MeshArray)
-
-Write a text representation of the Green's function `obj` to the output stream `io`.
-"""
 function Base.show(io::IO, obj::MeshArray)
-    print(io, "Green's function with dims = $(obj.dims) and total length = $(length(obj.data))\n"
+    print(io, "Meshed array with dims = $(obj.dims) and total length = $(length(obj.data))\n"
               *
               "- Mesh: $(typeof(obj.mesh)) \n"
     )
