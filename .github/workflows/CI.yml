@@ -47,7 +47,7 @@ jobs:
             ${{ runner.os }}-
       - uses: julia-actions/julia-buildpkg@v1
       - name: Install triqs
-        run: sudo apt-get update && sudo apt-get install -y software-properties-common apt-transport-https curl ; source /etc/lsb-release ; curl -L https://users.flatironinstitute.org/~ccq/triqs3/$DISTRIB_CODENAME/public.gpg | sudo apt-key add - ; sudo add-apt-repository "deb https://users.flatironinstitute.org/~ccq/triqs3/$DISTRIB_CODENAME/ /"
+        run: sudo apt-get update && sudo apt-get install -y software-properties-common apt-transport-https curl && source /etc/lsb-release && curl -L https://users.flatironinstitute.org/~ccq/triqs3/$DISTRIB_CODENAME/public.gpg | sudo apt-key add - && sudo add-apt-repository "deb https://users.flatironinstitute.org/~ccq/triqs3/$DISTRIB_CODENAME/ /" && sudo apt-get update && sudo apt-get install -y triqs
       - name: Check triqs
         run: python3 -c "import triqs.version; print(triqs.version.version)"
       - uses: julia-actions/julia-runtest@v1
