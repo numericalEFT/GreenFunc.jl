@@ -1,5 +1,5 @@
 """
-    Base.:<<(objL::ManifoldArray, objR::ManifoldArray)
+    Base.:<<(objL::MeshArray, objR::MeshArray)
 
 DLR Fourier transform of functions that has exactly one TemporalGrid(ImTime, ImFreq or DLRFreq) among the meshes. 
 If objL and objR have identical TemporalGrid, objL<<objR assign objR to objL.
@@ -8,7 +8,7 @@ If objL is in DLR space, objL<<objR calculates the DLR spectral density of data 
 if objR is in DLR space, objL<<objR calculates the corresponding data from the DLR spectral density in objR.
 """
 
-function Base.:<<(objL::ManifoldArray, objR::ManifoldArray)
+function Base.:<<(objL::MeshArray, objR::MeshArray)
     # init version of <<
     # more general version needed
     axes = []
@@ -52,14 +52,14 @@ end
 
 
 """
-    function dlr_to_imtime(obj::ManifoldArray; kwargs...)
+    function dlr_to_imtime(obj::MeshArray; kwargs...)
 
 Convert sepctral density in DLR space to imaginary time space for function with exactly one DLRFreq grid among meshes.
 #Arguements
 #- 'obj': Function in DLR space
 #- 'targetGrid': The imaginary time grid which the function transforms into. Default value is the imaginary time space from the DLR grid in obj.
 """
-function dlr_to_imtime(obj::ManifoldArray; kwargs...)
+function dlr_to_imtime(obj::MeshArray; kwargs...)
     # init version of <<
     # more general version needed
     axes = []
@@ -81,11 +81,11 @@ function dlr_to_imtime(obj::ManifoldArray; kwargs...)
     mesh_copy = Tuple(i == axes[1] ? tgrid : obj.mesh[i] for i in 1:length(obj.dims))
     data = dlr2tau(mesh.dlr, obj.data, tgrid.grid; axis=axes[1])
     datatype = typeof(data[1])
-    return ManifoldArray(mesh_copy...; dtype=datatype, data=data)
+    return MeshArray(mesh_copy...; dtype=datatype, data=data)
 end
 
 """
-    function dlr_to_imfreq(obj::ManifoldArray; kwargs...)
+    function dlr_to_imfreq(obj::MeshArray; kwargs...)
 
 Convert sepctral density in DLR space to matsubara frequency space for function with exactly one DLRFreq grid among meshes.
 #Arguements
@@ -93,7 +93,7 @@ Convert sepctral density in DLR space to matsubara frequency space for function 
 #- 'targetGrid': The matsubara frequency grid which the function transforms into. Default value is the imaginary time space from the DLR grid in obj.
 """
 
-function dlr_to_imfreq(obj::ManifoldArray; kwargs...)
+function dlr_to_imfreq(obj::MeshArray; kwargs...)
     # init version of <<
     # more general version needed
     axes = []
@@ -114,11 +114,11 @@ function dlr_to_imfreq(obj::ManifoldArray; kwargs...)
     mesh_copy = Tuple(i == axes[1] ? tgrid : obj.mesh[i] for i in 1:length(obj.dims))
     data = dlr2matfreq(mesh.dlr, obj.data, tgrid.grid; axis=axes[1])
     datatype = typeof(data[1])
-    return ManifoldArray(mesh_copy...; dtype=datatype, data=data)
+    return MeshArray(mesh_copy...; dtype=datatype, data=data)
 end
 
 """
-    function to_dlr(obj::ManifoldArray; kwargs...)
+    function to_dlr(obj::MeshArray; kwargs...)
 
 Calculate the sepctral density of a function in imaginary time/matsubara frequency space, with exactly one DLRFreq grid among meshes.
 #Arguements
@@ -126,7 +126,7 @@ Calculate the sepctral density of a function in imaginary time/matsubara frequen
 #- 'targetGrid': The DLRFreq grid which the function transforms into. Default value is a DLRFreq gridwith the same beta and statistics of the temporal grid in obj, with default rtol=1e-12 and Euv = 1000/beta. 
 """
 
-function to_dlr(obj::ManifoldArray; kwargs...)
+function to_dlr(obj::MeshArray; kwargs...)
     # init version of <<
     # more general version needed
     axes = []
@@ -152,12 +152,12 @@ function to_dlr(obj::ManifoldArray; kwargs...)
         data = tau2dlr(tgrid.dlr, obj.data, mesh.grid; axis=axes[1])
     end
     datatype = typeof(data[1])
-    return ManifoldArray(mesh_copy...; dtype=datatype, data=data)
+    return MeshArray(mesh_copy...; dtype=datatype, data=data)
 end
 
 # """
 #     <<(Obj::GreenDLR, objSrc::Py)
-#     Converts the green function from triqs to ManifoldArray.
+#     Converts the green function from triqs to MeshArray.
 # """
 
 # """
@@ -208,7 +208,7 @@ end
 
 # Return the single-particle density matrix of the Green's function `obj`.
 # """
-# function density(obj::ManifoldArray; kwargs...)
+# function density(obj::MeshArray; kwargs...)
 #     G_ins = toTau(obj, [obj.β,]).data .* (-1)
 #     return selectdim(G_ins, ndims(G_ins), 1)
 # end
@@ -255,6 +255,6 @@ end
 
 #         wrapped_aux.set_from_gf_data_mul_LR(self.data, L, G.data, R)
 # """
-# function from_L_G_R(self,L,G::ManifoldArray,R)
+# function from_L_G_R(self,L,G::MeshArray,R)
 #     return 1
 # end

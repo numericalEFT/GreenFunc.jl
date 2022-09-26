@@ -11,7 +11,7 @@ using PythonCall
 
     ############ test GreenNew constructor #########
     G_w = gf.GfImFreq(mesh=miw, data=np.random.rand(lj, 2, 3)) #target_shape = [2, 3] --> innerstate = [3, 2]
-    gw = ManifoldArray(G_w)
+    gw = MeshArray(G_w)
     @test size(gw) == (3, 2, lj)
     i1, i2, t = 1, 2, 3
     @test gw[i1, i2, t] ≈ pyconvert(Float64, G_w.data[t-1, i2-1, i1-1])
@@ -29,7 +29,7 @@ using PythonCall
 
     ############ test GreenNew constructor #############
     G_t = gf.GfImTime(mesh=mt, data=np.random.rand(lj, 2, 3)) #target_shape = [2, 3] --> innerstate = [3, 2]
-    gt = ManifoldArray(G_t)
+    gt = MeshArray(G_t)
     @test size(gt) == (3, 2, lj)
     i1, i2, t = 1, 2, 3
     @test gt[i1, i2, t] ≈ pyconvert(Float64, G_t.data[t-1, i2-1, i1-1])

@@ -21,7 +21,7 @@
 # - `innerstate` (Tuple): innerstate saves the discrete inner dgrees of freedom of Green's function. 
 # - `data` (Array{T,Ndata}): the data of the Green's function.
 # """
-mutable struct ManifoldArray{T,N,MT} <: AbstractManifoldArray{T,N}
+mutable struct MeshArray{T,N,MT} <: AbstractMeshArray{T,N}
     #########   Mesh   ##############
     mesh::MT
     data::Array{T,N}
@@ -29,7 +29,7 @@ mutable struct ManifoldArray{T,N,MT} <: AbstractManifoldArray{T,N}
 end
 
 """
-    function ManifoldArray(mesh...;
+    function MeshArray(mesh...;
         innerstate::Union{AbstractVector{Int},Tuple{Vararg{Int}}}=(),
         data::Union{Nothing,AbstractArray}=nothing) where {T}
     
@@ -40,7 +40,7 @@ Create a Green struct. Its memeber `dims` is setted as the tuple consisting of t
 - `dtype`: data type of Green's function's value.
 - `data`: the data of the Green's function. By default, `data` is constructed to an unintialized Array with the `dims` size containing elements of `dtype`.
 """
-function ManifoldArray(mesh...;
+function MeshArray(mesh...;
     dtype=Float64,
     data::Union{Nothing,AbstractArray}=nothing)
 
@@ -54,83 +54,83 @@ function ManifoldArray(mesh...;
     else
         data = Array{dtype,N}(undef, dims...)
     end
-    return ManifoldArray{dtype,N,typeof(mesh)}(mesh, data, dims)
+    return MeshArray{dtype,N,typeof(mesh)}(mesh, data, dims)
 end
 
 ########## Array Interface: https://docs.julialang.org/en/v1/manual/interfaces/#man-interface-array #############
 
 """
-    size(obj::ManifoldArray)
+    size(obj::MeshArray)
 
 Return a tuple containing the dimensions of `obj.data` (`obj.dims`).
 """
-Base.size(obj::ManifoldArray) = obj.dims
+Base.size(obj::MeshArray) = obj.dims
 
 """
-    eltype(obj::ManifoldArray)
+    eltype(obj::MeshArray)
 
 Return the type of the elements contained in `obj.data`.
 """
-Base.eltype(::Type{ManifoldArray{T,N,MT}}) where {T,N,MT} = T
+Base.eltype(::Type{MeshArray{T,N,MT}}) where {T,N,MT} = T
 
 
 """
-    getindex(obj::ManifoldArray, inds...)
+    getindex(obj::MeshArray, inds...)
 
 Return a subset of `obj`'s data as specified by `inds`, where each `inds` may be, for example, an Int, an AbstractRange, or a Vector. 
 """
-Base.getindex(obj::ManifoldArray{T,N,MT}, inds::Vararg{Int,N}) where {T,MT,N} = Base.getindex(obj.data, inds...)
-# Base.getindex(obj::ManifoldArray, I::Int) = Base.getindex(obj.data, I)
+Base.getindex(obj::MeshArray{T,N,MT}, inds::Vararg{Int,N}) where {T,MT,N} = Base.getindex(obj.data, inds...)
+# Base.getindex(obj::MeshArray, I::Int) = Base.getindex(obj.data, I)
 
 """
-    setindex!(obj::ManifoldArray, v, inds...)
+    setindex!(obj::MeshArray, v, inds...)
     obj[inds...] = v
 
 Store values from array `v` within some subset of `obj.data` as specified by `inds`.
 """
-Base.setindex!(obj::ManifoldArray{T,N,MT}, v, inds::Vararg{Int,N}) where {T,MT,N} = Base.setindex!(obj.data, v, inds...)
-# Base.setindex!(obj::ManifoldArray, v, I::Int) = Base.setindex!(obj.data, v, I)
+Base.setindex!(obj::MeshArray{T,N,MT}, v, inds::Vararg{Int,N}) where {T,MT,N} = Base.setindex!(obj.data, v, inds...)
+# Base.setindex!(obj::MeshArray, v, I::Int) = Base.setindex!(obj.data, v, I)
 
 
 
 
-# IndexStyle(::Type{<:ManifoldArray}) = IndexCartesian() # by default, it is IndexCartesian
+# IndexStyle(::Type{<:MeshArray}) = IndexCartesian() # by default, it is IndexCartesian
 
 """
-    Base.similar(obj::ManifoldArray{T,N,MT}, ::Type{S}) where {T,MT,N,S}
-    Base.similar(obj::ManifoldArray{T,N,MT}) where {T,MT,N} = Base.similar(obj, T)
+    Base.similar(obj::MeshArray{T,N,MT}, ::Type{S}) where {T,MT,N,S}
+    Base.similar(obj::MeshArray{T,N,MT}) where {T,MT,N} = Base.similar(obj, T)
 
 # Return type:
-- `Base.similar(obj::ManifoldArray)`: Return a new ManifoldArray with the same meshes, and the uninitialized data of the same type as `obj.data`.
-- `Base.similar(obj::ManifoldArray, ::Type{S})`: Return a new ManifoldArray with the same meshes, but with the uninitialized data of type `S`.
+- `Base.similar(obj::MeshArray)`: Return a new MeshArray with the same meshes, and the uninitialized data of the same type as `obj.data`.
+- `Base.similar(obj::MeshArray, ::Type{S})`: Return a new MeshArray with the same meshes, but with the uninitialized data of type `S`.
 """
-function Base.similar(obj::ManifoldArray{T,N,MT}, ::Type{S}) where {T,MT,N,S}
-    return ManifoldArray(obj.mesh...; dtype=S, data=similar(obj.data, S))
+function Base.similar(obj::MeshArray{T,N,MT}, ::Type{S}) where {T,MT,N,S}
+    return MeshArray(obj.mesh...; dtype=S, data=similar(obj.data, S))
 end
-Base.similar(obj::ManifoldArray{T,N,MT}) where {T,MT,N} = Base.similar(obj, T)
-#By default, the following functions will all call Base.similar(obj::ManifoldArray, ::Type{S}, inds) as explained in https://docs.julialang.org/en/v1/manual/interfaces/#man-interface-array
-#`Base.similar(obj::ManifoldArray, ::Type{S}, inds)`: Return a slice of obj.data.
+Base.similar(obj::MeshArray{T,N,MT}) where {T,MT,N} = Base.similar(obj, T)
+#By default, the following functions will all call Base.similar(obj::MeshArray, ::Type{S}, inds) as explained in https://docs.julialang.org/en/v1/manual/interfaces/#man-interface-array
+#`Base.similar(obj::MeshArray, ::Type{S}, inds)`: Return a slice of obj.data.
 #However, we don't want that since slice of GreeNew itself is not well defined with meshes.
 
 ################################ broadcast interface ###############################################
-Base.BroadcastStyle(::Type{<:ManifoldArray}) = Broadcast.ArrayStyle{ManifoldArray}()
+Base.BroadcastStyle(::Type{<:MeshArray}) = Broadcast.ArrayStyle{MeshArray}()
 
-function Base.similar(bc::Base.Broadcast.Broadcasted{Broadcast.ArrayStyle{ManifoldArray}}, ::Type{ElType}) where {ElType}
+function Base.similar(bc::Base.Broadcast.Broadcasted{Broadcast.ArrayStyle{MeshArray}}, ::Type{ElType}) where {ElType}
     # println("get called")
-    # Scan the inputs for the ManifoldArray:
+    # Scan the inputs for the MeshArray:
     A = find_gf(bc)
     # Use other fields of A to create the output
-    ManifoldArray(A.mesh, similar(Array{ElType}, axes(bc)), A.dims)
+    MeshArray(A.mesh, similar(Array{ElType}, axes(bc)), A.dims)
 end
 
 find_gf(bc::Broadcast.Broadcasted) = find_gf(bc.args)
 find_gf(args::Tuple) = find_gf(find_gf(args[1]), Base.tail(args))
 find_gf(x) = x
 find_gf(::Tuple{}) = nothing
-find_gf(a::ManifoldArray, rest) = a
+find_gf(a::MeshArray, rest) = a
 find_gf(::Any, rest) = find_gf(rest)
 
-function Base.copyto!(dest, bc::Base.Broadcast.Broadcasted{ManifoldArray{T,N,MT}}) where {T,MT,N}
+function Base.copyto!(dest, bc::Base.Broadcast.Broadcasted{MeshArray{T,N,MT}}) where {T,MT,N}
     # without this function, inplace operation like g1 .+= g2 will make a lot of allocations
     # Please refer to the following posts for more details:
     # 1. manual on the interface: https://docs.julialang.org/en/v1/manual/interfaces/#extending-in-place-broadcast-2
@@ -146,7 +146,7 @@ function Base.copyto!(dest, bc::Base.Broadcast.Broadcasted{ManifoldArray{T,N,MT}
 end
 
 ########### alternative approach ######################
-# function Base.copyto!(dest::ManifoldArray{T, N, MT}, bc::Base.Broadcast.Broadcasted{Nothing}) where {T,MT,N}
+# function Base.copyto!(dest::MeshArray{T, N, MT}, bc::Base.Broadcast.Broadcasted{Nothing}) where {T,MT,N}
 #     _bcf = Base.Broadcast.flatten(bc)
 #     bcf = Base.Broadcast.preprocess(dest, _bcf)
 #     for I in CartesianIndices(dest)
@@ -157,7 +157,7 @@ end
 
 
 # somehow, the following leads to stackoverflow due to some kind of infinite loop
-# function Base.getproperty(obj::ManifoldArray{T,MT,N,Ninner}, sym::Symbol) where {T,MT,N,Ninner}
+# function Base.getproperty(obj::MeshArray{T,MT,N,Ninner}, sym::Symbol) where {T,MT,N,Ninner}
 #     if sym === :N
 #         return N
 #     elseif sym === :Ninner
@@ -170,11 +170,11 @@ end
 # end
 
 """
-    show(io::IO, obj::ManifoldArray)
+    show(io::IO, obj::MeshArray)
 
 Write a text representation of the Green's function `obj` to the output stream `io`.
 """
-function Base.show(io::IO, obj::ManifoldArray)
+function Base.show(io::IO, obj::MeshArray)
     print(io, "Green's function with dims = $(obj.dims) and total length = $(length(obj.data))\n"
               *
               "- Mesh: $(typeof(obj.mesh)) \n"
@@ -182,11 +182,11 @@ function Base.show(io::IO, obj::ManifoldArray)
 end
 
 """
-    function rank(obj::ManifoldArray{T,N,MT})
+    function rank(obj::MeshArray{T,N,MT})
 
 Return the dimension of `obj.data` (`N`).
 """
-rank(::Type{ManifoldArray{T,N,MT}}) where {T,MT,N} = N
+rank(::Type{MeshArray{T,N,MT}}) where {T,MT,N} = N
 
 
 #TODO:Following triqs design, we want the following two things:
@@ -221,11 +221,11 @@ rank(::Type{ManifoldArray{T,N,MT}}) where {T,MT,N} = N
 # """
 
 """
-    function _check(objL::ManifoldArray, objR::ManifoldArray)
+    function _check(objL::MeshArray, objR::MeshArray)
 
 Check if the Green's functions `objL` and `objR` are on the same meshes. Throw an AssertionError if any check is false.
 """
-function _check(objL::ManifoldArray, objR::ManifoldArray)
+function _check(objL::MeshArray, objR::MeshArray)
     # KUN: check --> __check
     # first:  check typeof(objL.tgrid)==typeof(objR.tgrid) 
     # second: check length(objL.tgrid)

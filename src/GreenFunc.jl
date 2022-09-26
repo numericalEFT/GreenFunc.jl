@@ -24,13 +24,14 @@ export GreenSym2DLR, dynamic, instant
 # export MeshProduct
 # export locate, volume
 
-include("manifold_array/ManifoldArrays.jl")
-using .ManifoldArrays
-export ManifoldArrays, ManifoldArray, dlr_to_imfreq, to_dlr, dlr_to_imtime
+include("mesharrays/MeshArrays.jl")
+using .MeshArrays
+export MeshArrays, MeshArray
 
 include("triqs/Triqs.jl")
 export Triqs
 
 include("green/transform.jl")
+export dlr_to_imfreq, to_dlr, dlr_to_imtime
 
 end

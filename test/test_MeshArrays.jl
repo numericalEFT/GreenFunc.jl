@@ -1,15 +1,15 @@
 SemiCircle(dlr, grid, type) = Sample.SemiCircle(dlr.Euv, dlr.β, dlr.isFermi, grid, type, dlr.symmetry; rtol=dlr.rtol, degree=24, regularized=true)
 
-@testset "ManifoldArray" begin
+@testset "MeshArray" begin
     function test_shape(N1, N2, innermesh)
         ############# basic test ################
         mesh1 = SimpleGrid.Uniform{Float64}([0.0, 1.0], N1)
         mesh2 = SimpleGrid.Uniform{Float64}([0.0, 1.0], N2)
         if isempty(innermesh)
-            g = ManifoldArray(mesh1, mesh2)
+            g = MeshArray(mesh1, mesh2)
             @test length(g) == N1 * N2
         else
-            g = ManifoldArray(innermesh..., mesh1, mesh2)
+            g = MeshArray(innermesh..., mesh1, mesh2)
             @test length(g) == N1 * N2 * reduce(*, length.(innermesh))
         end
         show(g)
@@ -21,12 +21,12 @@ SemiCircle(dlr, grid, type) = Sample.SemiCircle(dlr.Euv, dlr.β, dlr.isFermi, gr
         ############ broadcast test ###################
         g.data = rand(g.dims...)
         if isempty(innermesh)
-            g2 = ManifoldArray(mesh1, mesh2; data=rand(g.dims...))
+            g2 = MeshArray(mesh1, mesh2; data=rand(g.dims...))
         else
-            g2 = ManifoldArray(innermesh..., mesh1, mesh2; data=rand(g.dims...))
+            g2 = MeshArray(innermesh..., mesh1, mesh2; data=rand(g.dims...))
         end
 
-        ManifoldArrays._check(g, g2) #check if the two GreenFuncs have the same shape
+        MeshArrays._check(g, g2) #check if the two GreenFuncs have the same shape
 
         # sum/minus/mul/div
         g3 = g .+ g2
@@ -72,9 +72,9 @@ SemiCircle(dlr, grid, type) = Sample.SemiCircle(dlr.Euv, dlr.β, dlr.isFermi, gr
         mesh1 = SimpleGrid.Uniform{Float64}([0.0, 1.0], N1)
         mesh2 = MeshGrids.DLRFreq(beta, statistics)
         if isempty(innermesh)
-            g = ManifoldArray(mesh1, mesh2)
+            g = MeshArray(mesh1, mesh2)
         else
-            g = ManifoldArray(innermesh..., mesh1, mesh2)
+            g = MeshArray(innermesh..., mesh1, mesh2)
         end
         g_freq = dlr_to_imfreq(g)
         Gτ = SemiCircle(mesh2.dlr, mesh2.dlr.τ, :τ)
