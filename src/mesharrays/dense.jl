@@ -1,26 +1,31 @@
-# """
-#     mutable struct GreenDLR{T,Domain<:TimeDomain,TGT,MT,Ndata}
+"""
+    mutable struct MeshArray{T,N,MT} <: AbstractMeshArray{T,N}
 
-# General Green's function on a multi-dimensional mesh plus one in-built Discrete Lehmann Representation.
+Multi-dimensional array that is defined on a mesh. 
+The mesh is a tuple of meshgrid objects. 
+The mesh is stored in the field `mesh` and the data is stored in the field `data`. 
 
-# # Parameters:
-# - `T`: type of data
-# - `Domain`: type of time domain, `Domain`<:`TimeDomain`.
-# - `TGT`: type of time grid
-# - `MT`: type of mesh
-# - `N`: number of internal degrees of freedom
-# - `Ndata`: rank of Green's function data, which always equals to N+2, 2 stands for the mesh and the extra dimension that has built-in DLR grid.
+# Parameters:
+- `T`: type of data
+- `MT`: type of mesh, e.g., Tuple{MeshType1, MeshType2, ...}
+- `N`: number of dimensions
 
-# # Members:
-# - `DLR`: built-in DLR grid. Only one-dimensional DLR is available currently.
-# - `tgrid` (TGT): the imaginary-time or Matsubara-frequency grid of dimension with built in DLR . If not provided by user, the optimized grid from DLR is used.
-# - `mesh` (MT): the mesh is a direct product of grids of all other continuous degrees of freedom of Green's function, other than the one with DLR. The mesh has to support all standard Base functions of AbstractArray, plus the following two:
-#     - locate(`mesh`, value): find the index of the closest grid point for given value;
-#     - volume(`mesh`, index): find the volume of grid space near the point at griven index.
-#     - volume(`mesh`, gridvalue): locate the corresponding index of a given value and than find the volume of grid space. 
-# - `innerstate` (Tuple): innerstate saves the discrete inner dgrees of freedom of Green's function. 
-# - `data` (Array{T,Ndata}): the data of the Green's function.
-# """
+# Members:
+- `mesh` (MT): the mesh is a tuple of meshes.  
+   The mesh should be an iterable object that contains an ordered list of grid points. 
+   Examples are the 
+   1. Meshes defined in the [`MeshGrids`](@ref) module.
+   2. UnitRange such as `1:10`, etc.
+   2. Product of meshes [`MeshProduct`](@ref) defined in the [`MeshGrids`](@ref) module.
+
+   If a mesh is defined on a continuous manifold and supports the following methods, then one can perform interpolation, derivatives, etc. on the mesh:
+    - `locate(mesh, value)`: find the index of the closest grid point for given value;
+    - `volume(mesh, index)`: find the volume of grid space near the point at griven index.
+    - `volume(mesh, gridpoint)`: locate the corresponding index of a given grid point and than find the volume spanned by the grid point. 
+
+- `data`: Array{T,N}: the data.
+- `dims`: dimension of the data
+"""
 mutable struct MeshArray{T,N,MT} <: AbstractMeshArray{T,N}
     #########   Mesh   ##############
     mesh::MT
@@ -36,7 +41,8 @@ end
 Create a Green struct. Its memeber `dims` is setted as the tuple consisting of the length of all meshes.
 
 # Arguments
-- `mesh`: meshes of Green's function. Mesh could be any iterable object, examples are vector, tuple, array, number, UnitRange (say, 1:5).
+- `mesh`: meshes of Green's function. See the docs of [`MeshArray`](@ref) for more details.
+   Mesh could be any iterable object, examples are vector, tuple, array, number, UnitRange (say, 1:5).
 - `dtype`: data type of Green's function's value.
 - `data`: the data of the Green's function. By default, `data` is constructed to an unintialized Array with the `dims` size containing elements of `dtype`.
 """
@@ -90,9 +96,6 @@ Store values from array `v` within some subset of `obj.data` as specified by `in
 """
 Base.setindex!(obj::MeshArray{T,N,MT}, v, inds::Vararg{Int,N}) where {T,MT,N} = Base.setindex!(obj.data, v, inds...)
 # Base.setindex!(obj::MeshArray, v, I::Int) = Base.setindex!(obj.data, v, I)
-
-
-
 
 # IndexStyle(::Type{<:MeshArray}) = IndexCartesian() # by default, it is IndexCartesian
 
