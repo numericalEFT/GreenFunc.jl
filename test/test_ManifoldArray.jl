@@ -12,6 +12,7 @@ SemiCircle(dlr, grid, type) = Sample.SemiCircle(dlr.Euv, dlr.β, dlr.isFermi, gr
             g = ManifoldArray(innermesh..., mesh1, mesh2)
             @test length(g) == N1 * N2 * reduce(*, length.(innermesh))
         end
+        show(g)
         @test size(g) == (length.(innermesh)..., N1, N2)
         @test eltype(typeof(g)) == Float64
         gc = similar(g, ComplexF64)

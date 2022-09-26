@@ -27,4 +27,7 @@ export GreenSym2DLR, dynamic, instant
 include("green/ManifoldArray.jl")
 export ManifoldArray, dlr_to_imfreq, to_dlr, dlr_to_imtime
 
+include("triqs/Triqs.jl")
+export Triqs
+
 end
