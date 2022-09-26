@@ -236,6 +236,11 @@ function _check(objL::GreenNew, objR::GreenNew)
     # @assert objL.mesh == objR.mesh "Green's function meshes are not compatible:\n $(objL.mesh)\nand\n $(objR.mesh)"
 end
 
+ """
+    <<(Obj::GreenDLR, objSrc::Py)
+    Converts the green function from triqs to GreenNew.
+"""
+    
 # """
 #     <<(Obj::GreenDLR, objSrc::Expr)
 #     Obj << objSrc

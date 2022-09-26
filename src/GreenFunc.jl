@@ -27,4 +27,7 @@ export GreenSym2DLR, dynamic, instant
 include("green/GreenNew.jl")
 export GreenNew
 
+include("triqs/Triqs.jl")
+export Triqs
+
 end
