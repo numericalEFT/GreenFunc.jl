@@ -194,25 +194,7 @@ function to_dlr(obj::MeshArray{T,N,MT}; dim::Union{Nothing,Int}=nothing, rtol=1e
     end
 end
 
-
-# """
-#     <<(Obj::GreenDLR, objSrc::Py)
-#     Converts the green function from triqs to MeshArray.
-# """
-
-# """
-#     <<(Obj::GreenDLR, objSrc::Expr)
-#     Obj << objSrc
-
-# Initiate the Green's function `Obj` with the given function expression `objSrc`.
-# TODO: Add other behaviors including:
-# 1. Convert other type of GreenFunc to GreenDLR
-# 2. Assign a GreenDLR to another GreenDLR
-# 3. Convert triqs Green's function to GreenDLR
-# 4. First convert triqs object to triqs green's function, than to GreenDLR
-# """
-# function Base.:<<(Obj::GreenDLR, objSrc::Expr)
-#     # init version of <<
+# function Base.:<<(Obj::MeshArray, objSrc::Expr)
 #     # more general version needed
 #     for (id, d) in enumerate(Obj)
 #         inds = ind2sub_gen(size(Obj), id)
@@ -244,7 +226,6 @@ end
 
 #     return nothing
 # end
-
 
 # Return the single-particle density matrix of the Green's function `obj`.
 # """
