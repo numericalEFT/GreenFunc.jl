@@ -40,6 +40,7 @@ Create a `ImFreq` struct.
 function ImFreq(β, statistics::Statistics=UNKNOWN;
     dtype=Float64,
     Euv=1000 / β,
+    rtol=1e-12,
     grid::Union{AbstractGrid,AbstractVector,Nothing}=nothing
 )
     if isnothing(grid)
