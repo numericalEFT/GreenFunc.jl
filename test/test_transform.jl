@@ -6,33 +6,33 @@ SemiCircle(dlr, grid, type) = Sample.SemiCircle(dlr.Euv, dlr.β, dlr.isFermi, gr
         mesh2 = MeshGrids.DLRFreq(beta, statistics)
         g = MeshArray(mesh1, mesh2; data=zeros(N1, length(mesh2)))
 
-        g_freq = to_imfreq(g)
+        g_freq = dlr_to_imfreq(g)
         Gτ = SemiCircle(mesh2.dlr, mesh2.dlr.τ, :τ)
         Gn = SemiCircle(mesh2.dlr, mesh2.dlr.n, :n)
         # iterate over the last dimension of g_freq.data
         for (ni, n) in enumerate(mesh2.dlr.n)
             g_freq.data[:, ni] .= Gn[ni]
         end
-        g_dlr = to_dlr(g_freq)
+        g_dlr = imfreq_to_dlr(g_freq)
         rtol = mesh2.dlr.rtol
 
-        g_time = to_imtime(g_dlr)
+        g_time = dlr_to_imtime(g_dlr)
         err = maximum(abs.(g_time.data[1, :] .- Gτ))
         printstyled("test dlr_to_imtime dlr->τ $err\n", color=:white)
 
         @test err < 50 * rtol
-        g_freq1 = to_imfreq(g_dlr)
+        g_freq1 = dlr_to_imfreq(g_dlr)
         err = maximum(abs.(g_freq1.data[1, :] .- Gn))
         printstyled("test dlr_to_imfreq $err\n", color=:white)
         @test err < 50 * rtol
 
         ########### test pipe operation #############
-        g_freq2 = g_freq |> to_dlr |> to_imfreq
+        g_freq2 = g_freq |> to_dlr |> dlr_to_imfreq
         err = maximum(abs.(g_freq2.data[1, :] .- Gn))
         printstyled("test dlr_to_imfreq with pipe $err\n", color=:white)
         @test err < 50 * rtol
 
-        g_time2 = g_freq |> to_dlr |> to_imtime
+        g_time2 = g_freq |> to_dlr |> dlr_to_imtime
         err = maximum(abs.(g_time2.data[1, :] .- Gτ))
         printstyled("test dlr_to_imtime with pipe $err\n", color=:white)
         @test err < 50 * rtol
