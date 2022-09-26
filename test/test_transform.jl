@@ -1,4 +1,4 @@
-SemiCircle(dlr, grid, type) = Sample.SemiCircle(dlr.Euv, dlr.β, dlr.isFermi, grid, type, dlr.symmetry; rtol=dlr.rtol, degree=24, regularized=true)
+SemiCircle(dlr, grid, type) = Sample.SemiCircle(dlr.Euv, dlr.β, dlr.isFermi, grid, type, dlr.symmetry; rtol=dlr.rtol, degree=24, regularized=false)
 
 @testset "Transform" begin
     function test_fourier(N1, beta, statistics)
@@ -9,10 +9,16 @@ SemiCircle(dlr, grid, type) = Sample.SemiCircle(dlr.Euv, dlr.β, dlr.isFermi, gr
         g_freq = dlr_to_imfreq(g)
         Gτ = SemiCircle(mesh2.dlr, mesh2.dlr.τ, :τ)
         Gn = SemiCircle(mesh2.dlr, mesh2.dlr.n, :n)
+
         # iterate over the last dimension of g_freq.data
-        for (ni, n) in enumerate(mesh2.dlr.n)
-            g_freq.data[:, ni] .= Gn[ni]
-        end
+        # for (ni, n) in enumerate(mesh2.dlr.n)
+        #     g_freq.data[:, ni] .= Gn[ni]
+        # end
+
+        GreenFunc.semicircle!(g_freq)
+
+        @test g_freq[1, :] ≈ Gn
+
         g_dlr = imfreq_to_dlr(g_freq)
         rtol = mesh2.dlr.rtol
 

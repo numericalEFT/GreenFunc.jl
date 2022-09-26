@@ -35,4 +35,6 @@ include("green/transform.jl")
 export dlr_to_imfreq, dlr_to_imtime
 export imfreq_to_dlr, imtime_to_dlr, to_dlr
 
+include("green/testcase.jl")
+
 end
