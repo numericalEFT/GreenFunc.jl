@@ -26,8 +26,8 @@ isiterable(::Type{T}) where {T} = hasmethod(iterate, (T,))
 # - `innerstate` (Tuple): innerstate saves the discrete inner dgrees of freedom of Green's function. 
 # - `data` (Array{T,Ndata}): the data of the Green's function.
 # """
-# mutable struct GreenNew{T,MT,N} <: AbstractGreen{T,N}
-mutable struct GreenNew{T,N,MT} <: AbstractArray{T,N}
+# mutable struct ManifoldArray{T,MT,N} <: AbstractGreen{T,N}
+mutable struct ManifoldArray{T,N,MT} <: AbstractArray{T,N}
     #########   Mesh   ##############
     mesh::MT
     data::Array{T,N}
@@ -35,7 +35,7 @@ mutable struct GreenNew{T,N,MT} <: AbstractArray{T,N}
 end
 
 """
-    function GreenNew{T}(mesh...;
+    function ManifoldArray{T}(mesh...;
         innerstate::Union{AbstractVector{Int},Tuple{Vararg{Int}}}=(),
         data::Union{Nothing,AbstractArray}=nothing) where {T}
     
@@ -47,7 +47,7 @@ Create a Green struct.
 - `innerstate`: innerstate saves the discrete inner dgrees of freedom of Green's function. By default, `innerstate` = (1,).
 - `data`: the data of the Green's function. By default, `data` = zeros(`datatype`, `Ndata`).
 """
-function GreenNew(mesh...;
+function ManifoldArray(mesh...;
     dtype=Float64,
     data::Union{Nothing,AbstractArray}=nothing)
 
@@ -55,69 +55,67 @@ function GreenNew(mesh...;
 
     N = length(mesh)
     dims = tuple([length(v) for v in mesh]...)
-
     if isnothing(data) == false
         @assert length(size(data)) == N
     else
         data = Array{dtype,N}(undef, dims...)
     end
-
-    return GreenNew{dtype,N,typeof(mesh)}(mesh, data, dims)
+    return ManifoldArray{dtype,N,typeof(mesh)}(mesh, data, dims)
 end
 
 ########## Array Interface: https://docs.julialang.org/en/v1/manual/interfaces/#man-interface-array #############
-Base.size(obj::GreenNew) = obj.dims
+Base.size(obj::ManifoldArray) = obj.dims
 
-Base.eltype(::Type{GreenNew{T,N,MT}}) where {T,N,MT} = T
+Base.eltype(::Type{ManifoldArray{T,N,MT}}) where {T,N,MT} = T
 
 """
     getindex(obj::GreenDLR, inds...)
 
 Return a subset of `obj`'s data as specified by `inds`, where each `inds` may be, for example, an Int, an AbstractRange, or a Vector. 
 """
-Base.getindex(obj::GreenNew{T,N,MT}, inds::Vararg{Int,N}) where {T,MT,N} = Base.getindex(obj.data, inds...)
-# Base.getindex(obj::GreenNew, I::Int) = Base.getindex(obj.data, I)
-Base.setindex!(obj::GreenNew{T,N,MT}, v, inds::Vararg{Int,N}) where {T,MT,N} = Base.setindex!(obj.data, v, inds...)
-# Base.setindex!(obj::GreenNew, v, I::Int) = Base.setindex!(obj.data, v, I)
+Base.getindex(obj::ManifoldArray{T,N,MT}, inds::Vararg{Int,N}) where {T,MT,N} = Base.getindex(obj.data, inds...)
+# Base.getindex(obj::ManifoldArray, I::Int) = Base.getindex(obj.data, I)
+Base.setindex!(obj::ManifoldArray{T,N,MT}, v, inds::Vararg{Int,N}) where {T,MT,N} = Base.setindex!(obj.data, v, inds...)
+# Base.setindex!(obj::ManifoldArray, v, I::Int) = Base.setindex!(obj.data, v, I)
 
-# IndexStyle(::Type{<:GreenNew}) = IndexCartesian() # by default, it is IndexCartesian
+# IndexStyle(::Type{<:ManifoldArray}) = IndexCartesian() # by default, it is IndexCartesian
 
 """
-    Base.similar(obj::GreenNew{T,MT,N,Ninner}, ::Type{S}) where {T,MT,N,Ninner,S}
-    Base.similar(obj::GreenNew{T,MT,N,Ninner}) where {T,MT,N,Ninner} = Base.similar(obj, T)
+    Base.similar(obj::ManifoldArray{T,MT,N,Ninner}, ::Type{S}) where {T,MT,N,Ninner,S}
+    Base.similar(obj::ManifoldArray{T,MT,N,Ninner}) where {T,MT,N,Ninner} = Base.similar(obj, T)
 
 # Return type:
-- `Base.similar(obj::GreenNew)`: Return a new GreenNew with the same mesh and innerstate, and a new data of the same type as obj.data.
-- `Base.similar(obj::GreenNew, ::Type{S})`: Return a new GreenNew with the same mesh and innerstate, but with a new data of type S.
-- `Base.similar(obj::GreenNew, ::Type{S}, inds)`: Return a slice of obj.data. (slice of GreeNew itself is not well defined, because it has meshes) 
+- `Base.similar(obj::ManifoldArray)`: Return a new ManifoldArray with the same mesh and innerstate, and a new data of the same type as obj.data.
+- `Base.similar(obj::ManifoldArray, ::Type{S})`: Return a new ManifoldArray with the same mesh and innerstate, but with a new data of type S.
+- `Base.similar(obj::ManifoldArray, ::Type{S}, inds)`: Return a slice of obj.data. (slice of GreeNew itself is not well defined, because it has meshes) 
 """
-function Base.similar(obj::GreenNew{T,N,MT}, ::Type{S}) where {T,MT,N,S}
-    return GreenNew(obj.mesh...; dtype=S, data=similar(obj.data, S))
+function Base.similar(obj::ManifoldArray{T,N,MT}, ::Type{S}) where {T,MT,N,S}
+    return ManifoldArray(obj.mesh...; dtype=S, data=similar(obj.data, S))
 end
-Base.similar(obj::GreenNew{T,N,MT}) where {T,MT,N} = Base.similar(obj, T)
-#By default, the following functions will all call Base.similar(obj::GreenNew, ::Type{S}, inds) 
+Base.similar(obj::ManifoldArray{T,N,MT}) where {T,MT,N} = Base.similar(obj, T)
+#By default, the following functions will all call Base.similar(obj::ManifoldArray, ::Type{S}, inds) 
 #as explained in https://docs.julialang.org/en/v1/manual/interfaces/#man-interface-array
 #However, we don't want that. What we want the following: 
 
 ################################ broadcast interface ###############################################
-Base.BroadcastStyle(::Type{<:GreenNew}) = Broadcast.ArrayStyle{GreenNew}()
+Base.BroadcastStyle(::Type{<:ManifoldArray}) = Broadcast.ArrayStyle{ManifoldArray}()
 
-function Base.similar(bc::Base.Broadcast.Broadcasted{Broadcast.ArrayStyle{GreenNew}}, ::Type{ElType}) where {ElType}
+function Base.similar(bc::Base.Broadcast.Broadcasted{Broadcast.ArrayStyle{ManifoldArray}}, ::Type{ElType}) where {ElType}
     # println("get called")
     # Scan the inputs for the ArrayAndChar:
     A = find_gf(bc)
     # Use the char field of A to create the output
-    GreenNew(A.mesh, similar(Array{ElType}, axes(bc)), A.dims)
+    ManifoldArray(A.mesh, similar(Array{ElType}, axes(bc)), A.dims)
 end
 
 find_gf(bc::Broadcast.Broadcasted) = find_gf(bc.args)
 find_gf(args::Tuple) = find_gf(find_gf(args[1]), Base.tail(args))
 find_gf(x) = x
 find_gf(::Tuple{}) = nothing
-find_gf(a::GreenNew, rest) = a
+find_gf(a::ManifoldArray, rest) = a
 find_gf(::Any, rest) = find_gf(rest)
 
-function Base.copyto!(dest::GreenNew{T,N,MT}, bc::Base.Broadcast.Broadcasted{Nothing}) where {T,MT,N}
+function Base.copyto!(dest::ManifoldArray{T,N,MT}, bc::Base.Broadcast.Broadcasted{Nothing}) where {T,MT,N}
     # don't why, but this function make no allocations anymore
     # see the post https://discourse.julialang.org/t/help-implementing-copyto-for-broadcasting/51204/3
     bcf = Base.Broadcast.flatten(bc)
@@ -128,9 +126,8 @@ function Base.copyto!(dest::GreenNew{T,N,MT}, bc::Base.Broadcast.Broadcasted{Not
     return dest
 end
 
-
 # somehow, the following leads to stackoverflow due to some kind of infinite loop
-# function Base.getproperty(obj::GreenNew{T,MT,N,Ninner}, sym::Symbol) where {T,MT,N,Ninner}
+# function Base.getproperty(obj::ManifoldArray{T,MT,N,Ninner}, sym::Symbol) where {T,MT,N,Ninner}
 #     if sym === :N
 #         return N
 #     elseif sym === :Ninner
@@ -147,8 +144,8 @@ end
 
 Write a text representation of the Green's function `obj` to the output stream `io`.
 """
-function Base.show(io::IO, obj::GreenNew)
-    print(io, "Green's function with dims = $(obj.dims) and innerstate = $(obj.innerstate), total length = $(length(obj.data))\n"
+function Base.show(io::IO, obj::ManifoldArray)
+    print(io, "Green's function with dims = $(obj.dims) and innerstate, total length = $(length(obj.data))\n"
               *
               "- Mesh: $(typeof(obj.mesh)), \n"
     )
@@ -176,7 +173,7 @@ end
 Return the rank of Green's function data, which always equals to N+2. 
 N stands for the number of internal degrees of freedom; 2 stands for the mesh and the extra dimension that has built-in DLR grid.
 """
-rank(obj::GreenNew{T,N,MT}) where {T,MT,N} = N
+rank(obj::ManifoldArray{T,N,MT}) where {T,MT,N} = N
 
 
 #TODO:Following triqs design, we want the following two things:
@@ -215,7 +212,7 @@ rank(obj::GreenNew{T,N,MT}) where {T,MT,N} = N
 
 Check if the Green's functions `objL` and `objR` are on the same `innerstate`, `tgrid`, and `mesh`. Throw an AssertionError if any check is false.
 """
-function _check(objL::GreenNew, objR::GreenNew)
+function _check(objL::ManifoldArray, objR::ManifoldArray)
     # KUN: check --> __check
     # first:  check typeof(objL.tgrid)==typeof(objR.tgrid) 
     # second: check length(objL.tgrid)
@@ -259,7 +256,7 @@ end
 #             τ = tgrid[inds[3]]
 #         end
 #         p = Obj.mesh[inds[2]]
-
+ 
 #         m = Dict(
 #             :G => G,
 #             :p => p,
@@ -274,9 +271,168 @@ end
 #     return nothing
 # end
 
+"""
+    Base.:<<(objL::ManifoldArray, objR::ManifoldArray)
+
+DLR Fourier transform of functions that has exactly one TemporalGrid(ImTime, ImFreq or DLRFreq) among the meshes. 
+If objL and objR have identical TemporalGrid, objL<<objR assign objR to objL.
+If objL and objR have different TemporalGrid, one of them has to be in DLR space.
+If objL is in DLR space, objL<<objR calculates the DLR spectral density of data in objR
+if objR is in DLR space, objL<<objR calculates the corresponding data from the DLR spectral density in objR.
+"""
+
+function Base.:<<(objL::ManifoldArray, objR::ManifoldArray)
+    # init version of <<
+    # more general version needed
+    axes=[]
+    for (mi,mesh) in enumerate(objL.mesh) 
+        if(typeof(mesh) <: TemporalGrid)
+            append!(axes,mi)
+        else
+            #TODO:add hashtable for mesh to support == operation 
+            @assert typeof(mesh) == typeof(objR.mesh[mi]) "Meshes not involved in Fourier transform have to be identical" #should assert mesh == objR.mesh[mi] when == is defined
+        end
+    end
+    @assert length(axes)==1 "Only one temporal mesh with built in DLR grid is allowed"
+    typeL = typeof(objL.mesh[axes[1]])
+    typeR = typeof(objR.mesh[axes[1]])
+    meshL = objL.mesh[axes[1]]
+    meshR = objR.mesh[axes[1]]
+
+    if typeL==typeR
+        error("Assignment still work in progress") #need == operation for mesh
+        # if meshL == meshR
+        #     objL.data=deepcopy(objR.data)
+        # else
+        #     error("Green's function can only be assigned to another with the same mesh")
+        # end
+    elseif typeL <: MeshGrids.DLRFreq
+        if typeR <: MeshGrids.ImFreq
+            objL.data = matfreq2dlr(meshL.dlr, objR.data, meshR.grid; axis=axes[1])
+        elseif typeR <: MeshGrids.ImTime
+            objL.data = tau2dlr(meshL.dlr, objR.data, meshR.grid; axis=axes[1])
+        end
+    elseif typeR <: MeshGrids.DLRFreq
+        if typeL <: MeshGrids.ImFreq
+            objL.data = dlr2matfreq(meshR.dlr, objR.data, meshL.grid; axis=axes[1])
+        elseif typeL <: MeshGrids.ImTime
+            objL.data = dlr2tau(meshR.dlr, objR.data, meshL.grid; axis=axes[1])
+        end
+    else
+        error("One of the Grren's function has to be in DLRfreq space to do Fourier transform")
+    end
+end
+
+
+"""
+    function dlr_to_imtime(obj::ManifoldArray; kwargs...)
+
+Convert sepctral density in DLR space to imaginary time space for function with exactly one DLRFreq grid among meshes.
+#Arguements
+#- 'obj': Function in DLR space
+#- 'targetGrid': The imaginary time grid which the function transforms into. Default value is the imaginary time space from the DLR grid in obj.
+"""
+function dlr_to_imtime(obj::ManifoldArray; kwargs...)
+    # init version of <<
+    # more general version needed
+    axes=[]
+    for (mi,mesh) in enumerate(obj.mesh) 
+        if(typeof(mesh) <: TemporalGrid)
+            @assert typeof(mesh)<:MeshGrids.DLRFreq "Green's function has to be in DLRFreq space"
+            append!(axes,mi)
+        end
+    end
+    @assert length(axes)==1 "Only one temporal mesh with built in DLR grid is allowed"
+    mesh = obj.mesh[axes[1]]
+    if :targetGrid in keys(kwargs)
+        tgrid=kwargs[:targetGrid]
+        @assert typeof(tgrid)==MeshGrids.ImTime "Target grid has to be ImTime type"
+    else
+        tgrid=MeshGrids.ImTime(mesh.beta,mesh.statistics)
+    end
+
+    mesh_copy=Tuple( i==axes[1] ? tgrid : obj.mesh[i] for i in 1:length(obj.dims)  )
+    data = dlr2tau(mesh.dlr, obj.data, tgrid.grid; axis=axes[1])
+    datatype = typeof(data[1])
+    return ManifoldArray(mesh_copy...; dtype = datatype  ,data=data)
+end
+
+"""
+    function dlr_to_imfreq(obj::ManifoldArray; kwargs...)
+
+Convert sepctral density in DLR space to matsubara frequency space for function with exactly one DLRFreq grid among meshes.
+#Arguements
+#- 'obj': Function in DLR space
+#- 'targetGrid': The matsubara frequency grid which the function transforms into. Default value is the imaginary time space from the DLR grid in obj.
+"""
+
+function dlr_to_imfreq(obj::ManifoldArray; kwargs...)
+    # init version of <<
+    # more general version needed
+    axes=[]
+    for (mi,mesh) in enumerate(obj.mesh)
+        if(typeof(mesh) <: TemporalGrid)
+            @assert typeof(mesh)<:MeshGrids.DLRFreq "Green's function has to be in DLRFreq space"
+            append!(axes,mi)
+        end
+    end
+    @assert length(axes)==1 "Only one temporal mesh with built in DLR grid is allowed"
+    mesh = obj.mesh[axes[1]]
+    if :targetGrid in keys(kwargs)
+        tgrid=kwargs[:targetGrid]
+        @assert typeof(tgrid)==MeshGrids.ImFreq "Target grid has to be MeshGrids.ImFreq type"
+    else
+        tgrid=MeshGrids.ImFreq(mesh.beta,mesh.statistics)
+    end
+    mesh_copy=Tuple( i==axes[1] ? tgrid : obj.mesh[i] for i in 1:length(obj.dims)  )
+    data = dlr2matfreq(mesh.dlr, obj.data, tgrid.grid; axis=axes[1])
+    datatype = typeof(data[1])
+    return ManifoldArray(mesh_copy...; dtype = datatype  ,data=data)
+end
+
+"""
+    function to_dlr(obj::ManifoldArray; kwargs...)
+
+Calculate the sepctral density of a function in imaginary time/matsubara frequency space, with exactly one DLRFreq grid among meshes.
+#Arguements
+#- 'obj': Function in imaginary time/matsubara frequency space
+#- 'targetGrid': The DLRFreq grid which the function transforms into. Default value is a DLRFreq gridwith the same beta and statistics of the temporal grid in obj, with default rtol=1e-12 and Euv = 1000/beta. 
+"""
+
+function to_dlr(obj::ManifoldArray; kwargs...)
+    # init version of <<
+    # more general version needed
+    axes=[]
+    for (mi,mesh) in enumerate(obj.mesh)
+        if(typeof(mesh) <: TemporalGrid)
+            @assert typeof(mesh)<:MeshGrids.ImTime||typeof(mesh)<:MeshGrids.ImFreq "Green's function has to be in ImFreq or ImTime space"
+            append!(axes,mi)
+        end
+    end
+    @assert length(axes)==1 "Only one temporal mesh with built in DLR grid is allowed"
+    mesh = obj.mesh[axes[1]]
+    if :targetGrid in keys(kwargs)
+        tgrid=kwargs[:targetGrid]
+        @assert typeof(tgrid)==MeshGrids.DLRFreq "Target grid has to be DLRFreq type"
+    else
+        tgrid=MeshGrids.DLRFreq(mesh.beta,mesh.statistics)
+    end
+    mesh_copy=Tuple( i==axes[1] ? tgrid : obj.mesh[i] for i in 1:length(obj.dims)  )
+    if typeof(mesh)<:MeshGrids.ImFreq
+        data = matfreq2dlr(tgrid.dlr, obj.data, mesh.grid; axis=axes[1])
+    else typeof(mesh)<:MeshGrids.ImTime
+        data = tau2dlr(tgrid.dlr, obj.data, mesh.grid; axis=axes[1])
+    end
+    datatype = typeof(data[1])
+    return ManifoldArray(mesh_copy...; dtype = datatype  ,data=data)
+end
+
+
+
+
 # Return the single-particle density matrix of the Green's function `obj`.
 # """
-# function density(obj::GreenDLR; kwargs...)
+# function density(obj::ManifoldArray; kwargs...)
 #     G_ins = toTau(obj, [obj.β,]).data .* (-1)
 #     return selectdim(G_ins, ndims(G_ins), 1)
 # end
@@ -323,7 +479,7 @@ end
 
 #         wrapped_aux.set_from_gf_data_mul_LR(self.data, L, G.data, R)
 # """
-# function from_L_G_R(self,L,G::GreenDLR,R)
+# function from_L_G_R(self,L,G::ManifoldArray,R)
 #     return 1
 # end
 

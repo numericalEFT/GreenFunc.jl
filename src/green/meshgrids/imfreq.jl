@@ -31,7 +31,8 @@ Constructor of TimeGrid.
 - `isFermi`: true if fermion, false if boson.
 """
 function ImFreq(beta, statistics::Statistics=UNKNOWN;
-    dtype=Float64,
+             dtype=Int64,
+    rtol = 1e-12,
     Euv=1000 / beta,
     grid::Union{AbstractGrid,AbstractVector,Nothing}=nothing
 )

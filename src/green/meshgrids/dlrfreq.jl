@@ -11,7 +11,7 @@ Time grid for Green's functions. An 1D grid wrapped with TimeDomain tpye.
 and AbstractArray interface implemented.
 grid should be grid of Int for ImFreq, and DLRGrid for DLRFreq.
 """
-struct DLRFreq{T<:Real} <: TemporalGrid{Int}
+struct DLRFreq{T<:Real} <: TemporalGrid{T}
     dlr::DLRGrid
     grid::SimpleG.Arbitrary{T}
     beta::T
