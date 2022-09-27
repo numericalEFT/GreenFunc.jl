@@ -42,7 +42,7 @@ using PythonCall
 
     ########## test MeshBrZone #######################
     lat = pyimport("triqs.lattice")
-    BL = lat.BravaisLattice(units=((2, 0, 0), (1, sqrt(3), 0)))
+    BL = lat.BravaisLattice(units=((2, 0, 0), (1, sqrt(3), 0))) # testing with a triangular lattice so that exchanged index makes a difference
     BZ = lat.BrillouinZone(BL)
     nk = 8
     mk = gf.MeshBrillouinZone(BZ, nk)

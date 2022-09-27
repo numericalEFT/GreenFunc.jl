@@ -39,7 +39,7 @@ function _get_mesh_from_triqs(triqs_mesh)
         return tgrid
     elseif pyisinstance(triqs_mesh, gf.meshes.MeshBrZone)
         # when import from python, linear_index remain consistent
-        # while DIM
+        # while cartesian index and order of lattice vector reversed
         mkdims = pyconvert(Array, triqs_mesh.dims)
         mkunits = pyconvert(Array, triqs_mesh.units)
         DIM = count(i -> (i != 1), mkdims) # actual dimension of the grid
