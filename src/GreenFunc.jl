@@ -6,7 +6,7 @@ include("meshgrids/MeshGrids.jl")
 using .MeshGrids
 export MeshGrids
 export locate, volume
-export FERMI, BOSE, UNKNOWN
+export FERMION, BOSON
 export TemporalGrid
 export MeshProduct
 export DLRFreq, ImTime, ImFreq

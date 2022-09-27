@@ -14,7 +14,7 @@ Discrete-Lehmann-representation grid for Green's functions.
 - `Euv`:  the UV energy scale of the spectral density.
 - `rtol`: tolerance absolute error.
 - `sym`: the symmetry of `dlr`.
-- `statistics`: type of statistics for particles. It can be `FERMI`, `BOSE`, and `UNKNOWN`.
+- `isFermi`: the statistics for particles. 
 """
 struct DLRFreq{T<:Real} <: TemporalGrid{T}
     dlr::DLRGrid
@@ -23,11 +23,11 @@ struct DLRFreq{T<:Real} <: TemporalGrid{T}
     Euv::T
     rtol::Float64
     sym::Symbol
-    statistics::Statistics
+    isFermi::Bool
 end
 
 """
-    function DLRFreq(β, statistics::Statistics=UNKNOWN;
+    function DLRFreq(β, isFermi::Bool=false;
         dtype=Float64,
         rtol=1e-12,
         Euv=1000 / β,
@@ -39,14 +39,14 @@ Create a `DLRFreq` struct.
 
 # Arguments
 - `β`: inverse temperature.
-- `statistics`: type of statistics for particles, including `FERMI`, `BOSE`, and `UNKNOWN`. By default, `statistics = UNKNOWN`.
+- `isFermi`: the statistics for particles is fermionic or not. False by default.
 - `dtype`: type of `β` and `Euv`.
 - `rtol`: tolerance absolute error. By default, `rtol` = 1e-12.
 - `Euv`: the UV energy scale of the spectral density. By default, `Euv = 1000 / β`.
 - `sym`: the symmetry of `dlr`. By default, `sym = :none`.
 - `dlr`: 1D DLR grid. By default, a DLR grid with input arguments is used.
 """
-function DLRFreq(β, statistics::Statistics=UNKNOWN;
+function DLRFreq(β, isFermi::Bool=false;
     dtype=Float64,
     rtol=1e-12,
     Euv=1000 / β,
@@ -54,10 +54,10 @@ function DLRFreq(β, statistics::Statistics=UNKNOWN;
     dlr::Union{DLRGrid,Nothing}=nothing
 )
     if isnothing(dlr)
-        dlr = DLRGrid(Euv, β, rtol, statistics isa Fermi, sym)
+        dlr = DLRGrid(Euv, β, rtol, isFermi, sym)
     end
     grid = SimpleG.Arbitrary{dtype}(dlr.ω)
-    return DLRFreq{dtype}(dlr, grid, β, Euv, rtol, sym, statistics)
+    return DLRFreq{dtype}(dlr, grid, β, Euv, rtol, sym, isFermi)
 end
 
 """
@@ -65,4 +65,4 @@ end
 
 Write a text representation of the DLR grid `tg` to the output stream `io`.
 """
-Base.show(io::IO, tg::DLRFreq) = print(io, "DLR frequency grid with $(length(tg)) points, inverse temperature = $(tg.β), UV Energy scale = $(tg.Euv), rtol = $(tg.rtol), sym = $(tg.sym), statistics = $(tg.statistics): $(_grid(tg.grid))")
+Base.show(io::IO, tg::DLRFreq) = print(io, "DLR frequency grid with $(length(tg)) points, inverse temperature = $(tg.β), UV Energy scale = $(tg.Euv), rtol = $(tg.rtol), sym = $(tg.sym), fermionic = $(tg.isFermi): $(_grid(tg.grid))")

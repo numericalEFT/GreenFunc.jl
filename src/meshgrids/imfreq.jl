@@ -12,17 +12,17 @@ Imaginary-frequency grid for Green's functions.
   It should be grid of Int for ImFreq, and DLRGrid for DLRFreq.
 - `β`: inverse temperature.
 - `Euv`:  the UV energy scale of the spectral density.
-- `statistics`: type of statistics for particles. It can be `FERMI`, `BOSE`, and `UNKNOWN`.
+- `isFermi`: the statistics for particles is fermionic or not.
 """
 struct ImFreq{T<:Real,Grid} <: TemporalGrid{Int}
     grid::Grid
     β::T
     Euv::T
-    statistics::Statistics
+    isFermi::Bool
 end
 
 """
-    function ImFreq(β, statistics::Statistics=UNKNOWN;
+    function ImFreq(β, isFermi::Bool=false;
         dtype=Float64,
         Euv=1000 / β,
         grid::Union{AbstractGrid,AbstractVector,Nothing}=nothing
@@ -32,28 +32,28 @@ Create a `ImFreq` struct.
 
 # Arguments
 - `β`: inverse temperature.
-- `statistics`: type of statistics for particles, including `FERMI`, `BOSE`, and `UNKNOWN`. By default, `statistics = UNKNOWN`.
+- `isFermi`: the statistics for particles is fermionic or not. False by default.
 - `dtype`: type of `β` and `Euv`. By default, `dtype = Float64`.
 - `Euv`: the UV energy scale of the spectral density. By default, `Euv = 1000 / β`.
 - `grid`: 1D time grid as a AbstractVector or CompositeGrids.AbstractGrid. By default, a optimized grid built in DLR is used.
 """
-function ImFreq(β, statistics::Statistics=UNKNOWN;
+function ImFreq(β, isFermi::Bool=false;
     dtype=Float64,
     Euv=1000 / β,
     rtol=1e-12,
     grid::Union{AbstractGrid,AbstractVector,Nothing}=nothing
 )
     if isnothing(grid)
-        dlr = DLRGrid(Euv, β, rtol, statistics isa Fermi, :none)
+        dlr = DLRGrid(Euv, β, rtol, isFermi, :none)
         grid = SimpleG.Arbitrary{Int}(dlr.n)
     elseif (grid isa AbstractVector)
         grid = SimpleG.Arbitrary{Int}(Int.(grid))
     end
-    return ImFreq{dtype,typeof(grid)}(grid, β, Euv, statistics)
+    return ImFreq{dtype,typeof(grid)}(grid, β, Euv, isFermi)
 end
 
-matfreq_to_int(tg::ImFreq, ωn) = (tg.statistics isa Fermi) ? Int(round((ωn * tg.β / π - 1) / 2)) : Int(round((ωn * tg.β / π) / 2))
-int_to_matfreq(tg::ImFreq, n::Int) = (tg.statistics isa Fermi) ? (2n + 1) * π / tg.β : 2n * π / tg.β
+matfreq_to_int(tg::ImFreq, ωn) = tg.isFermi ? Int(round((ωn * tg.β / π - 1) / 2)) : Int(round((ωn * tg.β / π) / 2))
+int_to_matfreq(tg::ImFreq, n::Int) = tg.isFermi ? (2n + 1) * π / tg.β : 2n * π / tg.β
 
 """
     getindex(g::ImFreq, I::Int)
@@ -70,7 +70,7 @@ Base.getindex(tg::ImFreq, I::Int) = int_to_matfreq(tg, tg.grid[I])
 
 Write a text representation of the Imaginary-frequency grid `tg` to the output stream `io`.
 """
-Base.show(io::IO, tg::ImFreq) = print(io, "Matsubara frequency grid with $(length(tg)) points, inverse temperature = $(tg.β), UV Energy scale = $(tg.Euv), statistics = $(tg.statistics): $(_grid(tg.grid))")
+Base.show(io::IO, tg::ImFreq) = print(io, "Matsubara frequency grid with $(length(tg)) points, inverse temperature = $(tg.β), UV Energy scale = $(tg.Euv), fermionic = $(tg.isFermi): $(_grid(tg.grid))")
 
 
 """

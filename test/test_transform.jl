@@ -56,6 +56,6 @@ SemiCircle(dlr, grid, type) = Sample.SemiCircle(dlr.Euv, dlr.β, dlr.isFermi, gr
 
 
     end
-    test_fourier(5, 100.0, FERMI)
-    test_fourier(5, 100.0, BOSE)
+    test_fourier(5, 100.0, FERMION)
+    test_fourier(5, 100.0, BOSON)
 end

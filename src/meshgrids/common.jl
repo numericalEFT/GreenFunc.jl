@@ -1,9 +1,3 @@
-################# common interface for TemporalGrid  ################
-Base.print(io::IO, s::UnKnown) = print(io, "UnKnown")
-Base.print(io::IO, s::Fermi) = print(io, "Fermi")
-Base.print(io::IO, s::Bose) = print(io, "Bose")
-# Base.display(io::IO, s::Statistics) = Base.show(io, s)
-
 # basic AbstractArray implement
 Base.length(tg::TemporalGrid) = length(tg.grid)
 Base.size(tg::TemporalGrid) = size(tg.grid)
