@@ -15,6 +15,8 @@ SemiCircle(dlr, grid, type) = Sample.SemiCircle(dlr.Euv, dlr.β, dlr.isFermi, gr
         #     g_freq.data[:, ni] .= Gn[ni]
         # end
 
+        GreenFunc.multipole!(g_freq, [1.0, 2.0]) #check if it runs or not
+
         GreenFunc.semicircle!(g_freq)
 
         @test g_freq[1, :] ≈ Gn
