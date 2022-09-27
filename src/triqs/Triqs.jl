@@ -2,6 +2,7 @@ module Triqs
 
 import ..MeshArray
 import ..MeshGrids
+import ..BrillouinZoneMeshes
 
 using PythonCall
 # gf = pyimport("triqs.gf")
@@ -36,8 +37,24 @@ function _get_mesh_from_triqs(triqs_mesh)
         grid_t = [grid_first_index:grid_last_index;]
         tgrid = MeshGrids.ImFreq(β, stat, grid=grid_t)
         return tgrid
+    elseif pyisinstance(triqs_mesh, gf.meshes.MeshBrZone)
+        # when import from python, linear_index remain consistent
+        # while cartesian index and order of lattice vector reversed
+        mkdims = pyconvert(Array, triqs_mesh.dims)
+        mkunits = pyconvert(Array, triqs_mesh.units)
+        DIM = count(i -> (i != 1), mkdims) # actual dimension of the grid
+        nk = mkdims[1]
+        latvec = pyconvert(Array, mkunits)[1:DIM, 1:DIM]' .* nk
+        latvec = reverse(latvec, dims=2)
+        umesh = BrillouinZoneMeshes.BaseMesh.UniformMesh{DIM,nk,BrillouinZoneMeshes.BaseMesh.EdgedMesh}([0.0, 0.0], latvec)
+        return umesh
+    elseif pyisinstance(triqs_mesh, gf.mesh_product.MeshProduct)
+        # expand MeshProduct to a tuple
+        rank = pyconvert(Int, triqs_mesh.rank)
+        mlist = Tuple(_get_mesh_from_triqs(triqs_mesh[i-1]) for i in rank:-1:1)
+        return mlist
     else
-        error("Unknown mesh type")
+        error("Unknown mesh type:", pytype(triqs_mesh))
     end
 end
 
@@ -46,7 +63,12 @@ function MeshArray(objSrc::Py)
     innerstate = pyconvert(Tuple, objSrc.target_shape)
     # @assert innerstate == dims[1:length(innerstate)] "Inner state dimensions do not match!"
     mesh = (1:state for state in innerstate[end:-1:1])
-    mesh = (mesh..., _get_mesh_from_triqs(objSrc.mesh))
+    triqmesh = _get_mesh_from_triqs(objSrc.mesh)
+    if isa(triqmesh, Tuple)
+        mesh = (mesh..., triqmesh...)
+    else
+        mesh = (mesh..., triqmesh)
+    end
     _data = PyArray(objSrc.data, copy=false) #no copy is made, but PyArray will be in column-major 
     g = MeshArray(mesh...; dtype=Float64)
     for i in 1:length(g)

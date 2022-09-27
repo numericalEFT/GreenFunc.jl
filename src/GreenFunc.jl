@@ -1,5 +1,5 @@
 module GreenFunc
-using StaticArrays, Lehmann, CompositeGrids#, BZMeshes
+using StaticArrays, Lehmann, CompositeGrids, BrillouinZoneMeshes
 # Write your package code here.
 
 include("meshgrids/MeshGrids.jl")
