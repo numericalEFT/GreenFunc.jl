@@ -52,6 +52,8 @@ function ImTime(β, isFermi::Bool=false;
     elseif (grid isa AbstractVector)
         grid = SimpleG.Arbitrary{dtype}(grid)
     end
+    @assert grid[1] >= 0 && grid[end] <= β "The grid should be in the range [0, β]."
+    @assert issorted(grid) "The grid should be sorted."
     @assert eltype(grid) == dtype "The type of grid should be the same as dtype = $dtype"
     return ImTime{dtype,typeof(grid)}(grid, β, Euv, isFermi)
 end

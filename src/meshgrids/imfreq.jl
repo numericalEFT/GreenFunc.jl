@@ -35,7 +35,7 @@ Create a `ImFreq` struct.
 - `isFermi`: the statistics for particles is fermionic or not. False by default.
 - `dtype`: type of `β` and `Euv`. By default, `dtype = Float64`.
 - `Euv`: the UV energy scale of the spectral density. By default, `Euv = 1000 / β`.
-- `grid`: 1D time grid as a AbstractVector or CompositeGrids.AbstractGrid. By default, a optimized grid built in DLR is used.
+- `grid`: 1D Matsubara-frequency integer-valued grid as a AbstractVector or CompositeGrids.AbstractGrid. By default, a optimized grid built in DLR is used.
 """
 function ImFreq(β, isFermi::Bool=false;
     dtype=Float64,
@@ -49,6 +49,9 @@ function ImFreq(β, isFermi::Bool=false;
     elseif (grid isa AbstractVector)
         grid = SimpleG.Arbitrary{Int}(Int.(grid))
     end
+
+    @assert issorted(grid) "The grid should be sorted."
+    @assert eltype(grid) <: Int "Matsubara-frequency grid should be Int."
     return ImFreq{dtype,typeof(grid)}(grid, β, Euv, isFermi)
 end
 
