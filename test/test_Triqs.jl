@@ -9,9 +9,9 @@ using PythonCall
     l = @py len(mt)
     lj = pyconvert(Int, l)
 
-    ############ test ManifoldArray constructor #############
+    ############ test MeshArray constructor #############
     G_t = gf.GfImTime(mesh=mt, data=np.random.rand(lj, 2, 3)) #target_shape = [2, 3] --> innerstate = [3, 2]
-    gt = ManifoldArray(G_t)
+    gt = MeshArray(G_t)
     @test size(gt) == (3, 2, lj)
     i1, i2, t = 1, 2, 3
     @test gt[i1, i2, t] ≈ pyconvert(Float64, G_t.data[t-1, i2-1, i1-1])
@@ -27,9 +27,9 @@ using PythonCall
     l = @py len(miw)
     lj = pyconvert(Int, l)
 
-    ############ test ManifoldArray constructor #########
+    ############ test MeshArray constructor #########
     G_w = gf.GfImFreq(mesh=miw, data=np.random.rand(lj, 2, 3)) #target_shape = [2, 3] --> innerstate = [3, 2]
-    gw = ManifoldArray(G_w)
+    gw = MeshArray(G_w)
     @test size(gw) == (3, 2, lj)
     i1, i2, t = 1, 2, 3
     @test gw[i1, i2, t] ≈ pyconvert(Float64, G_w.data[t-1, i2-1, i1-1])
@@ -48,15 +48,15 @@ using PythonCall
     mk = gf.MeshBrillouinZone(BZ, nk)
     mprod = gf.MeshProduct(mk, miw)
     G_k_w = gf.GfImFreq(mesh=mprod, target_shape=[1, 1]) #G_k_w.data.shape will be [nk^2, lj, 1, 1]
-    gkw = ManifoldArray(G_k_w)
+    gkw = MeshArray(G_k_w)
     umesh = gkw.mesh[4]
     for p in mk
-        ilin = pyconvert(Int, p.linear_index)
+        ilin = pyconvert(Int, p.linear_index) + 1
         inds = pyconvert(Array, p.index)[1:2] .+ 1
         pval = pyconvert(Array, p.value)
-        # println(pval, umesh[inds...])
-        @test pval[1:2] ≈ umesh[inds...]
-        println(pval[1:2], umesh[ilin+1])
+        # note that while linear_index is kept, the index reversed
+        @test pval[1:2] ≈ umesh[ilin]
+        @test pval[1:2] ≈ umesh[reverse(inds)...]
     end
     @test size(gkw) == (1, 1, lj, nk^2)
     ik, iw = 12, 10

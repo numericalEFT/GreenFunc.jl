@@ -1,6 +1,6 @@
 module Triqs
 
-import ..ManifoldArray
+import ..MeshArray
 import ..MeshGrids
 import ..BrillouinZoneMeshes
 
@@ -38,11 +38,14 @@ function _get_mesh_from_triqs(triqs_mesh)
         tgrid = MeshGrids.ImFreq(β, stat, grid=grid_t)
         return tgrid
     elseif pyisinstance(triqs_mesh, gf.meshes.MeshBrZone)
+        # when import from python, linear_index remain consistent
+        # while DIM
         mkdims = pyconvert(Array, triqs_mesh.dims)
         mkunits = pyconvert(Array, triqs_mesh.units)
         DIM = count(i -> (i != 1), mkdims) # actual dimension of the grid
         nk = mkdims[1]
         latvec = pyconvert(Array, mkunits)[1:DIM, 1:DIM]' .* nk
+        latvec = reverse(latvec, dims=2)
         umesh = BrillouinZoneMeshes.BaseMesh.UniformMesh{DIM,nk,BrillouinZoneMeshes.BaseMesh.EdgedMesh}([0.0, 0.0], latvec)
         return umesh
     elseif pyisinstance(triqs_mesh, gf.mesh_product.MeshProduct)
@@ -55,7 +58,7 @@ function _get_mesh_from_triqs(triqs_mesh)
     end
 end
 
-function ManifoldArray(objSrc::Py)
+function MeshArray(objSrc::Py)
 
     innerstate = pyconvert(Tuple, objSrc.target_shape)
     # @assert innerstate == dims[1:length(innerstate)] "Inner state dimensions do not match!"
@@ -67,14 +70,14 @@ function ManifoldArray(objSrc::Py)
         mesh = (mesh..., triqmesh)
     end
     _data = PyArray(objSrc.data, copy=false) #no copy is made, but PyArray will be in column-major 
-    g = ManifoldArray(mesh...; dtype=Float64)
+    g = MeshArray(mesh...; dtype=Float64)
     for i in 1:length(g)
         g.data[i] = unsafe_load(_data.ptr, i) #read data from pointer
     end
     return g
 end
 
-function Base.:<<(obj::ManifoldArray{T,N,MT}, objSrc::Py) where {T,MT,N}
+function Base.:<<(obj::MeshArray{T,N,MT}, objSrc::Py) where {T,MT,N}
     @assert obj.dims[end:-1:1] == pyconvert(Tuple, objSrc.data.shape) "Dimensions do not match!"
     _data = PyArray(objSrc.data, copy=false) #no copy is made, but PyArray will be in column-major 
     for i in 1:length(obj)
@@ -83,7 +86,7 @@ function Base.:<<(obj::ManifoldArray{T,N,MT}, objSrc::Py) where {T,MT,N}
     return obj
 end
 
-# function Base.:<<(obj::ManifoldArray{T,N,MT}, objSrc::Py) where {T,MT,N}
+# function Base.:<<(obj::MeshArray{T,N,MT}, objSrc::Py) where {T,MT,N}
 
 #     innerstate = pyconvert(Tuple, objSrc.target_shape)
 #     @assert innerstate == dims[1:length(innerstate)] "Inner state dimensions do not match!"
@@ -110,7 +113,7 @@ end
 #     end
 #     data_t = pyconvert(Array, objSrc.data)
 #     obj.mesh = ()
-#     return Obj = GreenFunc.ManifoldArray(tgrid, 1:tar_sh[1], 1:tar_sh[2], dtype=eltype(data_t), data=data_t)
+#     return Obj = GreenFunc.MeshArray(tgrid, 1:tar_sh[1], 1:tar_sh[2], dtype=eltype(data_t), data=data_t)
 # end
 
 end

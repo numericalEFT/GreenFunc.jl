@@ -2,7 +2,7 @@ module GreenFunc
 using StaticArrays, Lehmann, CompositeGrids, BrillouinZoneMeshes
 # Write your package code here.
 
-include("green/meshgrids/MeshGrids.jl")
+include("meshgrids/MeshGrids.jl")
 using .MeshGrids
 export MeshGrids
 export locate, volume
@@ -24,10 +24,14 @@ export GreenSym2DLR, dynamic, instant
 # export MeshProduct
 # export locate, volume
 
-include("green/ManifoldArray.jl")
-export ManifoldArray, dlr_to_imfreq, to_dlr, dlr_to_imtime
+include("mesharrays/MeshArrays.jl")
+using .MeshArrays
+export MeshArrays, MeshArray
 
 include("triqs/Triqs.jl")
 export Triqs
+
+include("green/transform.jl")
+export dlr_to_imfreq, to_dlr, dlr_to_imtime
 
 end
