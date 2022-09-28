@@ -1,5 +1,35 @@
 using PythonCall
 
+@testset "Triqs mesh interface" begin
+    gf = pyimport("triqs.gf")
+    np = pyimport("numpy")
+
+    mt = gf.MeshImTime(beta=1.0, S="Fermion", n_max=3)
+    mjt = from_triqs(mt)
+    for (i, x) in enumerate([p for p in mt.values()])
+        @test mjt[i] ≈ pyconvert(Float64, x)
+    end
+
+    mw = gf.MeshImFreq(beta=1.0, S="Fermion", n_max=3)
+    mjw = from_triqs(mw)
+    for (i, x) in enumerate([p for p in mw.values()])
+        @test mjw[i] ≈ imag(pyconvert(ComplexF64, x))
+    end
+
+    #TODO: add tests for MeshBrZone
+
+    mprod = gf.MeshProduct(mt, mw)
+    mjprod = from_triqs(mprod)
+    # println(mjprod)
+    for (t, w) in mprod
+        # println(t, w)
+        ti, wi = pyconvert(Int, t.linear_index) + 1, pyconvert(Int, w.linear_index) + 1
+        points = mjprod[wi, ti] # triqs mesh order is reversed
+        @test points[1] ≈ imag(pyconvert(ComplexF64, w.value))
+        @test points[2] ≈ pyconvert(Float64, t.value)
+    end
+end
+
 @testset "Triqs interface" begin
     gf = pyimport("triqs.gf")
     np = pyimport("numpy")
@@ -49,6 +79,7 @@ using PythonCall
     mprod = gf.MeshProduct(mk, miw)
     G_k_w = gf.GfImFreq(mesh=mprod, target_shape=[1, 1]) #G_k_w.data.shape will be [nk^2, lj, 1, 1]
     gkw = MeshArray(G_k_w)
+    #gkw.mesh: [1:1, 1:1, miw, mk]
     umesh = gkw.mesh[4]
     for p in mk
         ilin = pyconvert(Int, p.linear_index) + 1
