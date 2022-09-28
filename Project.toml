@@ -4,7 +4,6 @@ authors = ["Tao Wang", "Xiansheng Cai"]
 version = "0.1.2"
 
 [deps]
-BlockDiagonals = "0a1fb500-61f7-11e9-3c65-f5ef3456f9f0"
 BrillouinZoneMeshes = "9f696214-9961-49f3-89a2-cb1ea204eb6e"
 CompositeGrids = "b5136c89-beeb-4521-9139-60d2cac8be56"
 DelimitedFiles = "8bb1440f-4735-579b-a4ab-409b98df4dab"
