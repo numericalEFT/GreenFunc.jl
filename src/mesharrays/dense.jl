@@ -14,9 +14,9 @@ The mesh is stored in the field `mesh` and the data is stored in the field `data
 - `mesh` (MT): the mesh is a tuple of meshes.  
    The mesh should be an iterable object that contains an ordered list of grid points. 
    Examples are the 
-   1. Meshes defined in the [`MeshGrids`](@ref) module.
+   1. Meshes defined in the `MeshGrids` module.
    2. UnitRange such as `1:10`, etc.
-   2. Product of meshes [`MeshProduct`](@ref) defined in the [`MeshGrids`](@ref) module.
+   2. Product of meshes `MeshProduct` defined in the `MeshGrids` module.
 
    If a mesh is defined on a continuous manifold and supports the following methods, then one can perform interpolation, derivatives, etc. on the mesh:
     - `locate(mesh, value)`: find the index of the closest grid point for given value;
