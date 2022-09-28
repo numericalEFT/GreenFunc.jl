@@ -7,9 +7,6 @@ import ..MeshGrids
 import ..BrillouinZoneMeshes
 
 using PythonCall
-using BlockDiagonals
-# gf = pyimport("triqs.gf")
-# sys = pyimport("sys")
 
 function _get_statistics(mesh)
     statis = pyconvert(String, mesh.statistic)
@@ -116,9 +113,14 @@ function from_triqs(pyobj::Py)
     elseif _check_Gf(pyobj, gf)
         return MeshArray(pyobj)
     elseif _check_BlockGf(pyobj, gf)
-        error("Block Gf not supported yet")
         # unfortunately BlockDiagonal only supports matrix type
-        # glist = [MeshArray(g[1]) for g in pyobj] # g = ("name", Gf)
+        glist = [MeshArray(g[1]) for g in pyobj] # g = ("name", Gf)
+        namelist = [pyconvert(String, g[0]) for g in pyobj]
+        gdict = Dict{eltype(namelist),eltype(glist)}()
+        for (ni, name) in enumerate(namelist)
+            gdict[name] = glist[ni]
+        end
+        return gdict
         # return BlockDiagonal(glist)
     else
         error("Unknown type of triqs object: ", pytype(pyobj))

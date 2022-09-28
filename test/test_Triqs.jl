@@ -100,27 +100,27 @@ end
 
 end
 
-# @testset "Triqs BlockGf interface" begin
-#     gf = pyimport("triqs.gf")
-#     np = pyimport("numpy")
+@testset "Triqs BlockGf interface" begin
+    gf = pyimport("triqs.gf")
+    np = pyimport("numpy")
 
-#     mt = gf.MeshImTime(beta=1.0, S="Fermion", n_max=3)
-#     lj = pyconvert(Int, @py len(mt))
-#     G_t = gf.GfImTime(mesh=mt, data=np.random.rand(lj, 2, 3)) #target_shape = [2, 3] --> innerstate = [3, 2]
-#     G_w = gf.GfImTime(mesh=mt, data=np.random.rand(lj, 2, 3)) #target_shape = [2, 3] --> innerstate = [3, 2]
+    mt = gf.MeshImTime(beta=1.0, S="Fermion", n_max=3)
+    lj = pyconvert(Int, @py len(mt))
+    G_t = gf.GfImTime(mesh=mt, data=np.random.rand(lj, 2, 3)) #target_shape = [2, 3] --> innerstate = [3, 2]
+    G_w = gf.GfImTime(mesh=mt, data=np.random.rand(lj, 2, 3)) #target_shape = [2, 3] --> innerstate = [3, 2]
 
-#     blockG = gf.BlockGf(name_list=["1", "2"], block_list=[G_t, G_w], make_copies=false)
+    blockG = gf.BlockGf(name_list=["1", "2"], block_list=[G_t, G_w], make_copies=false)
 
-#     jblockG = from_triqs(blockG)
+    jblockG = from_triqs(blockG)
 
-#     gt = MeshArray(G_t)
-#     @test size(gt) == (3, 2, lj)
-#     i1, i2, t = 1, 2, 3
-#     @test gt[i1, i2, t] ≈ pyconvert(Float64, G_t.data[t-1, i2-1, i1-1])
+    # gt = MeshArray(G_t)
+    # @test size(gt) == (3, 2, lj)
+    i1, i2, t = 1, 2, 3
+    @test jblockG["1"][i1, i2, t] ≈ pyconvert(Float64, G_t.data[t-1, i2-1, i1-1])
 
-#     ############ test Matsubara frequency mesh #############
-#     gw = MeshArray(G_w)
-#     @test size(gw) == (3, 2, lj)
-#     i1, i2, t = 1, 2, 3
-#     @test gw[i1, i2, t] ≈ pyconvert(Float64, G_w.data[t-1, i2-1, i1-1])
-# end
+    # ############ test Matsubara frequency mesh #############
+    # gw = MeshArray(G_w)
+    # @test size(gw) == (3, 2, lj)
+    i1, i2, t = 1, 2, 3
+    @test jblockG["2"][i1, i2, t] ≈ pyconvert(Float64, G_w.data[t-1, i2-1, i1-1])
+end
