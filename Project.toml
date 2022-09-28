@@ -1,7 +1,7 @@
 name = "GreenFunc"
 uuid = "9efc7ea6-d529-4241-ab29-dcf68b94af7c"
-authors = ["Tao Wang", "Xiansheng Cai"]
-version = "0.1.2"
+authors = ["Tao Wang", "Xiansheng Cai", "Pengcheng Hou", "Zhiyi Li", "Kun Chen"]
+version = "0.2.0"
 
 [deps]
 BrillouinZoneMeshes = "9f696214-9961-49f3-89a2-cb1ea204eb6e"
