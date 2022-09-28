@@ -27,38 +27,40 @@ diff(a, b) = maximum(abs.(a - b)) # return the maximum deviation between a and b
 
 conformal_tau(τ, β) = π^(1 / 4) / sqrt(2β) * 1 / sqrt(sin(π * τ / β))
 
-function syk_sigma_dlr(d, G_x, J = 1.0; sumrule = nothing, verbose = false)
+function syk_sigma(dlr, G_dlr, J=1.0)
+    G_t = dlr_to_imtime(G_dlr, dlr.τ)
 
-    tau_k = d.τ # DLR imaginary time nodes
-    tau_k_rev = d.β .- tau_k # Reversed imaginary time nodes
+    # tgrid = G_t.mesh[findfirst(x -> (x isa MeshGrids.ImTime), G_t.mesh)]
+    tau_rev = dlr.β .- dlr.τ # Reversed imaginary time nodes
+    G_t_rev = dlr_to_imtime(G_t, tau_rev) # G at beta - tau
 
-    G_x_rev = tau2tau(d, G_x, tau_k_rev, sumrule = sumrule, verbose = verbose) # G at beta - tau_k
+    Sigma_t = J .^ 2 .* G_t .^ 2 .* G_t_rev # SYK self-energy in imaginary time
 
-    Sigma_x = J .^ 2 .* G_x .^ 2 .* G_x_rev # SYK self-energy in imaginary time
-
-    return Sigma_x
+    return Sigma_t
 end
 
-function dyson(d, sigma_q, mu)
+function dyson(dlr, sigma_freq, mu)
     if d.symmetry == :ph #symmetrized G
         @assert mu ≈ 0.0 "Only the case μ=0 enjoys the particle-hole symmetry."
-        return 1im * imag.(-1 ./ (d.ωn * 1im .- mu .+ sigma_q))
+        return 1im * imag.(-1 ./ (dlr.ωn * 1im .- mu .+ sigma_freq))
     elseif d.symmetry == :none
-        return -1 ./ (d.ωn * 1im .- mu .+ sigma_q)
+        return -1 ./ (ωn * 1im .- mu .+ sigma_freq)
     else
         error("Not implemented!")
     end
 end
 
-function solve_syk_with_fixpoint_iter(d, mu, tol = d.rtol * 10; mix = 0.1, maxiter = 5000, G_x = zeros(ComplexF64, length(d)), sumrule = nothing, verbose = true)
+function solve_syk_with_fixpoint_iter(mesh_dlr, G_dlr, mu, tol=d.rtol * 10; mix=0.1, maxiter=5000, sumrule=nothing, verbose=true)
 
     for iter in 1:maxiter
 
-        Sigma_x = syk_sigma_dlr(d, G_x, sumrule = sumrule, verbose = verbose)
+        sigma_t = syk_sigma(mesh_dlr.dlr, G_dlr)
+        sigma_freq = dlr_to_imfreq(to_dlr(sigma_t))
+        sigma_freq = sigma_t |> to_dlr |> dlr_to_imfreq
 
-        G_q_new = dyson(d, tau2matfreq(d, Sigma_x), mu)
+        G_q_new = dyson(mesh_dlr.dlr, sigma_freq, mu)
 
-        G_x_new = matfreq2tau(d, G_q_new, sumrule = sumrule, verbose = verbose)
+        G_x_new = matfreq2tau(d, G_q_new, sumrule=sumrule, verbose=verbose)
 
 
         if verbose
@@ -85,14 +87,20 @@ function printG(d, G_x)
     println()
 end
 
-verbose = false
+# verbose = false
+β = 1e4
+isFermi = true
 
-printstyled("=====    Prepare the expected Green's function of the SYK model     =======\n", color = :yellow)
-dsym_correct = DLRGrid(Euv = 5.0, β = 10000.0, isFermi = true, rtol = 1e-14, symmetry = :ph) # Initialize DLR object
-G_x_correct = solve_syk_with_fixpoint_iter(dsym_correct, 0.00, mix = 0.1, verbose = false)
-printG(dsym_correct, G_x_correct)
+printstyled("=====    Prepare the expected Green's function of the SYK model     =======\n", color=:yellow)
 
-printstyled("=====    Test Symmetrized and Unsymmetrized DLR solver for SYK model     =======\n", color = :yellow)
+mesh_dlr = MeshGrids.DLRFreq(β, isFermi; Euv=5.0, rtol=1e-14, sym=:ph)   # Initialize DLR grid
+G_d = MeshArray(mesh_dlr; dtype=ComplexF64, data=rand(ComplexF64, mesh_dlr.dims...))
+
+# dsym_correct = DLRGrid(Euv=5.0, β=10000.0, isFermi=true, rtol=1e-14, symmetry=:ph) # Initialize DLR object
+G_x_correct = solve_syk_with_fixpoint_iter(mesh_dlr, G_d, 0.00, mix=0.1, verbose=false)
+printG(dsym_correct, G_t_correct)
+
+printstyled("=====    Test Symmetrized and Unsymmetrized DLR solver for SYK model     =======\n", color=:yellow)
 
 @printf("%30s%30s%30s%30s%20s\n", "Euv", "sym_solver", "unsym_solver", "unsym_solver+sum_rule", "good or bad")
 for Euv in LinRange(5.0, 10.0, 50)
@@ -101,17 +109,17 @@ for Euv in LinRange(5.0, 10.0, 50)
     β = 10000.0
     # printstyled("=====     Symmetrized DLR solver for SYK model     =======\n", color = :yellow)
     mix = 0.01
-    dsym = DLRGrid(Euv = Euv, β = β, isFermi = true, rtol = rtol, symmetry = :ph, rebuild = true, verbose = false) # Initialize DLR object
-    G_x_ph = solve_syk_with_fixpoint_iter(dsym, 0.00, mix = mix, sumrule = nothing, verbose = verbose)
+    dsym = DLRGrid(Euv=Euv, β=β, isFermi=true, rtol=rtol, symmetry=:ph, rebuild=true, verbose=false) # Initialize DLR object
+    G_x_ph = solve_syk_with_fixpoint_iter(dsym, 0.00, mix=mix, sumrule=nothing, verbose=verbose)
 
     # printstyled("=====     Unsymmetrized DLR solver for SYK model     =======\n", color = :yellow)
     mix = 0.01
-    dnone = DLRGrid(Euv = Euv, β = β, isFermi = true, rtol = rtol, symmetry = :none, rebuild = true, verbose = false) # Initialize DLR object
-    G_x_none = solve_syk_with_fixpoint_iter(dnone, 0.00, mix = mix, sumrule = nothing, verbose = verbose)
+    dnone = DLRGrid(Euv=Euv, β=β, isFermi=true, rtol=rtol, symmetry=:none, rebuild=true, verbose=false) # Initialize DLR object
+    G_x_none = solve_syk_with_fixpoint_iter(dnone, 0.00, mix=mix, sumrule=nothing, verbose=verbose)
 
     # printstyled("=====     Unsymmetrized DLR solver for SYK model     =======\n", color = :yellow)
     mix = 0.01
-    G_x_none_sumrule = solve_syk_with_fixpoint_iter(dnone, 0.00, mix = mix, sumrule = 1.0, verbose = verbose)
+    G_x_none_sumrule = solve_syk_with_fixpoint_iter(dnone, 0.00, mix=mix, sumrule=1.0, verbose=verbose)
     # printG(dnone, G_x_none)
 
     # printstyled("=====     Unsymmetrized versus Symmetrized DLR solver    =======\n", color = :yellow)
