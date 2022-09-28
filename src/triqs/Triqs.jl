@@ -11,11 +11,9 @@ using PythonCall
 function _get_statistics(mesh)
     statis = pyconvert(String, mesh.statistic)
     if (statis == "Fermion")
-        stat = MeshGrids.FERMI
-    elseif (statis == "Boson")
-        stat = MeshGrids.BOSE
-    else
-        stat = MeshGrids.UNKNOWN
+        stat = true
+    else # Boson or other
+        stat = false
     end
     return stat
 end
