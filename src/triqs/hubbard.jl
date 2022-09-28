@@ -31,7 +31,7 @@ G_k_w.data.fill(0.0)
 @time for (ik, k) in enumerate(G_k_w.mesh[0])
     G_w << gf.inverse(gf.iOmega_n - 2 * t * (np.cos(k[0]) + np.cos(k[1])))
     # G_k_w.data[ik-1, pyslice(nothing), 0, 0] = G_w.data[pyslice(nothing), 0, 0] #pyslice(nothing) == :, maybe there is a better way to do this
-    G_k_w.data[ik-1, pyslice(0, -1), 0, 0] = G_w.data[pyslice(0, -1), 0, 0] #pyslice(nothing) == :, maybe there is a better way to do this
+    G_k_w.data[ik-1, pyslice(0, nk^2), 0, 0] = G_w.data[pyslice(0, nk^2), 0, 0] #pyslice(nothing) == :, maybe there is a better way to do this
 end
 
 # plt.figure()
