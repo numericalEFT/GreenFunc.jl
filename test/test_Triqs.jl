@@ -1,6 +1,36 @@
 using PythonCall
 
-@testset "Triqs interface" begin
+@testset "Triqs mesh interface" begin
+    gf = pyimport("triqs.gf")
+    np = pyimport("numpy")
+
+    mt = gf.MeshImTime(beta=1.0, S="Fermion", n_max=3)
+    mjt = from_triqs(mt)
+    for (i, x) in enumerate([p for p in mt.values()])
+        @test mjt[i] ≈ pyconvert(Float64, x)
+    end
+
+    mw = gf.MeshImFreq(beta=1.0, S="Fermion", n_max=3)
+    mjw = from_triqs(mw)
+    for (i, x) in enumerate([p for p in mw.values()])
+        @test mjw[i] ≈ imag(pyconvert(ComplexF64, x))
+    end
+
+    #TODO: add tests for MeshBrZone
+
+    mprod = gf.MeshProduct(mt, mw)
+    mjprod = from_triqs(mprod)
+    # println(mjprod)
+    for (t, w) in mprod
+        # println(t, w)
+        ti, wi = pyconvert(Int, t.linear_index) + 1, pyconvert(Int, w.linear_index) + 1
+        points = mjprod[wi, ti] # triqs mesh order is reversed
+        @test points[1] ≈ imag(pyconvert(ComplexF64, w.value))
+        @test points[2] ≈ pyconvert(Float64, t.value)
+    end
+end
+
+@testset "Triqs Gf interface" begin
     gf = pyimport("triqs.gf")
     np = pyimport("numpy")
 
@@ -49,6 +79,7 @@ using PythonCall
     mprod = gf.MeshProduct(mk, miw)
     G_k_w = gf.GfImFreq(mesh=mprod, target_shape=[1, 1]) #G_k_w.data.shape will be [nk^2, lj, 1, 1]
     gkw = MeshArray(G_k_w)
+    #gkw.mesh: [1:1, 1:1, miw, mk]
     umesh = gkw.mesh[4]
     for p in mk
         ilin = pyconvert(Int, p.linear_index) + 1
@@ -67,4 +98,29 @@ using PythonCall
     ik, iw = 12, 10
     @test gkw[1, 1, iw, ik] ≈ pyconvert(Float64, G_k_w.data[ik-1, iw-1, 0, 0])
 
+end
+
+@testset "Triqs BlockGf interface" begin
+    gf = pyimport("triqs.gf")
+    np = pyimport("numpy")
+
+    mt = gf.MeshImTime(beta=1.0, S="Fermion", n_max=3)
+    lj = pyconvert(Int, @py len(mt))
+    G_t = gf.GfImTime(mesh=mt, data=np.random.rand(lj, 2, 3)) #target_shape = [2, 3] --> innerstate = [3, 2]
+    G_w = gf.GfImTime(mesh=mt, data=np.random.rand(lj, 2, 3)) #target_shape = [2, 3] --> innerstate = [3, 2]
+
+    blockG = gf.BlockGf(name_list=["1", "2"], block_list=[G_t, G_w], make_copies=false)
+
+    jblockG = from_triqs(blockG)
+
+    # gt = MeshArray(G_t)
+    # @test size(gt) == (3, 2, lj)
+    i1, i2, t = 1, 2, 3
+    @test jblockG["1"][i1, i2, t] ≈ pyconvert(Float64, G_t.data[t-1, i2-1, i1-1])
+
+    # ############ test Matsubara frequency mesh #############
+    # gw = MeshArray(G_w)
+    # @test size(gw) == (3, 2, lj)
+    i1, i2, t = 1, 2, 3
+    @test jblockG["2"][i1, i2, t] ≈ pyconvert(Float64, G_w.data[t-1, i2-1, i1-1])
 end

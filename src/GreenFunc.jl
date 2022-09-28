@@ -28,7 +28,9 @@ using .MeshArrays
 export MeshArrays, MeshArray
 
 include("triqs/Triqs.jl")
+using .Triqs
 export Triqs
+export from_triqs
 
 include("green/transform.jl")
 export dlr_to_imfreq, dlr_to_imtime
