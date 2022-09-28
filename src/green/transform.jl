@@ -143,7 +143,7 @@ function imfreq_to_dlr(obj::MeshArray{T,N,MT}, dlrgrid::Union{Nothing,DLRFreq}=n
     else
         @assert dlrgrid.β ≈ mesh.β "Target grid has to have the same inverse temperature as the source grid."
         @assert dlrgrid.isFermi ≈ mesh.isFermi "Target grid has to have the same statistics as the source grid."
-        @assert dlrgrid.Euv ≈ mesh.Euv "Target grid has to have the same Euv as the source grid."
+        # @assert dlrgrid.Euv ≈ mesh.Euv "Target grid has to have the same Euv as the source grid."
     end
 
     mesh_new = (obj.mesh[1:dim-1]..., dlrgrid, obj.mesh[dim+1:end]...)
@@ -176,7 +176,7 @@ function imtime_to_dlr(obj::MeshArray{T,N,MT}, dlrgrid::Union{Nothing,DLRFreq}=n
     else
         @assert dlrgrid.β ≈ mesh.β "Target grid has to have the same inverse temperature as the source grid."
         @assert dlrgrid.isFermi ≈ mesh.isFermi "Target grid has to have the same statistics as the source grid."
-        @assert dlrgrid.Euv ≈ mesh.Euv "Target grid has to have the same Euv as the source grid."
+        # @assert dlrgrid.Euv ≈ mesh.Euv "Target grid has to have the same Euv as the source grid."
     end
 
     mesh_new = (obj.mesh[1:dim-1]..., dlrgrid, obj.mesh[dim+1:end]...)
@@ -201,11 +201,9 @@ function to_dlr(obj::MeshArray{T,N,MT}, dlrgrid::Union{Nothing,DLRFreq}=nothing;
         @assert isnothing(dim) == false "No temporal can be transformed to imtime."
     end
 
-    mesh = obj.mesh[dim]
-
-    if mesh isa MeshGrids.ImTime
+    if obj.mesh[dim] isa MeshGrids.ImTime
         return imtime_to_dlr(obj, dlrgrid; dim=dim, rtol=rtol, sym=sym)
-    elseif mesh isa MeshGrids.ImFreq
+    elseif obj.mesh[dim] isa MeshGrids.ImFreq
         return imfreq_to_dlr(obj, dlrgrid; dim=dim, rtol=rtol, sym=sym)
     else
         error("ImTime or ImFreq is expect for the dim = $dim.")
