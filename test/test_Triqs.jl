@@ -16,8 +16,23 @@ using PythonCall
         @test mjw[i] ≈ imag(pyconvert(ComplexF64, x))
     end
 
-    #TODO: add tests for MeshBrZone
+    #add tests for MeshBrZone
+    lat = pyimport("triqs.lattice")
+    BL = lat.BravaisLattice(units=((2, 0, 0), (1, sqrt(3), 0))) # testing with a triangular lattice so that exchanged index makes a difference
+    BZ = lat.BrillouinZone(BL)
+    nk = 4
+    mk = gf.MeshBrillouinZone(BZ, nk)
+    mjk = from_triqs(mk)
+    for p in mk
+        ilin = pyconvert(Int, p.linear_index) + 1
+        inds = pyconvert(Array, p.index)[1:2] .+ 1
+        pval = pyconvert(Array, p.value)
+        # note that while linear_index is kept, the index reversed
+        @test pval[1:2] ≈ mjk[ilin]
+        @test pval[1:2] ≈ mjk[reverse(inds)...]
+    end
 
+    # tests for MeshProduct
     mprod = gf.MeshProduct(mt, mw)
     mjprod = from_triqs(mprod)
     # println(mjprod)
@@ -28,6 +43,19 @@ using PythonCall
         @test points[1] ≈ imag(pyconvert(ComplexF64, w.value))
         @test points[2] ≈ pyconvert(Float64, t.value)
     end
+
+    # test multilayer MeshProduct
+    mprod2 = gf.MeshProduct(mk, mprod)
+    mjprod2 = from_triqs(mprod2)
+    for (k, tw) in mprod2
+        # println(t, w)
+        ki, ti, wi = pyconvert(Int, k.linear_index) + 1, pyconvert(Int, tw[0].linear_index) + 1, pyconvert(Int, tw[1].linear_index) + 1
+        points = (mjprod2.meshes[1][wi, ti], mjprod2.meshes[2][ki])
+        @test points[1][1] ≈ imag(pyconvert(ComplexF64, tw[1].value))
+        @test points[1][2] ≈ pyconvert(Float64, tw[0].value)
+        @test points[2] ≈ pyconvert(Array, k.value)[1:2]
+    end
+
 end
 
 @testset "Triqs Gf interface" begin
@@ -80,15 +108,6 @@ end
     G_k_w = gf.GfImFreq(mesh=mprod, target_shape=[1, 1]) #G_k_w.data.shape will be [nk^2, lj, 1, 1]
     gkw = MeshArray(G_k_w)
     #gkw.mesh: [1:1, 1:1, miw, mk]
-    umesh = gkw.mesh[4]
-    for p in mk
-        ilin = pyconvert(Int, p.linear_index) + 1
-        inds = pyconvert(Array, p.index)[1:2] .+ 1
-        pval = pyconvert(Array, p.value)
-        # note that while linear_index is kept, the index reversed
-        @test pval[1:2] ≈ umesh[ilin]
-        @test pval[1:2] ≈ umesh[reverse(inds)...]
-    end
     @test size(gkw) == (1, 1, lj, nk^2)
     ik, iw = 12, 10
     @test gkw[1, 1, iw, ik] ≈ pyconvert(Float64, G_k_w.data[ik-1, iw-1, 0, 0])
