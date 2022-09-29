@@ -11,14 +11,21 @@ makedocs(;
     format=Documenter.HTML(;
         prettyurls=get(ENV, "CI", "false") == "true",
         canonical="https://fsxbhyy.github.io/GreenFunc.jl",
-        assets=String[],
+        assets=String[]
     ),
     pages=[
         "Home" => "index.md",
-    ],
+        "Reference" => [
+            "GreenFunc" => "lib/greenfunc.md",
+            "MeshArrays" => "lib/mesharrays.md",
+            "MeshGrids" => "lib/meshgrids.md",
+            "Triqs" => "lib/triqs.md",
+            "Deprecated" => "lib/deprecated.md",
+        ]
+    ]
 )
 
 deploydocs(;
     repo="github.com/numericalEFT/GreenFunc.jl",
-    devbranch="master",
+    devbranch="master"
 )
