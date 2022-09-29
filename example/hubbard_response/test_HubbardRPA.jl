@@ -4,18 +4,17 @@ using CondaPkg
 using PythonCall
 
 @testset "HubbardRPA" begin
+    include("HubbardRPA.jl")
 
-    @testset "Test PythonCall and tprf" begin
-        # run tprf official example to make sure it works
-        tb = pyimport("triqs_tprf.tight_binding")
-        gf = pyimport("triqs.gf")
-        lat = pyimport("triqs_tprf.lattice")
-        sq_lat = tb.create_square_lattice(norb=1, t=1.0)
+    @testset "tprf_rpa.py" begin
+        f = open("tprf_rpa.py", "r")
+        pyexec(read(f, String), Main)
+        gamma_rpa = pyeval(Py, "gamma_rpa", Main)
+        gamma = gamma_rpa(norb=1, t=1.0, nk=32, dim=2, beta=10, n_max=100, mu=0, U=1.0)
+        jgamma = GreenFunc.MeshArray(gamma)
+    end
 
-        nk = 32
-        e_k = sq_lat.get_kmesh((nk, nk, 1))
-
-        wmesh = gf.MeshImFreq(beta=10, S="Fermion", n_max=100)
-        g0_wk = lat.lattice_dyson_g0_wk(mu=0, e_k=e_k, mesh=wmesh)
+    @testset "HubbardRPA.jl" begin
+        jgamma = Gamma(norb=1, t=1.0, nk=32, dim=2, beta=10, n_max=100, mu=0, U=1.0)
     end
 end
