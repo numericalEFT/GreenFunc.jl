@@ -34,7 +34,7 @@ function syk_sigma(mesh_dlr, G_t, J=1.0)
     tau_rev = reverse(mesh_dlr.β .- mesh_dlr.dlr.τ) # Reversed imaginary time nodes
     G_t_rev = dlr_to_imtime(to_dlr(G_t, mesh_dlr), tau_rev) # G at beta - tau
 
-    Sigma_t = J .^ 2 .* G_t .^ 2 .* G_t_rev # SYK self-energy in imaginary time
+    Sigma_t = J .^ 2 .* G_t .^ 2 .* G_t_rev[end:-1:1] # SYK self-energy in imaginary time
 
     return Sigma_t
 end
@@ -50,7 +50,7 @@ function dyson(dlr, sigma_freq, mu)
     end
 end
 
-function solve_syk_with_fixpoint_iter(mesh_dlr, G_t, mu, tol=mesh_dlr.rtol * 10; mix=0.1, maxiter=5000, verbose=true)
+function solve_syk_with_fixpoint_iter(mesh_dlr, G_t, mu, tol=mesh_dlr.rtol * 10; mix=0.1, maxiter=1000, verbose=true)
     G_t.data = zeros(ComplexF64, G_t.dims...)
     iternum = 0
     for iter in 1:maxiter
@@ -75,7 +75,7 @@ function solve_syk_with_fixpoint_iter(mesh_dlr, G_t, mu, tol=mesh_dlr.rtol * 10;
         G_t = mix .* G_t_new + (1 - mix) .* G_t # Linear mixing
         iternum = iter
     end
-    println(iternum)
+    # println(iternum)
     return G_t
 end
 
@@ -110,7 +110,7 @@ mesh_dlr = MeshGrids.DLRFreq(β, isFermi; Euv=5.0, rtol=1e-10, sym=:ph, rebuild=
 mesh = MeshGrids.ImTime(β, isFermi; Euv=5.0, grid=mesh_dlr.dlr.τ)
 G_t = MeshArray(mesh; dtype=ComplexF64)
 
-@time G_t_correct = solve_syk_with_fixpoint_iter(mesh_dlr, G_t, 0.00, mix=0.01, maxiter=10000, verbose=true)
+@time G_t_correct = solve_syk_with_fixpoint_iter(mesh_dlr, G_t, 0.00, mix=0.1, maxiter=1000, verbose=true)
 printG(mesh_dlr.dlr, G_t_correct)
 
 G_dlr_correct = to_dlr(G_t_correct, mesh_dlr)
@@ -118,22 +118,22 @@ G_dlr_correct = to_dlr(G_t_correct, mesh_dlr)
 printstyled("=====    Test Symmetrized and Unsymmetrized DLR solver for SYK model     =======\n", color=:yellow)
 
 @printf("%30s%30s%30s%20s\n", "Euv", "sym_solver", "unsym_solver", "good or bad")
-for Euv in LinRange(5.0, 10.0, 20)
+for Euv in LinRange(5.0, 20.0, 10)
 
     rtol = 1e-10
     # printstyled("=====     Symmetrized DLR solver for SYK model     =======\n", color = :yellow)
-    mix = 0.01
-    mesh_dlrph = MeshGrids.DLRFreq(β, isFermi; Euv=Euv, rtol=rtol, sym=:ph, rebuild=true)
+    mix = 0.1
+    mesh_dlrph = MeshGrids.DLRFreq(β, isFermi; Euv=Euv, rtol=rtol, sym=:ph, rebuild=false)
     mesh1 = MeshGrids.ImTime(β, isFermi; Euv=Euv, grid=mesh_dlrph.dlr.τ)
     G_t1 = MeshArray(mesh1; dtype=ComplexF64)
-    G_t_ph = solve_syk_with_fixpoint_iter(mesh_dlrph, G_t1, 0.00, mix=mix, verbose=true)
+    G_t_ph = solve_syk_with_fixpoint_iter(mesh_dlrph, G_t1, 0.00, mix=mix, verbose=verbose)
 
     # printstyled("=====     Unsymmetrized DLR solver for SYK model     =======\n", color = :yellow)
-    mix = 0.01
-    mesh_dlrnone = MeshGrids.DLRFreq(β, isFermi; Euv=Euv, rtol=rtol, sym=:none, rebuild=true)
+    mix = 0.1
+    mesh_dlrnone = MeshGrids.DLRFreq(β, isFermi; Euv=Euv, rtol=rtol, sym=:none, rebuild=false)
     mesh2 = MeshGrids.ImTime(β, isFermi; Euv=Euv, grid=mesh_dlrnone.dlr.τ)
     G_t2 = MeshArray(mesh2; dtype=ComplexF64)
-    G_t_none = solve_syk_with_fixpoint_iter(mesh_dlrnone, G_t2, 0.00, mix=mix, verbose=true)
+    G_t_none = solve_syk_with_fixpoint_iter(mesh_dlrnone, G_t2, 0.00, mix=mix, verbose=verbose)
 
     # printstyled("=====     Unsymmetrized versus Symmetrized DLR solver    =======\n", color = :yellow)
     # @printf("%15s%40s%40s%40s\n", "τ", "sym DLR (interpolated)", "unsym DLR", "difference")
