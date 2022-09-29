@@ -73,7 +73,7 @@ function dlr_to_imtime(obj::MeshArray{T,N,MT}, tgrid=nothing; dim::Union{Nothing
     if tgrid isa MeshGrids.ImTime
         @assert tgrid.β ≈ mesh.β "Target grid has to have the same inverse temperature as the source grid."
         @assert tgrid.isFermi ≈ mesh.isFermi "Target grid has to have the same statistics as the source grid."
-        @assert tgrid.Euv ≈ mesh.Euv "Target grid has to have the same Euv as the source grid."
+        # @assert tgrid.Euv ≈ mesh.Euv "Target grid has to have the same Euv as the source grid."
     elseif tgrid === nothing
         tgrid = MeshGrids.ImTime(mesh.β, mesh.isFermi; grid=mesh.dlr.τ, Euv=mesh.Euv)
     else
@@ -107,7 +107,7 @@ function dlr_to_imfreq(obj::MeshArray{T,N,MT}, ngrid=nothing; dim::Union{Nothing
     if ngrid isa MeshGrids.ImFreq
         @assert ngrid.β ≈ mesh.β "Target grid has to have the same inverse temperature as the source grid."
         @assert ngrid.isFermi ≈ mesh.isFermi "Target grid has to have the same statistics as the source grid."
-        @assert ngrid.Euv ≈ mesh.Euv "Target grid has to have the same Euv as the source grid."
+        # @assert ngrid.Euv ≈ mesh.Euv "Target grid has to have the same Euv as the source grid."
     elseif ngrid === nothing
         ngrid = MeshGrids.ImFreq(mesh.β, mesh.isFermi; grid=mesh.dlr.n, Euv=mesh.Euv)
     else
