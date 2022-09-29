@@ -21,6 +21,7 @@ A SYK model solver based on a forward fixed-point iteration method.
 """
 
 using GreenFunc
+using Lehmann
 using Printf
 
 diff(a, b) = maximum(abs.(a - b)) # return the maximum deviation between a and b
@@ -92,30 +93,30 @@ mesh_dlr = MeshGrids.DLRFreq(β, isFermi; Euv=5.0, rtol=1e-14, sym=:ph)   # Init
 mesh = MeshGrids.ImTime(β, isFermi; Euv=5.0, grid=mesh_dlr.dlr.τ)
 G_t = MeshArray(mesh; dtype=ComplexF64)
 
-G_t_correct = solve_syk_with_fixpoint_iter(mesh_dlr, G_t, 0.00, mix=0.1, verbose=false)
+@time G_t_correct = solve_syk_with_fixpoint_iter(mesh_dlr, G_t, 0.00, mix=0.1, verbose=false)
 printG(mesh_dlr.dlr, G_t_correct)
 
 printstyled("=====    Test Symmetrized and Unsymmetrized DLR solver for SYK model     =======\n", color=:yellow)
 
 @printf("%30s%30s%30s%20s\n", "Euv", "sym_solver", "unsym_solver", "good or bad")
-for Euv in LinRange(5.0, 10.0, 50)
+for Euv in LinRange(5.0, 10.0, 20)
 
     rtol = 1e-10
     # printstyled("=====     Symmetrized DLR solver for SYK model     =======\n", color = :yellow)
     mix = 0.01
-    mesh_dlrph = MeshGrids.DLRFreq(β, isFermi; Euv=Euv, rtol=rtol, sym=:ph)   # Initialize DLR grid
+    # dlrgrid1 = DLRGrid(Euv, β, rtol, isFermi, :ph; rebuild=true)   # Initialize DLR grid
+    mesh_dlrph = MeshGrids.DLRFreq(β, isFermi; Euv=Euv, rtol=rtol, sym=:ph, rebuild=true)
     mesh1 = MeshGrids.ImTime(β, isFermi; Euv=Euv, grid=mesh_dlrph.dlr.τ)
     G_t1 = MeshArray(mesh1; dtype=ComplexF64)
     G_t_ph = solve_syk_with_fixpoint_iter(mesh_dlrph, G_t1, 0.00, mix=mix, verbose=verbose)
-    printG(mesh_dlrph.dlr, G_t_ph)
 
     # printstyled("=====     Unsymmetrized DLR solver for SYK model     =======\n", color = :yellow)
     mix = 0.01
-    mesh_dlrnone = MeshGrids.DLRFreq(β, isFermi; Euv=Euv, rtol=rtol, sym=:none)   # Initialize DLR grid
+    # dlrgrid2 = DLRGrid(Euv, β, rtol, isFermi, :none; rebuild=true)  # Initialize DLR grid
+    mesh_dlrnone = MeshGrids.DLRFreq(β, isFermi; Euv=Euv, rtol=rtol, sym=:none, rebuild=true)
     mesh2 = MeshGrids.ImTime(β, isFermi; Euv=Euv, grid=mesh_dlrnone.dlr.τ)
     G_t2 = MeshArray(mesh2; dtype=ComplexF64)
     G_t_none = solve_syk_with_fixpoint_iter(mesh_dlrnone, G_t2, 0.00, mix=mix, verbose=verbose)
-    printG(mesh_dlrnone.dlr, G_t_none)
 
     # printstyled("=====     Unsymmetrized versus Symmetrized DLR solver    =======\n", color = :yellow)
     # @printf("%15s%40s%40s%40s\n", "τ", "sym DLR (interpolated)", "unsym DLR", "difference")
