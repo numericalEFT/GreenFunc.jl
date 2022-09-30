@@ -51,15 +51,20 @@ function save_hubbard_rpa_list(;
             "greens" => greens,
             "gammas" => gammas
         ), compress=true)
+    return paras, greens, gammas
 end
 
 function load_hubbard_rpa_list(;
     fname="./run/hubbard_rpa.jld2")
-    f = load(fname)
-    paras = f["paras"]
-    greens = f["greens"]
-    gammas = f["gammas"]
-    return paras, greens, gammas
+    try
+        f = load(fname)
+        paras = f["paras"]
+        greens = f["greens"]
+        gammas = f["gammas"]
+        return paras, greens, gammas
+    catch
+        println("Warning[load_hubbard_rpa_list]:" * fname * " fail to open!")
+    end
 end
 
 end
