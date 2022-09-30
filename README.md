@@ -18,21 +18,22 @@ GreenFunc.jl provides a general container for multidimensional Green's functions
 This package has been registered. So, simply type `import Pkg; Pkg.add("GreenFunc")` in the Julia REPL to install.
 
 ## Basic Usage
-We first show how to generate a multidimensional function given by the following equation: $G_{\sigma_1,\sigma_2}(q,\omega_n) = \frac{1}{i \omega_n - \epsilon}$. This is a bare green's function of particles that have two inner spin 1/2 degrees, $sigma_1$ and $sigma_2$, and a dispersion $\epsilon = q^2-1$.
+We first show how to generate a multidimensional function given by the following equation: $G_{ \sigma_1, \sigma_2}(q,\omega_n) = \frac{1}{i \omega_n - \epsilon}$. This is a bare green's function of particles that have two inner spin 1/2 degrees, $\sigma_1$ and $\sigma_2$, and a dispersion $\epsilon = q^2-1$.
      
 ```julia
 julia> using GreenFunc
 julia> using CompositeGrids
+julia> isFermi = true
 julia> mesh1 = SimpleGrid.Uniform{Float64}([0.0, 10.0], 50);
-julia> mesh2 = MeshGrids.ImFreq(100.0, FERMION);
+julia> mesh2 = MeshGrids.ImFreq(100.0, isFermi);
 julia> innermesh = (1:2,1:2);    
-julia> g =  MeshArray(innermesh..., mesh1, mesh2, dtype=ComplexF64)
+julia> g_freq =  MeshArray(innermesh..., mesh1, mesh2, dtype=ComplexF64)
 Meshed array with dims = (2, 2, 50, 60) and total length = 12000
 - Mesh: Tuple{UnitRange{Int64}, UnitRange{Int64}, CompositeGrids.SimpleG.Uniform{Float64}, ImFreq{Float64, CompositeGrids.SimpleG.Arbitrary{Int64}}}
-julia> for ind in eachindex(g)
-           q = g.mesh[3][ind[3]]
-           ω_n = g.mesh[4][ind[4]]
-           g[ind] = 1/(im*ω_n - (q^2-1))
+julia> for ind in eachindex(g_freq)
+           q = g_freq.mesh[3][ind[3]]
+           ω_n = g_freq.mesh[4][ind[4]]
+           g_freq[ind] = 1/(im*ω_n - (q^2-1))
        end
 ```
 - Momentum grids are handled by CompositeGrids package. Here SimpleGrid.Uniform{T}([mink,maxk],N) generates a linearly spaced momentum grid with N points in the interval (mink,maxk). For other specialized grids see https://github.com/numericalEFT/CompositeGrids.jl.
@@ -44,10 +45,35 @@ julia> for ind in eachindex(g)
 We provide a dedicated fourier transform between imaginary time and Matsubara frequency spaces through the Discrete Lehmann representation.
 
 ```julia
-    build green_dlr from above green's function (with to_dlr method)
-    build green_tau from green_dlr (with dlr_to_tau method)
-    Compare with exact analytical expression (can do this by plot)
-    showcase the usage of <<, pipe in fourier transform
+#Transform the green function to DLR space and imaginary time space from Matsubara frequency spaces
+julia > g_dlr = to_dlr(g)
+julia > g_tau = dlr_to_imtime(g_dlr)
+
+# Transform to Matsubara frequency space from DLR spectral density with "<<"
+julia > g_freq_1 = MeshArray(innermesh..., mesh1, mesh2, dtype=ComplexF64)
+julia > g_freq_1 << g_dlr
+
+# Transform to imaginary time space from DLR spectral density with "<<"
+julia > mesh3 = MeshGrids.ImTime(100.0, isFermi)
+julia > g_tau_1 =  MeshArray(innermesh..., mesh1, mesh3, dtype=ComplexF64)
+julia > g_tau_1 << g_dlr
+
+# Transform to DLR space from imaginary time space with "<<"
+julia > mesh4 = MeshGrids.DLRFreq(100,isFermi)
+julia > g_dlr_1 =  MeshArray(innermesh..., mesh1, mesh4, dtype=ComplexF64)
+julia > g_dlr_1 << g_tau
+
+# julia > g_tau_0 =  MeshArray(innermesh..., mesh1, mesh3, dtype=ComplexF64)
+# julia> for ind in eachindex(g_tau_0)
+#            q = g.mesh[3][ind[3]]
+#            τ = g.mesh[4][ind[4]]
+#            g[ind] = -exp(-τ*(q^2-1))*(1-1/(exp(100*(q^2-1))+1))
+#        end
+
+# build green_dlr from above green's function (with to_dlr method)
+# build green_tau from green_dlr (with dlr_to_tau method)
+# Compare with exact analytical expression (can do this by plot)
+# showcase the usage of <<, pipe in fourier transform
 ```
 - The green's function in DLR space saves the spectral density of the object, which once generated, can be used to reproduce the Green's function in imaginary time/ Matsubara frequency space at any point with great accuracy (The reason why our current api always ask user to first go to DLR space)
 - Explain the behavior of << for fourier transform, and when one should use it.
