@@ -6,7 +6,7 @@ using GreenFunc.Triqs.PythonCall
 using Parameters
 using JLD2
 
-export hubbard_rpa, save_hubbard_rpa_list
+export hubbard_rpa, save_hubbard_rpa_list, load_hubbard_rpa_list
 
 #TODO: load rpa kernel of hubbard model from triqs and triqs_tprf
 
@@ -42,16 +42,10 @@ end
 function save_hubbard_rpa_list(;
     para::Para=Para(), betas=[para.beta,],
     fname="./run/hubbard_rpa.jld2")
-    paras = []
-    gammas = []
-    greens = []
-    for beta in betas
-        parab = Para(para, beta=beta)
-        push!(paras, parab)
-        gamma, green = hubbard_rpa(para)
-        push!(gammas, gamma)
-        push!(greens, green)
-    end
+    paras = [Para(para, beta=beta) for beta in betas]
+    funcs = [hubbard_rpa(param) for param in paras]
+    greens = [funcs[i][1] for i in 1:length(funcs)]
+    gammas = [funcs[i][2] for i in 1:length(funcs)]
     save(fname, Dict(
             "paras" => paras,
             "greens" => greens,
