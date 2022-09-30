@@ -32,6 +32,7 @@ end
         rtol=1e-12,
         Euv=1000 / β,
         sym=:none,
+        rebuild=false,
         dlr::Union{DLRGrid,Nothing}=nothing
     )
 
@@ -44,6 +45,7 @@ Create a `DLRFreq` struct.
 - `rtol`: tolerance absolute error. By default, `rtol` = 1e-12.
 - `Euv`: the UV energy scale of the spectral density. By default, `Euv = 1000 / β`.
 - `sym`: the symmetry of `dlr`. By default, `sym = :none`.
+- `rebuild`: if no dlr is input, set false to load DLRGrid from the file; set true to recalculate the DLRGrid on the fly. By default, `rebuild = false`.
 - `dlr`: 1D DLR grid. By default, a DLR grid with input arguments is used.
 """
 function DLRFreq(β, isFermi::Bool=false;
@@ -51,10 +53,11 @@ function DLRFreq(β, isFermi::Bool=false;
     rtol=1e-12,
     Euv=1000 / β,
     sym=:none,
+    rebuild=false,
     dlr::Union{DLRGrid,Nothing}=nothing
 )
     if isnothing(dlr)
-        dlr = DLRGrid(Euv, β, rtol, isFermi, sym)
+        dlr = DLRGrid(Euv, β, rtol, isFermi, sym; rebuild=rebuild)
     end
     grid = SimpleG.Arbitrary{dtype}(dlr.ω)
     return DLRFreq{dtype}(dlr, grid, β, Euv, rtol, sym, isFermi)
