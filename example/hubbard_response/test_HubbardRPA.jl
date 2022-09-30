@@ -4,17 +4,27 @@ using CondaPkg
 using PythonCall
 
 @testset "HubbardRPA" begin
-    include("HubbardRPA.jl")
+    include("./HubbardRPA.jl")
+    using .HubbardRPA
 
     @testset "tprf_rpa.py" begin
-        f = open("tprf_rpa.py", "r")
+        f = open("./example/hubbard_response/tprf_rpa.py", "r")
         pyexec(read(f, String), Main)
         gamma_rpa = pyeval(Py, "gamma_rpa", Main)
-        gamma = gamma_rpa(norb=1, t=1.0, nk=32, dim=2, beta=10, n_max=100, mu=0, U=1.0)
+        gamma, green0 = gamma_rpa(norb=1, t=1.0, nk=32, dim=2, beta=10, n_max=100, mu=0, U=1.0)
         jgamma = GreenFunc.MeshArray(gamma)
     end
 
     @testset "HubbardRPA.jl" begin
-        jgamma = Gamma(norb=1, t=1.0, nk=32, dim=2, beta=10, n_max=100, mu=0, U=1.0)
+        para = HubbardRPA.Para()
+        jgamma, jgreen0 = hubbard_rpa(para)
+    end
+
+    @testset "save and load" begin
+        save_hubbard_rpa_list()
+        paras, greens, gammas = load_hubbard_rpa_list()
+        print(paras)
+        print(greens)
+        print(gammas)
     end
 end

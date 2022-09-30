@@ -20,6 +20,6 @@ def gamma_rpa(norb, t, nk, dim, beta, n_max, mu, U):
     phi_d_wk = construct_phi_wk(chi_d_wk, UU)
     phi_m_wk = construct_phi_wk(chi_m_wk, UU)
     gamma_singlet = construct_gamma_singlet_rpa(UU, UU, phi_d_wk, phi_m_wk)
-    return gamma_singlet
+    return gamma_singlet, g0_wk
 
 # gamma_rpa(norb=1,t=1.0,nk=32,dim=2,beta=100,n_max=1000,mu=0,U=1.0)
