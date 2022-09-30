@@ -161,6 +161,9 @@ function Base.show(io::IO, obj::MeshArray)
     )
 end
 
+Base.show(io::IO, ::MIME"text/plain", obj::MeshArray) = Base.show(io, obj)
+Base.show(io::IO, ::MIME"text/html", obj::MeshArray) = Base.show(io, obj)
+
 """
     function rank(obj::MeshArray{T,N,MT})
 
