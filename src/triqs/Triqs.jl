@@ -87,8 +87,14 @@ function _check_mesh(obj::Py, gf)
     return false
 end
 
+"""
+    function MeshArray(objSrc::Py)
+    
+Convert a Green's function object from triqs to a MeshArray.
+"""
 function MeshArray(objSrc::Py)
     # println(objSrc)
+    @assert _check_Gf(objSrc, pyimport("triqs.gf")) "Not a Green's function object"
     innerstate = pyconvert(Tuple, objSrc.target_shape)
     # @assert innerstate == dims[1:length(innerstate)] "Inner state dimensions do not match!"
     mesh = (1:state for state in innerstate[end:-1:1])
@@ -107,6 +113,15 @@ function MeshArray(objSrc::Py)
     return g
 end
 
+"""
+    function from_triqs(pyobj::Py)
+    
+Convert a triqs object to a julia object. Currently support the following types:
+
+1. Triqs Mesh (ImTime, ImFreq, MeshProduct) -> MeshGrids (ImTime, ImFreq, MeshProduct)
+2. Triqs Green's function (Gf, GfImTime, GfImFreq)  -> MeshArray
+3. Triqs BlockGf -> Dict{String, MeshArray}
+"""
 function from_triqs(pyobj::Py)
     gf = pyimport("triqs.gf")
     if _check_mesh(pyobj, gf)
