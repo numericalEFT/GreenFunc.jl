@@ -148,7 +148,7 @@ function imfreq_to_dlr(obj::MeshArray{T,N,MT}, dlrgrid::Union{Nothing,DLRFreq}=n
 
     mesh_new = (obj.mesh[1:dim-1]..., dlrgrid, obj.mesh[dim+1:end]...)
 
-    data = matfreq2dlr(dlrgrid.dlr, obj.data, mesh.grid; axis=dim)
+    data = matfreq2dlr(dlrgrid.dlr, obj.data, mesh.grid.grid; axis=dim) # should be mesh.grid.grid here
     return MeshArray(mesh_new...; dtype=eltype(data), data=data)
 end
 
@@ -181,7 +181,7 @@ function imtime_to_dlr(obj::MeshArray{T,N,MT}, dlrgrid::Union{Nothing,DLRFreq}=n
 
     mesh_new = (obj.mesh[1:dim-1]..., dlrgrid, obj.mesh[dim+1:end]...)
 
-    data = tau2dlr(dlrgrid.dlr, obj.data, mesh.grid; axis=dim)
+    data = tau2dlr(dlrgrid.dlr, obj.data, mesh.grid.grid; axis=dim)
     return MeshArray(mesh_new...; dtype=eltype(data), data=data)
 end
 

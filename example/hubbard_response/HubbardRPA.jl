@@ -44,8 +44,8 @@ function save_hubbard_rpa_list(;
     fname="./run/hubbard_rpa.jld2")
     paras = [Para(para, beta=beta) for beta in betas]
     funcs = [hubbard_rpa(param) for param in paras]
-    greens = [funcs[i][1] for i in 1:length(funcs)]
-    gammas = [funcs[i][2] for i in 1:length(funcs)]
+    greens = [funcs[i][2] for i in 1:length(funcs)]
+    gammas = [funcs[i][1] for i in 1:length(funcs)]
     save(fname, Dict(
             "paras" => paras,
             "greens" => greens,
