@@ -44,20 +44,16 @@ function PPver(;
     print=-1,
     alpha=3.0, #learning ratio
     config=nothing,
-    kwargs...
-)
-    dim = 2
-    beta = 10.0
-    nk = 32
-    t, U = 1.0, 1.0
+    para::HubbardRPA.Para=para,
+    kwargs...)
+    HubbardRPA.@unpack t, nk, dim, beta, U = para
+
     Euv = 4t
 
-    jgamma = Gamma(norb=1, t=t, nk=nk, dim=dim, beta=beta, n_max=100, mu=0, U=U)
-
-    kmesh = jgamma.mesh[5]
+    kmesh = ga_w.mesh[5]
 
     ##### prepare external K grid and tau grid ##############
-    extKgrid = [(kx, ky) for (kx, ky) in kmesh]
+    extKgrid = [(k[1], k[2]) for k in kmesh]
     extTgrid = CompositeGrid.LogDensedGrid(:uniform, [0.0, beta], [0.0, beta], 8, 1 / Euv, 8) #roughly ~100 points if resolution = β/128
 
     nt = length(extTgrid)

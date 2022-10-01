@@ -106,7 +106,8 @@ function MeshArray(objSrc::Py)
     end
     _data = PyArray(objSrc.data, copy=false) #no copy is made, but PyArray will be in column-major 
     # g = MeshArray(mesh...; dtype=Float64)
-    g = MeshArray(mesh...; dtype=ComplexF64) # tprf_rpa produce complex
+    # TODO: read data type from python
+    g = MeshArray(mesh...; dtype=eltype(_data)) # tprf_rpa produce complex
     for i in 1:length(g)
         g.data[i] = unsafe_load(_data.ptr, i) #read data from pointer
     end

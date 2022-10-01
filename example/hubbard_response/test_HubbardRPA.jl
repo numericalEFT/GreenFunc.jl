@@ -21,10 +21,10 @@ using PythonCall
     end
 
     @testset "save and load" begin
-        save_hubbard_rpa_list()
+        save_hubbard_rpa_list(betas=[10.0, 20.0])
         paras, greens, gammas = load_hubbard_rpa_list()
-        print(paras)
-        print(greens)
-        print(gammas)
+        # print(paras)
+        # print(greens)
+        # print(gammas)
     end
 end
