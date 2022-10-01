@@ -147,7 +147,6 @@ function imfreq_to_dlr(obj::MeshArray{T,N,MT}, dlrgrid::Union{Nothing,DLRFreq}=n
     end
 
     mesh_new = (obj.mesh[1:dim-1]..., dlrgrid, obj.mesh[dim+1:end]...)
-
     data = matfreq2dlr(dlrgrid.dlr, obj.data, mesh.grid.grid; axis=dim) # should be mesh.grid.grid here
     return MeshArray(mesh_new...; dtype=eltype(data), data=data)
 end

@@ -28,11 +28,12 @@ para = paras[pid]
 
 
 gr_dlr = gr_w |> to_dlr
-gr_imt = dlr_to_imtime(gr_dlr, CompositeGrid.SimpleG.Uniform{Float64}([0, para.beta], para.nw))
+gr_imt = dlr_to_imtime(gr_dlr, CompositeGrids.SimpleG.Uniform{Float64}([0, para.beta], para.nw))
+
 ga0 = ga_w[1, 1, 1, 1, 1, 1]
 ga_w .-= ga0
 ga_dlr = ga_w |> to_dlr
-ga_imt = dlr_to_imtime(ga_dlr, CompositeGrid.SimpleG.Uniform{Float64}([0, para.beta], para.nw))
+ga_imt = dlr_to_imtime(ga_dlr, CompositeGrids.SimpleG.Uniform{Float64}([0, para.beta], para.nw))
 # use default here cause ERROR:
 # when dlr.τ is converted to CompositeGrid.SimpleG.Arbitrary, the bound is not [0, β]
 

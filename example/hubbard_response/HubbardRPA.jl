@@ -4,6 +4,7 @@ module HubbardRPA
 using GreenFunc
 using GreenFunc.Triqs.PythonCall
 using Parameters
+using CodecZlib
 using JLD2
 
 export hubbard_rpa, save_hubbard_rpa_list, load_hubbard_rpa_list
