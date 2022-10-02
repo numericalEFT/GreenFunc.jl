@@ -77,6 +77,12 @@ julia> for ind in eachindex(g_freq)
 
 - [ ] Give an example use the uniform BZmesh to create the k-mesh
 
+Now we show how to generate a multidimensional function with
+tight-binding dispersion:
+$G_(k, \omega_n) = \frac{1}{i\omega_n - \epsilon(k)}$ with 
+$\epsilon(k) = -2t(cos(k_x)+cos(k_y))$.
+The momentum is defined on the first Brillouin zone captured by a 2D k-mesh.
+
 ```julia
 using GreenFunc
 using GreenFunc: BrillouinZoneMeshes
@@ -95,8 +101,9 @@ for ind in eachindex(g_freq)
     println(q, ω_n)
     g_freq[ind] = 1/(im*ω_n - (-2*t*sum(cos.(q))))
 end
-
 ```
+
+- Momentum is handled by BrillouinZoneMeshes package. Here a UniformMesh{DIM,N}(origin, latvec) generates a linearly spaced momentum mesh on the first Brillouin zone defined by origin and lattice vectors given. For more detail see https://github.com/numericalEFT/BrillouinZoneMeshes.jl.
 
 - [ ] Maybe discuss the MeshProduct here?
 
