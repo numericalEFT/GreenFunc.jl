@@ -77,6 +77,27 @@ julia> for ind in eachindex(g_freq)
 
 - [ ] Give an example use the uniform BZmesh to create the k-mesh
 
+```julia
+using GreenFunc
+using GreenFunc: BrillouinZoneMeshes
+
+DIM = 2
+latvec = [1.0 0.0; 0.0 1.0] .* 2π
+nk = 8
+bzmesh = BrillouinZoneMeshes.BaseMesh.UniformMesh{DIM, nk}([0.0, 0.0], latvec)
+wmesh = MeshGrids.ImFreq(10.0, FERMION)
+g_freq =  MeshArray(bzmesh, wmesh; dtype=ComplexF64)
+
+t = 1.0
+for ind in eachindex(g_freq)
+    q = g_freq.mesh[1][ind[1]]
+    ω_n = g_freq.mesh[2][ind[2]]
+    println(q, ω_n)
+    g_freq[ind] = 1/(im*ω_n - (-2*t*sum(cos.(q))))
+end
+
+```
+
 - [ ] Maybe discuss the MeshProduct here?
 
 ## Fourier Transform with DLR
