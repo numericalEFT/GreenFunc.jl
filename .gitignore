@@ -31,3 +31,4 @@ Manifest.toml
 
 .txt
 .CondaPkg
+**/__pycache__/
