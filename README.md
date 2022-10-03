@@ -162,5 +162,49 @@ Another
 
 ### Example 6: Load Triqs BrillouinZone
 
+In this example we show how the Brillouin zone mesh from triqs is loaded
+as a UniformMesh from BrillouinZoneMeshes package, and clarify the
+convention we adopted to resolve the conflict between Julia and Python
+data structure.
+
+```julia
+using PythonCall, GreenFunc
+
+# construct triqs Brillouin zone mesh
+lat = pyimport("triqs.lattice")
+gf = pyimport("triqs.gf")
+BL = lat.BravaisLattice(units=((2, 0, 0), (1, sqrt(3), 0))) 
+BZ = lat.BrillouinZone(BL)
+nk = 4
+mk = gf.MeshBrillouinZone(BZ, nk)
+
+# load Triqs mesh and construct 
+mkj = from_triqs(mk)
+
+for p in mk
+    pval = pyconvert(Array, p.value)
+    # notice that Triqs always return a 3D point, even for 2D case(where z is always 0)
+    # notice also that Julia index starts from 1 while Python from 0
+    # points of the same linear index has the same value
+    ilin = pyconvert(Int, p.linear_index) + 1
+    @assert pval[1:2] ≈ mkj[ilin]
+    # points with the same linear index corresponds to REVERSED cartesian index
+    inds = pyconvert(Array, p.index)[1:2] .+ 1
+    @assert pval[1:2] ≈ mkj[reverse(inds)...]
+end
+```
+
+- Due to the difference of cartesian index order between Julia and Python,
+it is inconvenient to construct Brillouin zone mesh exactly same as in Triqs.
+- We adopted the convention so that the grid point and linear index
+is consistent with Triqs counterpart, while the order of cartesian index
+and lattice vector reversed.
+- Here's a table of 2D converted mesh v.s. the Triqs counterpart:
+
+|Object | Triqs | GreenFunc.jl|
+| ------ | ------- | ------------- |
+| Linear index | mk[i]=(x, y, 0) | mkj[i]= (x, y) |
+| Cartesian index | mk[i,j]=(x, y, 0) | mkj[j,i]=(x,y) |
+| Lattice vector | (a1, a2) | (a2, a1) |
 
 ### Example 7: Load Triqs Green;s function
