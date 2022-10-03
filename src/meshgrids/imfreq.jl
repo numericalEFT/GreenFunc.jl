@@ -58,6 +58,8 @@ end
 matfreq_to_int(tg::ImFreq, ωn) = tg.isFermi ? Int(round((ωn * tg.β / π - 1) / 2)) : Int(round((ωn * tg.β / π) / 2))
 int_to_matfreq(tg::ImFreq, n::Int) = tg.isFermi ? (2n + 1) * π / tg.β : 2n * π / tg.β
 
+matfreq(tg::ImFreq) = [int_to_matfreq(tg, n) for n in tg.grid]
+
 """
     getindex(g::ImFreq, I::Int)
 
