@@ -9,6 +9,3 @@ Documentation for [GreenFunc](https://github.com/fsxbhyy/GreenFunc.jl).
 ```@index
 ```
 
-```@autodocs
-Modules = [GreenFunc]
-```
