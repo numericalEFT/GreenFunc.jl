@@ -67,8 +67,8 @@ julia> for ind in eachindex(G_n)
 
 Now we show how to generate a multidimensional function with
 tight-binding dispersion:
-$G_(k, \omega_n) = \frac{1}{i\omega_n - \epsilon(k)}$ with 
-$\epsilon(k) = -2t(cos(k_x)+cos(k_y))$.
+$G(q, \omega_n) = \frac{1}{i\omega_n - \epsilon_q}$ with 
+$\epsilon_q = -2t(cos(q_x)+cos(q_y))$.
 The momentum is defined on the first Brillouin zone captured by a 2D k-mesh.
 
 ```julia
