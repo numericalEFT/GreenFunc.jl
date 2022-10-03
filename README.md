@@ -21,7 +21,7 @@ This package has been registered. So, simply type `import Pkg; Pkg.add("GreenFun
 
 ### Example 1: Green's function of a single level
 
-We first show how to use `MeshArray` to present the Green's function of a single level quantum system filled with spinless fermionic particles. We assume that the system could exchange particles and energy with the enviroment and it is in an equilibrium state as a grand canonical ensemble. The single-particle Green's function is then has a simple form in Matsubara-frequency representation:  $G(ωₙ) = 1/(iωₙ - E)$ where `E` is the level energy. We show how to generate and manipulate this Green's function.
+We first show how to use `MeshArray` to represent the Green's function of a single level quantum system filled with spinless fermionic particles. We assume that the system could exchange particles and energy with the enviroment so that it's equilibrium state is a grand canonical ensemble. The single-particle Green's function is then has a simple form in Matsubara-frequency representation:  $G(ωₙ) = 1/(iωₙ - E)$ where `E` is the level energy. We show how to generate and manipulate this Green's function.
      
 ```julia
 julia> using GreenFunc, CompositeGrids
@@ -91,7 +91,7 @@ for ind in eachindex(g_freq)
 end
 ```
 
-- Momentum is handled by BrillouinZoneMeshes package. Here a UniformMesh{DIM,N}(origin, latvec) generates a linearly spaced momentum mesh on the first Brillouin zone defined by origin and lattice vectors given. For more detail see https://github.com/numericalEFT/BrillouinZoneMeshes.jl.
+- Momentum is handled by BrillouinZoneMeshes package. Here a `UniformMesh{DIM,N}(origin, latvec)` generates a linearly spaced momentum mesh on the first Brillouin zone defined by origin and lattice vectors given. For more detail see https://github.com/numericalEFT/BrillouinZoneMeshes.jl.
 
 
 ### Example 4:  Fourier Transform of Green's function with DLR
@@ -150,7 +150,7 @@ true
 
 - Since the spectral density `G_dlr` can be reused whenever user wants to change the grid points of Green's function (normally through interpolation that lost more accuracy then DLR transfrom), we encourage user to always keep the `G_dlr` objects. User can use piping operator |> as shown to do fourier transform directly between `ImFreq` and `ImTime` in one line, although it will throw away the spectral density.
 
-##  Connecting with TRIQS
+##  Interface with TRIQS
 
 TRIQS (Toolbox for Research on Interacting Quantum Systems) is a scientific project providing a set of C++ and Python libraries for the study of interacting quantum systems. We provides direct interface to convert TRIQS objects, such as temporal meshes, Brillioun zone meshes and multi-dimensional Green's functions, to the equivalent objects in our package. This helps TRIQS user to make use of our package without worrying about the different interal data structures.
 
