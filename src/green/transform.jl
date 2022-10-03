@@ -35,15 +35,15 @@ function Base.:<<(objL::MeshArray, objR::MeshArray)
     # end
     elseif typeL <: MeshGrids.DLRFreq
         if typeR <: MeshGrids.ImFreq
-            objL.data = matfreq2dlr(meshL.dlr, objR.data, meshR.grid; axis=axes[1])
+            objL.data .= matfreq2dlr(meshL.dlr, objR.data, meshR.grid; axis=axes[1])
         elseif typeR <: MeshGrids.ImTime
-            objL.data = tau2dlr(meshL.dlr, objR.data, meshR.grid; axis=axes[1])
+            objL.data .= tau2dlr(meshL.dlr, objR.data, meshR.grid; axis=axes[1])
         end
     elseif typeR <: MeshGrids.DLRFreq
         if typeL <: MeshGrids.ImFreq
-            objL.data = dlr2matfreq(meshR.dlr, objR.data, meshL.grid; axis=axes[1])
+            objL.data .= dlr2matfreq(meshR.dlr, objR.data, meshL.grid; axis=axes[1])
         elseif typeL <: MeshGrids.ImTime
-            objL.data = dlr2tau(meshR.dlr, objR.data, meshL.grid; axis=axes[1])
+            objL.data .= dlr2tau(meshR.dlr, objR.data, meshL.grid; axis=axes[1])
         end
     else
         error("One of the Grren's function has to be in DLRfreq space to do Fourier transform")

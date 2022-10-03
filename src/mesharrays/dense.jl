@@ -1,5 +1,5 @@
 """
-    mutable struct MeshArray{T,N,MT} <: AbstractMeshArray{T,N}
+    struct MeshArray{T,N,MT} <: AbstractMeshArray{T,N}
 
 Multi-dimensional array that is defined on a mesh. 
 The mesh is a tuple of meshgrid objects. 
@@ -26,7 +26,7 @@ The mesh is stored in the field `mesh` and the data is stored in the field `data
 - `data`: Array{T,N}: the data.
 - `dims`: dimension of the data
 """
-mutable struct MeshArray{T,N,MT} <: AbstractMeshArray{T,N}
+struct MeshArray{T,N,MT} <: AbstractMeshArray{T,N}
     #########   Mesh   ##############
     mesh::MT
     data::Array{T,N}
