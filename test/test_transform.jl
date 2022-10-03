@@ -6,6 +6,9 @@ SemiCircle(dlr, grid, type) = Sample.SemiCircle(dlr.Euv, dlr.β, dlr.isFermi, gr
         mesh2 = MeshGrids.DLRFreq(beta, statistics)
         g = MeshArray(mesh1, mesh2; data=zeros(N1, length(mesh2)))
 
+        @test GreenFunc._find_mesh(g.mesh, g.mesh[2]) == 2
+        @test GreenFunc._find_mesh(g.mesh, [1,2]) == 0 # not found
+
         g_freq = dlr_to_imfreq(g)
         Gτ = SemiCircle(mesh2.dlr, mesh2.dlr.τ, :τ)
         Gn = SemiCircle(mesh2.dlr, mesh2.dlr.n, :n)

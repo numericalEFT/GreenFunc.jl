@@ -29,12 +29,13 @@ distance(a, b) = norm(a - b, 2) # return the 1-norm distance between a and b
 
 conformal_tau(τ, β) = π^(1 / 4) / sqrt(2β) * 1 / sqrt(sin(π * τ / β))
 
-function syk_sigma(mesh_dlr, G_t, J=1.0)
-    # tgrid = G_t.mesh[findfirst(x -> (x isa MeshGrids.ImTime), G_t.mesh)]
-    tau_rev = reverse(mesh_dlr.β .- mesh_dlr.dlr.τ) # Reversed imaginary time nodes
-    G_t_rev = dlr_to_imtime(to_dlr(G_t, mesh_dlr), tau_rev) # G at beta - tau
+reverseview(x) = view(x, reverse(axes(x, 1))) # reversed view of x
 
-    Sigma_t = J .^ 2 .* G_t .^ 2 .* G_t_rev[end:-1:1] # SYK self-energy in imaginary time
+function syk_sigma(mesh_dlr, G_t, J=1.0)
+    minus_tau = reverse(mesh_dlr.β .- G_t.mesh[1]) # Reversed imaginary time mesh point
+    G_minus_t = dlr_to_imtime(to_dlr(G_t, mesh_dlr), minus_tau) # G at beta - tau
+
+    Sigma_t = J .^2 .* G_t .^2 .* reverseview(G_minus_t)  # SYK self-energy in imaginary time
 
     return Sigma_t
 end
