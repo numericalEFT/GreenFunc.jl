@@ -28,8 +28,9 @@ julia> using GreenFunc, CompositeGrids
 
 julia>  β = 100.0; E = 1.0 # inverse temperature and the level energy
 
-julia> ωₙ_mesh = MeshGrids.ImFreq(100.0, FERMION; Euv = 10E) # UV energy cutoff is 10 times larger than the level energy
-Matsubara frequency grid with 60 points, inverse temperature = 100.0, UV Energy scale = 10.0, fermionic = true: [-762, -374, -293, ..., 255, 394, 716]
+julia> ωₙ_mesh = MeshGrids.ImFreq(100.0, FERMION; Euv = 100E) # UV energy cutoff is 100 times larger than the level energy
+Matsubara frequency grid with 83 points, inverse temperature = 100.0, UV Energy scale = 100.0, fermionic = true: [-8083, -4302, -2816, ..., 3233, 4145, 8396]
+
 
 julia> Gn =  MeshArray(ωₙ_mesh; dtype=ComplexF64); # Green's function defined on the ωₙ_mesh
 
@@ -42,36 +43,27 @@ julia> for (n, ωₙ) in enumerate(Gn.mesh[1])
 
 - Once the meshes are created, one can define a `MeshArray` on them to represent the Green's function `Gn`. The constructor of `MeshArray` takes a set of meshes and initialze a multi-dimensional array. Each mesh corresponds to one dimension of the array. The data type of the `MeshArray` is specified by the optional keyword argument `dtype`, which is set to `Float64` by default. You can access the meshes (stored as a tuple) with `Gn.mesh`, and the array data with `Gn.data`.
 
-- To initialize the `Gn.data`, one can use iterator interface of the meshes and the `MeshArray`. 
+- By default `Gn.data` is left undefined if not specified by user. To initialize it, one can either use the  optional keyword argument `data` in constructor, or use iterator interface of the meshes and the `MeshArray`. 
 
 ### Example 2: Green's function of a free electron gas
 
 - [ ] Example use CompositeGrid to create the k-mesh with two inner states (spin up and down)
 
-We first show how to generate a multidimensional function given by the following equation: $G_{ \sigma_1, \sigma_2}(q,\omega_n) = \frac{1}{i \omega_n - \epsilon}$. This is a bare green's function of particles that have two inner spin 1/2 degrees, $\sigma_1$ and $\sigma_2$, and a dispersion $\epsilon = q^2-1$.
-     
+Now let us show how to create a Green's function of a free electron gas. Compared with the single level spinless fermionic particles, free electrons have a spin-1/2 innerstates, and kinetic energy `ϵ_q = q^2-E` (we use the unit where `m_e = 1/2`). The Green's function in Matsubara-frequnecy space is given by the following equation: `G_n = G_{ σ_1, σ_2}(q,ω_n) = 1/(i ω_n - ϵ_q)`, where `σ_i` denotes the spins of two electrons in the propagator. We inherit the Matsubara-frequency grid from the first example. We show how to use `CompositeGrids`package to generate momentum grids, and how multiple innerstates and meshes are treated by `MeshArray`.
 ```julia
-julia> using GreenFunc, CompositeGrids
+julia> kmesh = SimpleGrid.Uniform{Float64}([0.0, 10.0], 50); # initialze an uniform momentum grid
 
-julia> kmesh = SimpleGrid.Uniform{Float64}([0.0, 10.0], 50); # initialze a uniform 
+julia> G_n =  MeshArray(1:2, 1:2, kmesh, ωₙ_mesh; dtype=ComplexF64); # Green's function of free electron gas with 2x2 innerstates
 
-julia> mesh2 = MeshGrids.ImFreq(100.0, FERMION)
-Matsubara frequency grid with 60 points, inverse temperature = 100.0, UV Energy scale = 10.0, fermionic = true: [-762, -374, -293, ..., 255, 394, 716]
-
-julia> g_freq =  MeshArray(1:2, 1:2, mesh1, mesh2; dtype=ComplexF64) # Green's function with 2x2 innerstates
-Meshed array with dims = (2, 2, 50, 60) and total length = 12000
-- Mesh: Tuple{UnitRange{Int64}, UnitRange{Int64}, CompositeGrids.SimpleG.Uniform{Float64}, ImFreq{Float64, CompositeGrids.SimpleG.Arbitrary{Int64}}}
-
-julia> for ind in eachindex(g_freq)
-           q = g_freq.mesh[3][ind[3]]
-           ω_n = g_freq.mesh[4][ind[4]]
-           g_freq[ind] = 1/(im*ω_n - (q^2-1))
+julia> for ind in eachindex(G_n)
+           q = G_n.mesh[3][ind[3]]
+           ω_n = G_n.mesh[4][ind[4]]
+           G_n[ind] = 1/(im*ω_n - (q^2-E))
        end
 ```
-- Momentum grids are handled by CompositeGrids package. Here SimpleGrid.Uniform{T}([mink,maxk],N) generates a linearly spaced momentum grid with N points in the interval (mink,maxk). For other specialized grids see https://github.com/numericalEFT/CompositeGrids.jl.
-- GreenFunc package provides three specialized grids: imaginary time, matsubara frequnecy and DLR grids. They can be generated with ImTime, ImFreq and DLRFreq(beta,statistics) methods correspondingly. Here beta is the inverse temperature, and statistics defines whether the particle is fermion or boson. 
-- By default the data type of MeshArray is Float64, and data is set to nothing if not provided. One can reset them with 'dtype' and 'data' keywards arguments. 
-- Meshes for all variables, including the discrete ones (spin) and continuous ones (momentum and frequnecy), are collected in MeshArray(meshes...). They are simply stored in a tuple. In cases when one wants to reduce the dimension of data, one can use MeshProduct(meshes...) to group meshes into a 1D flattened array.  
+- One can generate various types of grids with `CompositeGrids` package. The `SimpleGrid` module here provides several basic grids, such as uniform grids and logarithmically densed grids. The` Uniform` method here generates a 1D linearly spaced grid. User has to specify the number of grid points `N` and the boundary points `[min,max]`. One can also combine arbitrary numbers of `SimpleGrid` subgrids with a user specified pattern defined by a `panel grid`. These mored advanced grids optimized for different purposes can be found on https://github.com/numericalEFT/CompositeGrids.jl.
+
+- The constructor of `MeshArray` can take any iterable objects as one of its meshes. Therefore for discrete innerstates such as spins, one can simply use an integer tuple.
 
 ### Example 3: Green's function of a Hubbard lattice
 
@@ -79,41 +71,68 @@ julia> for ind in eachindex(g_freq)
 
 - [ ] Maybe discuss the MeshProduct here?
 
-## Fourier Transform with DLR
-We provide a dedicated fourier transform between imaginary time and Matsubara frequency spaces through the Discrete Lehmann representation.
+### Example 4:  Fourier Transform of Green's function with DLR
+In this example we show one of the key features of our package: a dedicated fourier transform between imaginary time and Matsubara frequency spaces through the Discrete Lehmann representation (DLR). The DLR allows compact and efficient storage of any functions that has Lehmann representation. It saves just enough information in spectral density on optimized real frequency points to represent the function up to user specified accuracy `ϵ`. See https://github.com/numericalEFT/Lehmann.jl for more details.
 
+Let us first convert our free electron Green's function from Matsubara frequency space `G_n` to DLR space `G_dlr`, and then convert `G_dlr` back to `G_n2` that is identical to `G_n`.
 ```julia
-#Transform the green function to DLR space and imaginary time space from Matsubara frequency spaces
-julia > g_dlr = to_dlr(g)
-julia > g_tau = dlr_to_imtime(g_dlr)
+julia> G_dlr = to_dlr(G_n) # convert G_n to DLR space 
+Meshed array with dims = (2, 2, 50, 60) and total length = 12000
+- Mesh: Tuple{UnitRange{Int64}, UnitRange{Int64}, CompositeGrids.SimpleG.Uniform{Float64}, DLRFreq{Float64}} 
 
-# Transform to Matsubara frequency space from DLR spectral density with "<<"
-julia > g_freq_1 = MeshArray(innermesh..., mesh1, mesh2, dtype=ComplexF64)
-julia > g_freq_1 << g_dlr
+julia> G_n2 = dlr_to_imfreq(G_dlr) # convert G_dlr back to Matsubara frequency space
+Meshed array with dims = (2, 2, 50, 60) and total length = 12000
+- Mesh: Tuple{UnitRange{Int64}, UnitRange{Int64}, CompositeGrids.SimpleG.Uniform{Float64}, ImFreq{Float64, CompositeGrids.SimpleG.Arbitrary{Int64}}} 
 
-# Transform to imaginary time space from DLR spectral density with "<<"
-julia > mesh3 = MeshGrids.ImTime(100.0, isFermi)
-julia > g_tau_1 =  MeshArray(innermesh..., mesh1, mesh3, dtype=ComplexF64)
-julia > g_tau_1 << g_dlr
-
-# Transform to DLR space from imaginary time space with "<<"
-julia > mesh4 = MeshGrids.DLRFreq(100,isFermi)
-julia > g_dlr_1 =  MeshArray(innermesh..., mesh1, mesh4, dtype=ComplexF64)
-julia > g_dlr_1 << g_tau
-
-# julia > g_tau_0 =  MeshArray(innermesh..., mesh1, mesh3, dtype=ComplexF64)
-# julia> for ind in eachindex(g_tau_0)
-#            q = g.mesh[3][ind[3]]
-#            τ = g.mesh[4][ind[4]]
-#            g[ind] = -exp(-τ*(q^2-1))*(1-1/(exp(100*(q^2-1))+1))
-#        end
-
-# build green_dlr from above green's function (with to_dlr method)
-# build green_tau from green_dlr (with dlr_to_tau method)
-# Compare with exact analytical expression (can do this by plot)
-# showcase the usage of <<, pipe in fourier transform
+julia> G_n2 ≈ G_n
+true
 ```
-- The green's function in DLR space saves the spectral density of the object, which once generated, can be used to reproduce the Green's function in imaginary time/ Matsubara frequency space at any point with great accuracy (The reason why our current api always ask user to first go to DLR space)
-- Explain the behavior of << for fourier transform, and when one should use it.
+For the second step, let us construct the same Green's function in imaginary time space given by `G_τ = -e^{-τϵ_q}/(1+e^{-βϵ_q})`, and reproduce it by transforming `G_dlr`.
+```julia
+julia> τ_mesh = MeshGrids.ImTime(100.0, FERMION; Euv = 100E) 
+Imaginary Time grid with 83 points, inverse temperature = 100.0, UV Energy scale = 100.0, fermionic = true: [2.6136191e-5, 0.0020572557, 0.0068079994, ..., 99.993192, 99.997943, 99.999974]
+
+julia> G_τ =  MeshArray(1:2, 1:2, kmesh, τ_mesh; dtype=Float64);
+
+julia> for ind in eachindex(G_τ)
+           q = G_τ.mesh[3][ind[3]]
+           τ = G_τ.mesh[4][ind[4]]
+           ϵ_q = q^2-E
+           x = β*ϵ_q/2.0
+           y = 2*τ/β - 1.0
+           if x>0.0 #Make sure the index is always negative to avoid overflow issue from exponential function
+               G_τ[ind] =-exp(-x*(y+1))/(1+exp(-2*x))
+           else
+               G_τ[ind] =-exp(-x*(y-1))/(1+exp(2*x))
+           end
+       end
+
+julia> G_τ2 = dlr_to_imtime(G_dlr,τ_mesh) #Transform G_dlr to imaginary time space.
+
+julia> G_τ ≈ G_τ2
+true
+
+julia> G_τ3 = G_n |> to_dlr |> dlr_to_imtime; #Use pipe to do a two-step transform
+
+julia> G_τ ≈ G_τ3
+true
+
+```
+
+- For any Green's function that has eaxctly one temperal grid (`ImTime`, `ImFreq` and `DLRFreq`) in meshes, we provide a set of operations (`to_dlr`, `dlr_to_imfreq` and `dlr_to_imtime`) to bridge the DLR space with imaginary-time and Matsubara-frequency space. By default, all of them find the dimension of the temperal grid within meshes, and perform the transformation with respect to it. Otherwise, one can always specify the dimension with the optional keyword argumen `dim`. 
+
+- The `to_dlr` method calculate the DLR spectral density of a Green's function in imaginary-time or Matsubara-frequency space, and save it in a new `MeshArray` object. This operation requires a pre-defined `DLRFreq` grid that has the same inverse temperature and statistics (fermion or boson) as the `ImFreq` or `ImTime` grids in the original Green's function. By default, the DLR grid is automatically generated with accuracy `ϵ=1e-12`. User can also specify the accuracy with keywards argument `rtol`, or provide the DLR grid.
+
+- Once a spectral density `G_dlr` in DLR space is obtained, one can use `dlr_to_imfreq` or `dlr_to_imtime` methods to reconstruct the Green's function in corresponding space. Since DLR saves information for the entire function, the target `ImFreq` or `ImTime` grid can be any grids specified by user. By default it is set to be the optimized grid from `DLRFreq` mesh in `G_dlr`. 
+
+- Since the spectral density `G_dlr` can be reused whenever user wants to change the grid points of Green's function (normally through interpolation that lost more accuracy then DLR transfrom), we encourage user to always keep the `G_dlr` objects. User can use piping operator |> as shown to do fourier transform directly between `ImFreq` and `ImTime` in one line, although it will throw away the spectral density.
+
+##  Triqs
+
+### Example 5: Load Triqs Temporal Mesh
+Another 
+
+### Example 6: Load Triqs BrillouinZone
 
 
+### Example 7: Load Triqs Green;s function
