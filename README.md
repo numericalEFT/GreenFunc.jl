@@ -150,7 +150,7 @@ true
 
 - Since the spectral density `G_dlr` can be reused whenever user wants to change the grid points of Green's function (normally through interpolation that lost more accuracy then DLR transfrom), we encourage user to always keep the `G_dlr` objects. User can use piping operator |> as shown to do fourier transform directly between `ImFreq` and `ImTime` in one line, although it will throw away the spectral density.
 
-##  Connecting with TRIQS
+##  Interface with TRIQS
 
 TRIQS (Toolbox for Research on Interacting Quantum Systems) is a scientific project providing a set of C++ and Python libraries for the study of interacting quantum systems. We provides direct interface to convert TRIQS objects, such as temporal meshes, Brillioun zone meshes and multi-dimensional Green's functions, to the equivalent objects in our package. This helps TRIQS user to make use of our package without worrying about the different interal data structures.
 
