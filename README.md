@@ -91,7 +91,7 @@ for ind in eachindex(g_freq)
 end
 ```
 
-- Momentum is handled by BrillouinZoneMeshes package. Here a UniformMesh{DIM,N}(origin, latvec) generates a linearly spaced momentum mesh on the first Brillouin zone defined by origin and lattice vectors given. For more detail see https://github.com/numericalEFT/BrillouinZoneMeshes.jl.
+- Momentum is handled by BrillouinZoneMeshes package. Here a `UniformMesh{DIM,N}(origin, latvec)` generates a linearly spaced momentum mesh on the first Brillouin zone defined by origin and lattice vectors given. For more detail see https://github.com/numericalEFT/BrillouinZoneMeshes.jl.
 
 
 ### Example 4:  Fourier Transform of Green's function with DLR
