@@ -200,11 +200,11 @@ it is inconvenient to construct Brillouin zone mesh exactly same as in Triqs.
 is consistent with Triqs counterpart, while the order of cartesian index
 and lattice vector reversed.
 - Here's a table of 2D converted mesh v.s. the Triqs counterpart:
-```
+
 |Object | Triqs | GreenFunc.jl|
 | ------ | ------- | ------------- |
 | Linear index | mk[i]=(x, y, 0) | mkj[i]= (x, y) |
 | Cartesian index | mk[i,j]=(x, y, 0) | mkj[j,i]=(x,y) |
 | Lattice vector | (a1, a2) | (a2, a1) |
-```
+
 ### Example 7: Load Triqs Green;s function
