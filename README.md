@@ -21,7 +21,7 @@ This package has been registered. So, simply type `import Pkg; Pkg.add("GreenFun
 
 ### Example 1: Green's function of a single level
 
-We first show how to use `MeshArray` to present the Green's function of a single level quantum system filled with spinless fermionic particles. We assume that the system could exchange particles and energy with the enviroment and it is in an equilibrium state as a grand canonical ensemble. The single-particle Green's function is then has a simple form in Matsubara-frequency representation:  `G(ωₙ) = 1/(iωₙ - E)` where `E` is the level energy. We show how to generate and manipulate this Green's function.
+We first show how to use `MeshArray` to present the Green's function of a single level quantum system filled with spinless fermionic particles. We assume that the system could exchange particles and energy with the enviroment and it is in an equilibrium state as a grand canonical ensemble. The single-particle Green's function is then has a simple form in Matsubara-frequency representation:  $G(ωₙ) = 1/(iωₙ - E)$ where `E` is the level energy. We show how to generate and manipulate this Green's function.
      
 ```julia
 julia> using GreenFunc, CompositeGrids
@@ -47,9 +47,7 @@ julia> for (n, ωₙ) in enumerate(Gn.mesh[1])
 
 ### Example 2: Green's function of a free electron gas
 
-- [ ] Example use CompositeGrid to create the k-mesh with two inner states (spin up and down)
-
-Now let us show how to create a Green's function of a free electron gas. Compared with the single level spinless fermionic particles, free electrons have a spin-1/2 innerstates, and kinetic energy `ϵ_q = q^2-E` (we use the unit where `m_e = 1/2`). The Green's function in Matsubara-frequnecy space is given by the following equation: `G_n = G_{ σ_1, σ_2}(q,ω_n) = 1/(i ω_n - ϵ_q)`, where `σ_i` denotes the spins of two electrons in the propagator. We inherit the Matsubara-frequency grid from the first example. We show how to use `CompositeGrids`package to generate momentum grids, and how multiple innerstates and meshes are treated by `MeshArray`.
+Now let us show how to create a Green's function of a free electron gas. Compared with the single level spinless fermionic particles, free electrons have a spin-1/2 innerstates, and kinetic energy $ϵ_q = q^2-E$ (we use the unit where $m_e = 1/2$). The Green's function in Matsubara-frequnecy space is given by the following equation: $G_n = G_{\sigma_1, \sigma_2}(q,\omega_n) = 1/(i \omega_n - \epsilon_q)$, where $\sigma_i$ denotes the spins of two electrons in the propagator. We inherit the Matsubara-frequency grid from the first example. We show how to use `CompositeGrids`package to generate momentum grids, and how multiple innerstates and meshes are treated by `MeshArray`.
 ```julia
 julia> kmesh = SimpleGrid.Uniform{Float64}([0.0, 10.0], 50); # initialze an uniform momentum grid
 
@@ -112,7 +110,7 @@ Meshed array with dims = (2, 2, 50, 60) and total length = 12000
 julia> G_n2 ≈ G_n
 true
 ```
-For the second step, let us construct the same Green's function in imaginary time space given by `G_τ = -e^{-τϵ_q}/(1+e^{-βϵ_q})`, and reproduce it by transforming `G_dlr`.
+For the second step, let us construct the same Green's function in imaginary time space given by $G_{\tau} = -e^{-\tau \epsilon_q}/(1+e^{-\beta \epsilon_q})$, and reproduce it by transforming `G_dlr`.
 ```julia
 julia> τ_mesh = MeshGrids.ImTime(100.0, FERMION; Euv = 100E) 
 Imaginary Time grid with 83 points, inverse temperature = 100.0, UV Energy scale = 100.0, fermionic = true: [2.6136191e-5, 0.0020572557, 0.0068079994, ..., 99.993192, 99.997943, 99.999974]
