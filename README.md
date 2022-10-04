@@ -73,20 +73,19 @@ The momentum is defined on the first Brillouin zone captured by a 2D k-mesh.
     using GreenFunc
     using GreenFunc: BrillouinZoneMeshes
 
-    DIM = 2
+    DIM, nk = 2, 8
     latvec = [1.0 0.0; 0.0 1.0] .* 2π
-    nk = 8
     bzmesh = BrillouinZoneMeshes.BaseMesh.UniformMesh{DIM, nk}([0.0, 0.0], latvec)
-    wmesh = MeshGrids.ImFreq(10.0, FERMION)
-    g_freq =  MeshArray(bzmesh, wmesh; dtype=ComplexF64)
+    ωₙmesh = MeshGrids.ImFreq(10.0, FERMION)
+    g_freq =  MeshArray(bzmesh, ωₙmesh; dtype=ComplexF64)
 
     t = 1.0
     for ind in eachindex(g_freq)
         q = g_freq.mesh[1][ind[1]]
-        ω_n = g_freq.mesh[2][ind[2]]
-        println(q, ω_n)
-        g_freq[ind] = 1/(im*ω_n - (-2*t*sum(cos.(q))))
+        ωₙ = g_freq.mesh[2][ind[2]]
+        g_freq[ind] = 1/(ωₙ*im - (-2*t*sum(cos.(q))))
     end
+    g_tau = g_freq |> to_dlr |> to_imtime #fourier transform to (k, tau) domain
 ```
 
 - For lattice systems with multidimenstional Brillouin zone, the momentum grids can be better handled with the BrillouinZoneMeshes package. Here a `UniformMesh{DIM,N}(origin, latvec)` generates a linearly spaced momentum mesh on the first Brillouin zone defined by origin and lattice vectors given. For more detail see https://github.com/numericalEFT/BrillouinZoneMeshes.jl.
@@ -212,11 +211,11 @@ is consistent with Triqs counterpart, while the order of cartesian index
 and lattice vector reversed.
 - Here's a table of 2D converted mesh v.s. the Triqs counterpart:
 
-|Object | Triqs | GreenFunc.jl|
-| ------ | ------- | ------------- |
-| Linear index | mk[i]=(x, y, 0) | mkj[i]= (x, y) |
+| Object          | Triqs             | GreenFunc.jl   |
+| --------------- | ----------------- | -------------- |
+| Linear index    | mk[i]=(x, y, 0)   | mkj[i]= (x, y) |
 | Cartesian index | mk[i,j]=(x, y, 0) | mkj[j,i]=(x,y) |
-| Lattice vector | (a1, a2) | (a2, a1) |
+| Lattice vector  | (a1, a2)          | (a2, a1)       |
 
 ### Example 7: Load Triqs Greens function of a Hubbard Lattice
 

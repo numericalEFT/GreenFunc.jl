@@ -54,9 +54,9 @@ function ImFreq(β, isFermi::Bool=false;
     symmetry=:none,
     grid::Union{AbstractGrid,AbstractVector,Nothing}=nothing
 )
+    dlr = DLRGrid(Euv, β, rtol, isFermi, :none)
     if isnothing(grid)
         # TODO: replace the dlr.n with a non-dlr grid. User don't want dlr if it is not initialized with a dlr
-        dlr = DLRGrid(Euv, β, rtol, isFermi, :none)
         grid = SimpleG.Arbitrary{Int}(dlr.n)
     elseif (grid isa AbstractVector)
         grid = SimpleG.Arbitrary{Int}(Int.(grid))
@@ -66,7 +66,7 @@ function ImFreq(β, isFermi::Bool=false;
 
     @assert issorted(grid) "The grid should be sorted."
     @assert eltype(grid) <: Int "Matsubara-frequency grid should be Int."
-    return ImFreq{dtype,typeof(grid),Nothing}(grid, β, Euv, isFermi, symmetry, rtol, nothing)
+    return ImFreq{dtype,typeof(grid),typeof(dlr)}(grid, β, Euv, isFermi, symmetry, rtol, dlr)
 end
 
 """

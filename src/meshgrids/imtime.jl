@@ -54,8 +54,9 @@ function ImTime(β, isFermi::Bool=false;
     symmetry=:none,
     grid::Union{AbstractGrid,AbstractVector,Nothing}=nothing
 )
+
+    dlr = DLRGrid(Euv, β, rtol, isFermi, :none)
     if isnothing(grid)
-        dlr = DLRGrid(Euv, β, rtol, isFermi, :none)
         grid = SimpleG.Arbitrary{dtype}(dlr.τ)
         # grid = SimpleG.Uniform{dtype}([0, β], Int(round(β / resolution)))
         # grid = CompositeGrid.LogDensedGrid(:uniform, [0.0, β], [0.0, β], 8, 1 / Euv, 8) #roughly ~100 points if resolution = β/128
@@ -67,7 +68,7 @@ function ImTime(β, isFermi::Bool=false;
     @assert grid[1] >= 0 && grid[end] <= β "The grid should be in the range [0, β]."
     @assert issorted(grid) "The grid should be sorted."
     @assert eltype(grid) == dtype "The type of grid should be the same as dtype = $dtype"
-    return ImTime{dtype,typeof(grid),Nothing}(grid, β, Euv, isFermi, symmetry, rtol, nothing)
+    return ImTime{dtype,typeof(grid),typeof(dlr)}(grid, β, Euv, isFermi, symmetry, rtol, dlr)
 end
 
 """
