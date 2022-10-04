@@ -14,11 +14,14 @@ Imaginary-frequency grid for Green's functions.
 - `Euv`:  the UV energy scale of the spectral density.
 - `isFermi`: the statistics for particles is fermionic or not.
 """
-struct ImFreq{T<:Real,Grid} <: TemporalGrid{Int}
-    grid::Grid
+struct ImFreq{T<:Real,G<:AbstractVector{Int},B} <: TemporalGrid{Int}
+    grid::G
     β::T
     Euv::T
     isFermi::Bool
+    symmetry::Symbol
+    rtol::T
+    basis::B # representation of the imaginary-time axis
 end
 
 """
@@ -35,25 +38,40 @@ Create a `ImFreq` struct.
 - `isFermi`: the statistics for particles is fermionic or not. False by default.
 - `dtype`: type of `β` and `Euv`. By default, `dtype = Float64`.
 - `Euv`: the UV energy scale of the spectral density. By default, `Euv = 1000 / β`.
+- `sym`: `:ph` for particle-hole symmetric, `:pha` for particle-hole symmetry, and `:none` for no symmetry. By default, `sym = :none`.
 - `grid`: 1D Matsubara-frequency integer-valued grid as a AbstractVector or CompositeGrids.AbstractGrid. By default, a optimized grid built in DLR is used.
 """
 function ImFreq(β, isFermi::Bool=false;
     dtype=Float64,
     Euv=1000 / β,
     rtol=1e-12,
+    symmetry=:none,
     grid::Union{AbstractGrid,AbstractVector,Nothing}=nothing
 )
     if isnothing(grid)
+        # TODO: replace the dlr.n with a non-dlr grid. User don't want dlr if it is not initialized with a dlr
         dlr = DLRGrid(Euv, β, rtol, isFermi, :none)
         grid = SimpleG.Arbitrary{Int}(dlr.n)
     elseif (grid isa AbstractVector)
         grid = SimpleG.Arbitrary{Int}(Int.(grid))
+    else
+        error("Proper grid or basis are required.")
     end
 
     @assert issorted(grid) "The grid should be sorted."
     @assert eltype(grid) <: Int "Matsubara-frequency grid should be Int."
-    return ImFreq{dtype,typeof(grid)}(grid, β, Euv, isFermi)
+    return ImFreq{dtype,typeof(grid),Nothing}(grid, β, Euv, isFermi, symmetry, rtol, nothing)
 end
+
+function ImFreq(dlr::DLRGrid; dtype=Float64, grid::Union{AbstractGrid,AbstractVector}=SimpleG.Arbitrary{Int}(dlr.n))
+    if (grid isa AbstractGrid) == false
+        grid = SimpleG.Arbitrary{Int}(grid)
+    end
+    @assert issorted(grid) "The grid should be sorted."
+    @assert eltype(grid) <: Int "Matsubara-frequency grid should be Int."
+    return ImFreq{dtype,typeof(grid),typeof(dlr)}(grid, dlr.β, dlr.Euv, dlr.isFermi, dlr.symmetry, dlr.rtol, dlr)
+end
+ImFreq(dlrfreq::DLRFreq; kwargs...) = ImFreq(dlrfreq.dlr; kwargs...)
 
 matfreq_to_int(tg::ImFreq, ωn) = tg.isFermi ? Int(round((ωn * tg.β / π - 1) / 2)) : Int(round((ωn * tg.β / π) / 2))
 int_to_matfreq(tg::ImFreq, n::Int) = tg.isFermi ? (2n + 1) * π / tg.β : 2n * π / tg.β

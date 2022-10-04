@@ -26,6 +26,10 @@ export FERMION, BOSON
 export TemporalGrid
 include("common.jl")
 
+
+include("dlrfreq.jl")
+export DLRFreq
+
 include("imtime.jl")
 export ImTime
 
@@ -33,9 +37,6 @@ include("imfreq.jl")
 export ImFreq
 export int_to_matfreq, matfreq_to_int
 export matfreq
-
-include("dlrfreq.jl")
-export DLRFreq
 
 include("MeshProduct.jl")
 export MeshProduct

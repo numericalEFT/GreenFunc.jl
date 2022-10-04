@@ -1,3 +1,25 @@
+"""
+A SYK model solver based on a forward fixed-point iteration method.
+
+ The self-energy of the SYK model is given by,
+
+    Σ(τ) = J² * G(τ) * G(τ) * G(β-τ),
+    
+ where Green's function of the SYK model is given by the Dyson equation,
+
+    G(iωₙ) = -1/(iωₙ -μ + Σ(iωₙ))
+
+ We solve the Dyson equation self-consistently by a weighted fixed point iteration, 
+ with weight `mix` assigned to the new iterate and weight `1-mix` assigned to the previous iterate. 
+
+ The self-energy is evaluated in the imaginary time domain, 
+ and the Dyson equation is solved in the Matsubara frequency domain.
+
+ The SYK Green's function has particle-hole symmetry when μ=0. 
+ You may enforce such symmetry by setting `symmetry = :ph` when initialize the DLR grids.
+ A symmetrized solver tends to be more robust than a unsymmetrized one.
+"""
+
 using GreenFunc
 using Printf
 
@@ -31,7 +53,17 @@ function dyson(Gt)
     Gω = 1im * imag.(-1 ./ (freq .+ Σω))
 
     #############  Gω --> Gτ  ###############
-    return dlr_to_imtime(to_dlr(Gω, dlrmesh))
+    # return dlr_to_imtime(to_dlr(Gω, dlrmesh))
+    println(size(Gω))
+    Gdlr = Gω |> to_dlr
+    println(Gdlr.mesh[1].dlr)
+    println(size(Gdlr))
+    Gnew = Gdlr |> dlr_to_imtime
+    println(size(Gnew))
+    return Gnew
+    # return Gω |> to_dlr |> dlr_to_imtime
+    # return dlr_to_imtime(to_dlr(Gω, dlrmesh))
+
 end
 
 function nlsolve(G_t, tol=rtol, maxiter=1000, verbose=false, mix=0.1)

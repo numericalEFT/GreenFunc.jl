@@ -22,7 +22,7 @@ struct DLRFreq{T<:Real} <: TemporalGrid{T}
     β::T
     Euv::T
     rtol::Float64
-    sym::Symbol
+    symmetry::Symbol
     isFermi::Bool
 end
 
@@ -52,15 +52,18 @@ function DLRFreq(β, isFermi::Bool=false;
     dtype=Float64,
     rtol=1e-12,
     Euv=1000 / β,
-    sym=:none,
-    rebuild=false,
-    dlr::Union{DLRGrid,Nothing}=nothing
+    symmetry=:none,
+    rebuild=false
 )
-    if isnothing(dlr)
-        dlr = DLRGrid(Euv, β, rtol, isFermi, sym; rebuild=rebuild)
-    end
+    dlr = DLRGrid(Euv, β, rtol, isFermi, symmetry; rebuild=rebuild)
     grid = SimpleG.Arbitrary{dtype}(dlr.ω)
-    return DLRFreq{dtype}(dlr, grid, β, Euv, rtol, sym, isFermi)
+    return DLRFreq{dtype}(dlr, grid, β, Euv, rtol, symmetry, isFermi)
+end
+
+function DLRFreq(dlr::DLRGrid)
+    dtype = Float64 #TODO: replace it with dlr type
+    grid = SimpleG.Arbitrary{dtype}(dlr.ω)
+    return DLRFreq{dtype}(dlr, grid, dlr.β, dlr.Euv, dlr.rtol, dlr.symmetry, dlr.isFermi)
 end
 
 """
@@ -68,4 +71,4 @@ end
 
 Write a text representation of the DLR grid `tg` to the output stream `io`.
 """
-Base.show(io::IO, tg::DLRFreq) = print(io, "DLR frequency grid with $(length(tg)) points, inverse temperature = $(tg.β), UV Energy scale = $(tg.Euv), rtol = $(tg.rtol), sym = $(tg.sym), fermionic = $(tg.isFermi): $(_grid(tg.grid))")
+Base.show(io::IO, tg::DLRFreq) = print(io, "DLR frequency grid with $(length(tg)) points, inverse temperature = $(tg.β), UV Energy scale = $(tg.Euv), rtol = $(tg.rtol), sym = $(tg.symmetry), fermionic = $(tg.isFermi): $(_grid(tg.grid))")
