@@ -13,7 +13,7 @@ Discrete-Lehmann-representation grid for Green's functions.
 - `β`: inverse temperature.
 - `Euv`:  the UV energy scale of the spectral density.
 - `rtol`: tolerance absolute error.
-- `sym`: the symmetry of `dlr`.
+- `symmetry`: `:ph` for particle-hole symmetric, `:pha` for particle-hole symmetry, and `:none` for no symmetry. By default, `sym = :none`.
 - `isFermi`: the statistics for particles. 
 """
 struct DLRFreq{T<:Real} <: TemporalGrid{T}
@@ -36,7 +36,7 @@ end
         dlr::Union{DLRGrid,Nothing}=nothing
     )
 
-Create a `DLRFreq` struct.
+Create a `DLRFreq` struct from parameters.
 
 # Arguments
 - `β`: inverse temperature.
@@ -44,9 +44,8 @@ Create a `DLRFreq` struct.
 - `dtype`: type of `β` and `Euv`.
 - `rtol`: tolerance absolute error. By default, `rtol` = 1e-12.
 - `Euv`: the UV energy scale of the spectral density. By default, `Euv = 1000 / β`.
-- `sym`: the symmetry of `dlr`. By default, `sym = :none`.
+- `symmetry`: `:ph` for particle-hole symmetric, `:pha` for particle-hole symmetry, and `:none` for no symmetry. By default, `sym = :none`.
 - `rebuild`: if no dlr is input, set false to load DLRGrid from the file; set true to recalculate the DLRGrid on the fly. By default, `rebuild = false`.
-- `dlr`: 1D DLR grid. By default, a DLR grid with input arguments is used.
 """
 function DLRFreq(β::Real, isFermi::Bool=false;
     dtype=Float64,
@@ -60,6 +59,14 @@ function DLRFreq(β::Real, isFermi::Bool=false;
     return DLRFreq{dtype}(dlr, grid, β, Euv, rtol, symmetry, isFermi)
 end
 
+"""
+    function DLRFreq(dlr::DLRGrid)
+
+Create a `DLRFreq` struct from `DLRGrid`.
+
+# Arguments
+- `dlr`: 1D DLR grid.
+"""
 function DLRFreq(dlr::DLRGrid)
     dtype = Float64 #TODO: replace it with dlr type
     grid = SimpleG.Arbitrary{dtype}(dlr.ω)
