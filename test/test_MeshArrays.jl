@@ -31,6 +31,7 @@ using Random
         # sum/minus/mul/div
         g3 = g .+ g2
         @test g3.data ≈ g.data .+ g2.data
+        @time g3 = g .+ g2
 
         g4 = g .- g2
         @test g4.data ≈ g.data .- g2.data
@@ -47,6 +48,11 @@ using Random
         g = deepcopy(_g)
         g .+= g2
         @test _g.data .+ g2.data ≈ g.data
+
+        g = deepcopy(_g)
+        g .+= g2
+        println(".+= test time")
+        @time g .+= g2
 
         g = deepcopy(_g)
         g .-= g2
