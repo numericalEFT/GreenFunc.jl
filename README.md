@@ -21,11 +21,7 @@ This package has been registered. So, simply type `import Pkg; Pkg.add("GreenFun
 
 ### Example 1: Green's function of a single level
 
-<<<<<<< HEAD
 We first show how to use `MeshArray` to present the Green's function of a single level quantum system filled with spinless fermionic particles. We assume that the system could exchange particles and energy with the enviroment and it is in an equilibrium state as a grand canonical ensemble. The single-particle Green's function is then has a simple form in Matsubara-frequency representation:  $G(ωₙ) = \frac{1}{(iωₙ - E)}$ where `E` is the level energy. We show how to generate and manipulate this Green's function.
-=======
-We first show how to use `MeshArray` to represent the Green's function of a single level quantum system filled with spinless fermionic particles. We assume that the system could exchange particles and energy with the enviroment so that it's equilibrium state is a grand canonical ensemble. The single-particle Green's function is then has a simple form in Matsubara-frequency representation:  $G(ωₙ) = 1/(iωₙ - E)$ where `E` is the level energy. We show how to generate and manipulate this Green's function.
->>>>>>> 800f04809fa83d494339f4ebe93cbed98f29a5c1
      
 ```julia
     using GreenFunc, CompositeGrids
