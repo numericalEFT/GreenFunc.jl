@@ -18,9 +18,9 @@ end
 
     types = fieldtypes(MT)
     if types[1] == OldM
-        m = :(mesh_new)
+        m = :(mesh_new,)
     else
-        m = :(meshes[1])
+        m = :(meshes[1],)
     end
 
     for (i, t) in enumerate(types)
@@ -29,9 +29,9 @@ end
             continue
         else
             if t == OldM
-                m = :($m, mesh_new)
+                m = :($m..., mesh_new)
             else
-                m = :($m, meshes[$i])
+                m = :($m..., meshes[$i])
             end
         end
     end
@@ -39,7 +39,7 @@ end
 
     # the following will always return a tuple
     if length(types) == 1
-        return :($m,)
+        return :($m)
     else
         return :($m)
     end
@@ -95,24 +95,16 @@ function Base.:<<(objL::MeshArray{T,N,MT1}, objR::MeshArray{T,N,MT2}) where {T,N
     meshL = objL.mesh[dimL]
     meshR = objR.mesh[dimR]
 
-    if typeL == typeR
-        error("ImTime to ImTime or ImFreq to ImFreq is not supported yet!")h
-    elseif typeL <: DLRFreq
-        if typeR <: ImFreq
-            objL.data .= matfreq2dlr(meshL.dlr, objR.data, meshR.grid; axis=dimR)
-        elseif typeR <: ImTime
-            objL.data .= tau2dlr(meshL.dlr, objR.data, meshR.grid; axis=dimR)
-        end
-    elseif typeR <: DLRFreq
-        if typeL <: ImFreq
-            objL.data .= dlr2matfreq(meshR.dlr, objR.data, meshL.grid; axis=dimR)
-        elseif typeL <: ImTime
-            objL.data .= dlr2tau(meshR.dlr, objR.data, meshL.grid; axis=dimR)
-        end
-    else
-        error("One of the Grren's function has to be in DLRfreq space to do Fourier transform")
-    end
+    objL.data .= _transform(objR.data, meshL, meshR, dimR)
 end
+
+_transform(data, meshL, meshR, axis) = error("One of the Grren's function has to be in DLRfreq space to do Fourier transform")
+_transform(data, meshL::T, meshR::T, axis) where {T} = error("ImTime to ImTime or ImFreq to ImFreq is not supported yet!")
+_transform(data, meshL::DLRFreq, meshR::ImFreq, axis) = matfreq2dlr(meshL.dlr, data, meshR.grid; axis=axis)
+_transform(data, meshL::DLRFreq, meshR::ImTime, axis) = tau2dlr(meshL.dlr, data, meshR.grid; axis=axis)
+_transform(data, meshL::ImFreq, meshR::DLRFreq, axis) = dlr2matfreq(meshR.dlr, data, meshL.grid; axis=axis)
+_transform(data, meshL::ImTime, meshR::DLRFreq, axis) = dlr2tau(meshR.dlr, data, meshL.grid; axis=axis)
+
 
 """
     function dlr_to_imfreq(mesharray[, tgrid; dim])
