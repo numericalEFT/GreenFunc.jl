@@ -18,9 +18,9 @@ end
 
     types = fieldtypes(MT)
     if types[1] == OldM
-        m = :(mesh_new)
+        m = :(mesh_new,)
     else
-        m = :(meshes[1])
+        m = :(meshes[1],)
     end
 
     for (i, t) in enumerate(types)
@@ -29,9 +29,9 @@ end
             continue
         else
             if t == OldM
-                m = :($m, mesh_new)
+                m = :($m..., mesh_new)
             else
-                m = :($m, meshes[$i])
+                m = :($m..., meshes[$i])
             end
         end
     end
@@ -39,7 +39,7 @@ end
 
     # the following will always return a tuple
     if length(types) == 1
-        return :($m,)
+        return :($m)
     else
         return :($m)
     end

@@ -9,6 +9,11 @@ SemiCircle(dlr, grid, type) = Sample.SemiCircle(dlr.Euv, dlr.β, dlr.isFermi, gr
         @test GreenFunc._find_mesh(typeof(g.mesh), DLRFreq) == 2
         @test GreenFunc._find_mesh(typeof(g.mesh), Int) == 0 # not found
 
+        moremeshes = (mesh1, mesh2, mesh1)
+        replacedmeshes = GreenFunc._replace_mesh(moremeshes, mesh2, mesh1)
+        # println(typeof(replacedmeshes))
+        @test replacedmeshes == (mesh1, mesh1, mesh1)
+
         g_freq = dlr_to_imfreq(g)
         Gτ = SemiCircle(mesh2.dlr, mesh2.dlr.τ, :τ)
         Gn = SemiCircle(mesh2.dlr, mesh2.dlr.n, :n)
