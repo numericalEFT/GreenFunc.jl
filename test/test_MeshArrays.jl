@@ -1,3 +1,5 @@
+using Random
+
 @testset "MeshArray" begin
     function test_shape(N1, N2, innermesh)
         ############# basic test ################
@@ -17,7 +19,7 @@
         @test eltype(typeof(gc)) == ComplexF64
 
         ############ broadcast test ###################
-        g.data = rand(g.dims...)
+        rand!(g.data)
         if isempty(innermesh)
             g2 = MeshArray(mesh1, mesh2; data=rand(g.dims...))
         else

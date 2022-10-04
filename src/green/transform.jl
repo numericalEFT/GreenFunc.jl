@@ -35,15 +35,15 @@ function Base.:<<(objL::MeshArray, objR::MeshArray)
     # end
     elseif typeL <: MeshGrids.DLRFreq
         if typeR <: MeshGrids.ImFreq
-            objL.data = matfreq2dlr(meshL.dlr, objR.data, meshR.grid; axis=axes[1])
+            objL.data .= matfreq2dlr(meshL.dlr, objR.data, meshR.grid; axis=axes[1])
         elseif typeR <: MeshGrids.ImTime
-            objL.data = tau2dlr(meshL.dlr, objR.data, meshR.grid; axis=axes[1])
+            objL.data .= tau2dlr(meshL.dlr, objR.data, meshR.grid; axis=axes[1])
         end
     elseif typeR <: MeshGrids.DLRFreq
         if typeL <: MeshGrids.ImFreq
-            objL.data = dlr2matfreq(meshR.dlr, objR.data, meshL.grid; axis=axes[1])
+            objL.data .= dlr2matfreq(meshR.dlr, objR.data, meshL.grid; axis=axes[1])
         elseif typeL <: MeshGrids.ImTime
-            objL.data = dlr2tau(meshR.dlr, objR.data, meshL.grid; axis=axes[1])
+            objL.data .= dlr2tau(meshR.dlr, objR.data, meshL.grid; axis=axes[1])
         end
     else
         error("One of the Grren's function has to be in DLRfreq space to do Fourier transform")
@@ -83,10 +83,10 @@ function dlr_to_imtime(obj::MeshArray{T,N,MT}, tgrid=nothing; dim::Union{Nothing
     mesh_new = _replace_mesh(obj.mesh, mesh, tgrid)
     # mesh_new = (obj.mesh[1:dim-1]..., tgrid, obj.mesh[dim+1:end]...)
     data = dlr2tau(mesh.dlr, obj.data, tgrid.grid; axis=dim)
-    return MeshArray(mesh_new...; dtype=eltype(data), data=data)
+    return MeshArray(mesh=mesh_new, dtype=eltype(data), data=data)
 end
 
-@generated function replace_mesh_tuple(mesh::MT, N::Int, dim::Int, mesh_new::M) where {MT, M}
+@generated function replace_mesh_tuple(mesh::MT, N::Int, dim::Int, mesh_new::M) where {MT,M}
     if dim == 1
         m = :(mesh_new)
         for i in 2:N
@@ -101,19 +101,19 @@ end
     return :($m)
 end
 
-@generated function _replace_mesh(meshes::MT, mesh_old::OldM, mesh_new::NewM) where {MT, OldM, NewM}
+@generated function _replace_mesh(meshes::MT, mesh_old::OldM, mesh_new::NewM) where {MT,OldM,NewM}
     # return a new mesh tuple where mesh_old is replaced by mesh_new, if not found, the original meshes will be returned
 
     types = fieldtypes(MT)
     if types[1] == OldM
-        m =  :(mesh_new) 
+        m = :(mesh_new)
     else
         m = :(meshes[1])
     end
 
-    for (i,t) in enumerate(types)
+    for (i, t) in enumerate(types)
         # Core.println(t, ", ", M)
-        if i <=1
+        if i <= 1
             continue
         else
             if t == OldM
@@ -123,25 +123,25 @@ end
             end
         end
     end
-    return :($m)
+    # return :($m)
 
     # the following will always return a tuple
-    # if length(types) == 1
-    #     return :($m, )
-    # else
-    #     return :($m)
-    # end
+    if length(types) == 1
+        return :($m,)
+    else
+        return :($m)
+    end
 end
 
 #TODO: we need a version with the type of mesh as the second argument
-@generated function _find_mesh(meshs::MT, mesh::M) where {MT, M}
+@generated function _find_mesh(meshs::MT, mesh::M) where {MT,M}
     #find the first M type mesh in obj.mesh, if not found, return 0
     # Core.println(MT, ", ", M)
-    for (i,t) in enumerate(fieldtypes(MT))
+    for (i, t) in enumerate(fieldtypes(MT))
 
         # type equality is implemented as t<:M and M<:t, 
         # see https://discourse.julialang.org/t/how-to-test-type-equality/14144/6?u=mrbug
-        if t == M 
+        if t == M
             return :($i)
         end
     end
@@ -159,17 +159,17 @@ Transform a Green's function in DLR space to Matsubara frequency space.
 - `dim`: The dimension of the temporal mesh. Default value is the first ImFreq mesh.
 """
 # function dlr_to_imfreq(obj::MeshArray{T,N,MT}, ngrid=nothing; dim::Union{Nothing,Int}=nothing) where {T,N,MT}
-function dlr_to_imfreq(obj::MeshArray{T,N,MT}, 
-    ngrid = nothing;
+function dlr_to_imfreq(obj::MeshArray{T,N,MT},
+    ngrid=nothing;
     dim::Int=-1) where {T,N,MT}
     ########################## generic interface #################################
-    if dim<=0
+    if dim <= 0
         ind = findfirst(x -> (x isa MeshGrids.DLRFreq), obj.mesh)
         dim = isnothing(ind) ? -1 : ind
     end
     # dim = _find_mesh(obj.mesh, Type{MeshGrids.DLRFreq})
     # println(dim)
-    @assert dim >0 "No temporal can be transformed to imfreq."
+    @assert dim > 0 "No temporal can be transformed to imfreq."
 
     mesh = obj.mesh[dim]::MeshGrids.DLRFreq
     @assert mesh isa MeshGrids.DLRFreq "DLRFreq is expect for the dim = $dim."
@@ -179,7 +179,7 @@ function dlr_to_imfreq(obj::MeshArray{T,N,MT},
         @assert ngrid.isFermi ≈ mesh.isFermi "Target grid has to have the same statistics as the source grid."
         # @assert ngrid.Euv ≈ mesh.Euv "Target grid has to have the same Euv as the source grid."
     elseif isnothing(ngrid)
-        ngrid= MeshGrids.ImFreq(mesh.β, mesh.isFermi; grid=mesh.dlr.n, Euv=mesh.Euv);
+        ngrid = MeshGrids.ImFreq(mesh.β, mesh.isFermi; grid=mesh.dlr.n, Euv=mesh.Euv)
     else
         ngrid = MeshGrids.ImFreq(mesh.β, mesh.isFermi; grid=ngrid, Euv=mesh.Euv)
     end
@@ -187,7 +187,7 @@ function dlr_to_imfreq(obj::MeshArray{T,N,MT},
     mesh_new = _replace_mesh(obj.mesh, mesh, ngrid)
     # mesh_new = (obj.mesh[1:dim-1]..., ngrid, obj.mesh[dim+1:end]...)
     data = dlr2matfreq(mesh.dlr, obj.data, ngrid.grid.grid; axis=dim)
-    return MeshArray(mesh_new...; dtype=Base.eltype(data), data=data)
+    return MeshArray(mesh=mesh_new, dtype=Base.eltype(data), data=data)
 end
 
 """
@@ -220,7 +220,7 @@ function imfreq_to_dlr(obj::MeshArray{T,N,MT}, dlrgrid::Union{Nothing,DLRFreq}=n
     mesh_new = _replace_mesh(obj.mesh, mesh, dlrgrid)
     # mesh_new = (obj.mesh[1:dim-1]..., dlrgrid, obj.mesh[dim+1:end]...)
     data = matfreq2dlr(dlrgrid.dlr, obj.data, mesh.grid.grid; axis=dim) # should be mesh.grid.grid here
-    return MeshArray(mesh_new...; dtype=eltype(data), data=data)
+    return MeshArray(mesh=mesh_new, dtype=eltype(data), data=data)
 end
 
 """
@@ -253,8 +253,9 @@ function imtime_to_dlr(obj::MeshArray{T,N,MT}, dlrgrid::Union{Nothing,DLRFreq}=n
     mesh_new = _replace_mesh(obj.mesh, mesh, dlrgrid)
     # mesh_new = (obj.mesh[1:dim-1]..., dlrgrid, obj.mesh[dim+1:end]...)
 
+    # println(mesh_new)
     data = tau2dlr(dlrgrid.dlr, obj.data, mesh.grid.grid; axis=dim)
-    return MeshArray(mesh_new...; dtype=eltype(data), data=data)
+    return MeshArray(mesh=mesh_new, dtype=eltype(data), data=data)
 end
 
 """

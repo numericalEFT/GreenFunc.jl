@@ -31,6 +31,8 @@ export ImTime
 
 include("imfreq.jl")
 export ImFreq
+export int_to_matfreq, matfreq_to_int
+export matfreq
 
 include("dlrfreq.jl")
 export DLRFreq

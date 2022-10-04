@@ -1,5 +1,5 @@
 """
-    mutable struct MeshArray{T,N,MT} <: AbstractMeshArray{T,N}
+    struct MeshArray{T,N,MT} <: AbstractMeshArray{T,N}
 
 Multi-dimensional array that is defined on a mesh. 
 The mesh is a tuple of meshgrid objects. 
@@ -26,7 +26,7 @@ The mesh is stored in the field `mesh` and the data is stored in the field `data
 - `data`: Array{T,N}: the data.
 - `dims`: dimension of the data
 """
-mutable struct MeshArray{T,N,MT} <: AbstractMeshArray{T,N}
+struct MeshArray{T,N,MT} <: AbstractMeshArray{T,N}
     #########   Mesh   ##############
     mesh::MT
     data::Array{T,N}
@@ -56,7 +56,28 @@ function MeshArray(mesh...;
     dims = tuple([length(v) for v in mesh]...)
     if isnothing(data) == false
         # @assert length(size(data)) == N
-        @assert size(data) == dims
+        @assert size(data) == dims "data size $(size(data)) should be the same as the mesh size $dims"
+    else
+        data = Array{dtype,N}(undef, dims...)
+    end
+    return MeshArray{dtype,N,typeof(mesh)}(mesh, data, dims)
+end
+
+function MeshArray(; mesh::Union{Tuple,AbstractVector},
+    dtype=Float64,
+    data::Union{Nothing,AbstractArray}=nothing)
+
+    @assert all(x -> isiterable(typeof(x)), mesh) "all meshes should be iterable"
+
+    if mesh isa AbstractVector
+        mesh = (m for m in mesh)
+    end
+    @assert mesh isa Tuple "mesh should be a tuple, now get $(typeof(mesh))"
+    N = length(mesh)
+    dims = tuple([length(v) for v in mesh]...)
+    if isnothing(data) == false
+        # @assert length(size(data)) == N
+        @assert size(data) == dims "data size $(size(data)) should be the same as the mesh size $dims"
     else
         data = Array{dtype,N}(undef, dims...)
     end
