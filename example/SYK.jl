@@ -24,137 +24,56 @@ using GreenFunc
 using Printf
 using LinearAlgebra
 
+const β = 1e4
+const J = 1.0
+
 diff(a, b) = maximum(abs.(a - b)) # return the maximum deviation between a and b
 distance(a, b) = norm(a - b, 2) # return the 1-norm distance between a and b
 
-conformal_tau(τ, β) = π^(1 / 4) / sqrt(2β) * 1 / sqrt(sin(π * τ / β))
-
+conformal_tau(τ, β) = π^(1 / 4) / sqrt(2β) * 1 / sqrt(sin(π * τ / β)) #analytic solution with the conformal invariance
 reverseview(x) = view(x, reverse(axes(x, 1))) # reversed view of x
 
-function syk_sigma(mesh_dlr, G_t, J=1.0)
-    minus_tau = reverse(mesh_dlr.β .- G_t.mesh[1]) # Reversed imaginary time mesh point
-    G_minus_t = dlr_to_imtime(to_dlr(G_t, mesh_dlr), minus_tau) # G at beta - tau
+const dlrmesh = DLRFreq(β, FERMION; Euv=5.0, rtol=1e-10, symmetry=:ph)   # Initialize DLR grid
 
-    Sigma_t = J .^2 .* G_t .^2 .* reverseview(G_minus_t)  # SYK self-energy in imaginary time
-
-    return Sigma_t
+function selfenergy(Gt)
+    ######### calculate sigma ###############
+    minus_tau = reverse(β .- Gt.mesh[1]) # Reversed imaginary time mesh point
+    Gt_inv = dlr_to_imtime(to_dlr(Gt), minus_tau) # interpolate into minus_tau grid
+    Gmt = reverseview(Gt_inv)
+    Σt = J .^ 2 .* Gt .^ 2 .* Gmt  # SYK self-energy in imaginary time
+    return Σt |> to_dlr |> dlr_to_imfreq
 end
 
-function dyson(dlr, sigma_freq, mu)
-    if dlr.symmetry == :ph #symmetrized G
-        @assert mu ≈ 0.0 "Only the case μ=0 enjoys the particle-hole symmetry."
-        return 1im * imag.(-1 ./ (dlr.ωn * 1im .- mu .+ sigma_freq))
-    elseif dlr.symmetry == :none
-        return -1 ./ (dlr.ωn * 1im .- mu .+ sigma_freq)
-    else
-        error("Not implemented!")
-    end
+function dyson(Gt)
+    ########## sigma --> G  ################
+    Σω = selfenergy(Gt)
+    freq = matfreq(Σω.mesh[1]) * im
+    Gω = 1im * imag.(-1 ./ (freq .+ Σω))
+
+    return Gω |> to_dlr |> dlr_to_imtime # Gω --> Gτ
+
 end
 
-function solve_syk_with_fixpoint_iter(mesh_dlr, G_t, mu, tol=mesh_dlr.rtol * 10; mix=0.1, maxiter=1000, verbose=true)
-    G_t.data = zeros(ComplexF64, G_t.dims...)
-    iternum = 0
+function nlsolve(G_t; tol=rtol, maxiter=1000, verbose=false, mix=0.1)
     for iter in 1:maxiter
-        sigma_t = syk_sigma(mesh_dlr, G_t)
-        sigma_freq = dlr_to_imfreq(to_dlr(sigma_t, mesh_dlr))
-        # sigma_freq = sigma_t |> to_dlr |> dlr_to_imfreq
-
-        G_freq_new = dyson(mesh_dlr.dlr, sigma_freq, mu)
-
-        G_t_new = dlr_to_imtime(to_dlr(G_freq_new, mesh_dlr))
-
-        if verbose
-            if iter % (maxiter / 10) == 0
-                println("round $iter: change $(diff(G_t_new, G_t)), distance $(distance(G_t_new, G_t))")
-            end
+        G_t_new = dyson(G_t)
+        if verbose && (iter % (maxiter / 10) == 0)
+            println("round $iter: change $(diff(G_t_new, G_t)), distance $(distance(G_t_new, G_t))")
         end
         if maximum(abs.(G_t_new - G_t)) < tol && iter > 10
-            # if distance(G_t_new, G_t) < tol && iter > 10
-            break
+            return G_t_new
         end
-
         G_t = mix .* G_t_new + (1 - mix) .* G_t # Linear mixing
-        iternum = iter
     end
-    # println(iternum)
-    return G_t
 end
 
-function printG(dlr, G_t)
-    @printf("%15s%40s%40s%40s\n", "τ", "DLR imag", "DLR real", "asymtotically exact")
-    for i in 1:dlr.size
-        if dlr.τ[i] <= dlr.β / 2
-            @printf("%15.8f%40.15f%40.15f%40.15f\n", dlr.τ[i], imag(G_t[i]), real(G_t[i]), conformal_tau(dlr.τ[i], dlr.β))
-        end
-    end
-    println()
+const G_t = MeshArray(ImTime(dlrmesh); dtype=ComplexF64)
+fill!(G_t, 0.0)
+G = nlsolve(G_t, verbose=true)
+
+@printf("%15s%40s%40s%40s\n", "τ", "DLR imag", "DLR real", "asymtotically exact")
+for (i, t) in enumerate(G.mesh[1])
+    @printf("%15.8f%40.15f%40.15f%40.15f\n", t, imag(G[i]), real(G[i]), conformal_tau(t, β))
 end
+println()
 
-function printG(dlr, G_t, G_t1)
-    @printf("%15s%20s%20s%20s%20s%20s\n", "τ", "DLR imag", "DLR real", "DLR1 imag", "DLR1 real", "asymtotically exact")
-    for i in 1:dlr.size
-        if dlr.τ[i] <= dlr.β / 2
-            @printf("%15.8f%20.15f%20.15f%20.15f%20.15f%20.15f\n", dlr.τ[i], imag(G_t[i]), real(G_t[i]), imag(G_t1[i]), real(G_t1[i]), conformal_tau(dlr.τ[i], dlr.β))
-        end
-    end
-    println()
-end
-
-verbose = false
-β = 1e4
-isFermi = true
-
-printstyled("=====    Prepare the expected Green's function of the SYK model     =======\n", color=:yellow)
-
-# mesh_dlr = MeshGrids.DLRFreq(β, isFermi; Euv=5.0, rtol=1e-14, sym=:ph)   # Initialize DLR grid
-mesh_dlr = MeshGrids.DLRFreq(β, isFermi; Euv=5.0, rtol=1e-10, sym=:ph, rebuild=true)   # Initialize DLR grid
-mesh = MeshGrids.ImTime(β, isFermi; Euv=5.0, grid=mesh_dlr.dlr.τ)
-G_t = MeshArray(mesh; dtype=ComplexF64)
-
-@time G_t_correct = solve_syk_with_fixpoint_iter(mesh_dlr, G_t, 0.00, mix=0.1, maxiter=1000, verbose=true)
-printG(mesh_dlr.dlr, G_t_correct)
-
-G_dlr_correct = to_dlr(G_t_correct, mesh_dlr)
-
-printstyled("=====    Test Symmetrized and Unsymmetrized DLR solver for SYK model     =======\n", color=:yellow)
-
-@printf("%30s%30s%30s%20s\n", "Euv", "sym_solver", "unsym_solver", "good or bad")
-for Euv in LinRange(5.0, 20.0, 10)
-
-    rtol = 1e-10
-    # printstyled("=====     Symmetrized DLR solver for SYK model     =======\n", color = :yellow)
-    mix = 0.1
-    mesh_dlrph = MeshGrids.DLRFreq(β, isFermi; Euv=Euv, rtol=rtol, sym=:ph, rebuild=false)
-    mesh1 = MeshGrids.ImTime(β, isFermi; Euv=Euv, grid=mesh_dlrph.dlr.τ)
-    G_t1 = MeshArray(mesh1; dtype=ComplexF64)
-    G_t_ph = solve_syk_with_fixpoint_iter(mesh_dlrph, G_t1, 0.00, mix=mix, verbose=verbose)
-
-    # printstyled("=====     Unsymmetrized DLR solver for SYK model     =======\n", color = :yellow)
-    mix = 0.1
-    mesh_dlrnone = MeshGrids.DLRFreq(β, isFermi; Euv=Euv, rtol=rtol, sym=:none, rebuild=false)
-    mesh2 = MeshGrids.ImTime(β, isFermi; Euv=Euv, grid=mesh_dlrnone.dlr.τ)
-    G_t2 = MeshArray(mesh2; dtype=ComplexF64)
-    G_t_none = solve_syk_with_fixpoint_iter(mesh_dlrnone, G_t2, 0.00, mix=mix, verbose=verbose)
-
-    # printstyled("=====     Unsymmetrized versus Symmetrized DLR solver    =======\n", color = :yellow)
-    # @printf("%15s%40s%40s%40s\n", "τ", "sym DLR (interpolated)", "unsym DLR", "difference")
-    # G_x_interp = tau2tau(dsym_correct, G_x_correct, dnone.τ)
-    # for i in 1:dnone.size
-    #     if dnone.τ[i] <= dnone.β / 2
-    #         @printf("%15.8f%40.15f%40.15f%40.15f\n", dnone.τ[i], real(G_x_interp[i]), real(G_x_none[i]), abs(real(G_x_interp[i] - G_x_none[i])))
-    #     end
-    # end
-
-    G_t_interp_ph = dlr_to_imtime(G_dlr_correct, mesh1)
-    G_t_interp_none = dlr_to_imtime(G_dlr_correct, mesh2)
-    # printG(mesh_dlrph.dlr, G_t_interp_ph, G_t_ph)
-    # printG(mesh_dlrnone.dlr, G_t_interp_none, G_t_none)
-    d_ph = diff(G_t_interp_ph, G_t_ph)
-    d_none = diff(G_t_interp_none, G_t_none)
-    flag = (d_ph < 100rtol) && (d_none < 100rtol) ? "good" : "bad"
-
-    @printf("%30.15f%30.15e%30.15e%20s\n", Euv, d_ph, d_none, flag)
-    # println("symmetric Euv = $Euv maximumal difference: ", diff(G_x_interp, G_x_ph))
-    # println("non symmetric Euv = $Euv maximumal difference: ", diff(G_x_interp, G_x_none))
-
-end

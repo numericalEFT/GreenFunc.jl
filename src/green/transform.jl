@@ -251,14 +251,12 @@ function imtime_to_dlr(obj::MeshArray{T,N,MT}; dim::Union{Nothing,Int}=nothing) 
 end
 
 """
-    function to_dlr(obj::MeshArray; dim=nothing, rtol=1e-12, sym=:none)
+    function to_dlr(obj::MeshArray; dim=nothing)
 
 Calculate the DLR sepctral density of an imaginary-time or Matsubara-frequency Green's function.
 #Arguements
 - 'obj': Function in the imaginary-time space or in the Matsubara-frequency
 - `dim`: The dimension of the mesh to be transformed. Default value is the first dimension with mesh type ImTime or ImFreq.
-- `rtol`: The relative tolerance of the DLR transform. Default value is 1e-12.
-- `sym`: The symmetry of the Green's function, :none, :ph or :pha. Default value is :none.
 """
 function to_dlr(obj::MeshArray{T,N,MT}; dim::Union{Nothing,Int}=nothing) where {T,N,MT}
     if isnothing(dim)
