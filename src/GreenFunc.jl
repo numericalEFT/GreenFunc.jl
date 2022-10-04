@@ -36,7 +36,7 @@ export from_triqs
 
 include("green/transform.jl")
 export dlr_to_imfreq, dlr_to_imtime
-export imfreq_to_dlr, imtime_to_dlr, to_dlr
+export imfreq_to_dlr, imtime_to_dlr, to_dlr, to_imtime, to_imfreq
 
 include("green/testcase.jl")
 

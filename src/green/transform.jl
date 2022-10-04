@@ -100,14 +100,29 @@ end
 end
 
 #TODO: we need a version with the type of mesh as the second argument
-@generated function _find_mesh(meshs::MT, mesh::M) where {MT,M}
-    #find the first M type mesh in obj.mesh, if not found, return 0
-    # Core.println(MT, ", ", M)
+@generated function _find_mesh(::Type{MT}, ::Type{M}) where {MT,M}
     for (i, t) in enumerate(fieldtypes(MT))
-
         # type equality is implemented as t<:M and M<:t, 
         # see https://discourse.julialang.org/t/how-to-test-type-equality/14144/6?u=mrbug
-        if t == M
+        if t <: M
+            return :($i)
+        end
+    end
+    return :(0)
+end
+
+@generated function _find_mesh(::Type{MT}, ::Type{M1}, ::Type{M2}) where {MT,M1,M2}
+    for (i, t) in enumerate(fieldtypes(MT))
+        if t <: M1 || t <: M2
+            return :($i)
+        end
+    end
+    return :(0)
+end
+
+@generated function _find_mesh(::Type{MT}, ::Type{M1}, ::Type{M2}, ::Type{M3}) where {MT,M1,M2,M3}
+    for (i, t) in enumerate(fieldtypes(MT))
+        if t <: M1 || t <: M2 || t <: M3
             return :($i)
         end
     end
@@ -115,22 +130,20 @@ end
 end
 
 """
-    function dlr_to_imtime(obj::MeshArray, tgrid=nothing; dim=nothing)
+    function dlr_to_imfreq(mesharray[, tgrid; dim])
 
-Transform a Green's function in DLR space to the imaginary-time space. 
+Transform a Green's function in DLR to the imaginary-time domain. 
 #Arguements
-- 'obj': Function in DLR space
-- `tgrid`: The imaginary-time grid which the function transforms into. Default value is the imaginary-time grid from the `DLRFreq` constructor.
+- 'mesharray': MeshArray in DLR space
+- `tgrid`: The imaginary-time grid which the function transforms into. Default value is the imaginary-time grid from the `DLRGrid` from `mesharray.mesh[dim]`.
 - `dim`: The dimension of the temporal mesh. Default value is the first ImTime mesh.
 """
 function dlr_to_imtime(obj::MeshArray{T,N,MT},
     tgrid::Union{Nothing,AbstractGrid,AbstractVector,ImFreq}=nothing;
-    dim::Union{Nothing,Int}=nothing) where {T,N,MT}
-    ########################## generic interface #################################
-    if isnothing(dim)
-        dim = findfirst(x -> (x isa MeshGrids.DLRFreq), obj.mesh)
-        @assert isnothing(dim) == false "No temporal can be transformed to imtime."
-    end
+    dim::Int=_find_mesh(MT, DLRFreq)
+) where {T,N,MT}
+    @assert dim > 0 "No temporal can be transformed to imtime."
+    @assert dim <= N "Dimension must be <= $N."
 
     mesh = obj.mesh[dim]
     @assert mesh isa MeshGrids.DLRFreq "DLRFreq is expect for the dim = $dim."
@@ -152,32 +165,27 @@ function dlr_to_imtime(obj::MeshArray{T,N,MT},
 end
 
 """
-    function dlr_to_imfreq(obj::MeshArray, ngrid=nothing; dim=nothing)
+    function dlr_to_imfreq(mesharray[, ngrid; dim])
 
-Transform a Green's function in DLR space to Matsubara frequency space. 
+Transform a Green's function in DLR to Matsubara frequency domain. 
 #Arguements
-- 'obj': Function in DLR space
-- `ngrid`: The Matsubara-frequency grid which the function transforms into. Default value is the Matsubara-frequency grid from the `DLRFreq` constructor.
+- 'mesharray': MeshArray in DLR space
+- `ngrid`: The Matsubara-frequency grid which the function transforms into. Default value is the Matsubara-frequency grid from the `DLRGrid` from `mesharray.mesh[dim]`.
 - `dim`: The dimension of the temporal mesh. Default value is the first ImFreq mesh.
 """
 # function dlr_to_imfreq(obj::MeshArray{T,N,MT}, ngrid=nothing; dim::Union{Nothing,Int}=nothing) where {T,N,MT}
 function dlr_to_imfreq(obj::MeshArray{T,N,MT},
     ngrid::Union{Nothing,AbstractGrid,AbstractVector,ImFreq}=nothing;
-    dim::Int=-1) where {T,N,MT}
+    dim::Int=_find_mesh(MT, DLRFreq)) where {T,N,MT}
     ########################## generic interface #################################
-    if dim <= 0
-        ind = findfirst(x -> (x isa MeshGrids.DLRFreq), obj.mesh)
-        dim = isnothing(ind) ? -1 : ind
-    end
-    # dim = _find_mesh(obj.mesh, Type{MeshGrids.DLRFreq})
-    # println(dim)
     @assert dim > 0 "No temporal can be transformed to imfreq."
+    @assert dim <= N "Dimension must be <= $N."
 
     mesh = obj.mesh[dim]::MeshGrids.DLRFreq
     @assert mesh isa MeshGrids.DLRFreq "DLRFreq is expect for the dim = $dim."
 
     if isnothing(ngrid)
-        ngrid = MeshGrids.ImFreq(mesh)
+        ngrid = ImFreq(mesh)
     elseif ngrid isa MeshGrids.ImFreq
         @assert ngrid.β ≈ mesh.β "Target grid has to have the same inverse temperature as the source grid."
         @assert ngrid.isFermi ≈ mesh.isFermi "Target grid has to have the same statistics as the source grid."
@@ -193,21 +201,16 @@ function dlr_to_imfreq(obj::MeshArray{T,N,MT},
 end
 
 """
-    function imfreq_to_dlr(obj::MeshArray; dim=nothing, rtol=1e-12, sym=:none)
+    function imfreq_to_dlr(mesharray[; dim])
 
 Calculate the DLR sepctral density of a Matsubara-frequency Green's function.
 #Arguements
-- 'obj': Function in the Matsubara-frequency space.
-- `dlrgrid`: The DLR grid which the function transforms into. Default value is the DLR grid constructed from the `ImFreq` members and the optional arguments.
+- 'mesharray': MeshArray in the Matsubara-frequency domain.
 - `dim`: The dimension of the mesh to be transformed. Default value is the first dimension with mesh type ImFreq.
-- `rtol`: The relative tolerance of the DLR transform. Default value is 1e-12.
-- `sym`: The symmetry of the Green's function, :none, :ph or :pha. Default value is :none.
 """
-function imfreq_to_dlr(obj::MeshArray{T,N,MT}; dim::Union{Nothing,Int}=nothing) where {T,N,MT}
-    if isnothing(dim)
-        dim = findfirst(x -> (x isa MeshGrids.ImFreq), obj.mesh)
-        @assert isnothing(dim) == false "No temporal can be transformed to dlr."
-    end
+function imfreq_to_dlr(obj::MeshArray{T,N,MT}; dim::Int=_find_mesh(MT, ImFreq)) where {T,N,MT}
+    @assert dim > 0 "No temporal can be transformed to dlr."
+    @assert dim <= N "Dimension must be <= $N."
 
     mesh = obj.mesh[dim]
     @assert mesh isa MeshGrids.ImFreq "ImFreq is expect for the dim = $dim."
@@ -221,21 +224,17 @@ function imfreq_to_dlr(obj::MeshArray{T,N,MT}; dim::Union{Nothing,Int}=nothing) 
 end
 
 """
-    function imtime_to_dlr(obj::MeshArray; dim=nothing, rtol=1e-12, sym=:none)
+    function imtime_to_dlr(mesharray[; dim])
 
 Calculate the DLR sepctral density of an imaginary-time Green's function.
+
 #Arguements
-- 'obj': Function in the imaginary-time space.
-- `dlrgrid`: The DLR grid which the function transforms into. Default value is the DLR grid constructed from the `ImTime` members and the optional arguments.
+- 'mesharray': MeshArray in the imaginary-time domain.
 - `dim`: The dimension of the mesh to be transformed. Default value is the first dimension with mesh type ImTime.
-- `rtol`: The relative tolerance of the DLR transform. Default value is 1e-12.
-- `sym`: The symmetry of the Green's function, :none, :ph or :pha. Default value is :none.
 """
-function imtime_to_dlr(obj::MeshArray{T,N,MT}; dim::Union{Nothing,Int}=nothing) where {T,N,MT}
-    if isnothing(dim)
-        dim = findfirst(x -> (x isa MeshGrids.ImTime), obj.mesh)
-        @assert isnothing(dim) == false "No temporal can be transformed to imtime."
-    end
+function imtime_to_dlr(obj::MeshArray{T,N,MT}; dim::Int=_find_mesh(MT, ImTime)) where {T,N,MT}
+    @assert dim > 0 "No temporal can be transformed to dlr."
+    @assert dim <= N "Dimension must be <= $N."
 
     mesh = obj.mesh[dim]
     @assert mesh isa MeshGrids.ImTime "ImTime is expect for the dim = $dim."
@@ -251,18 +250,19 @@ function imtime_to_dlr(obj::MeshArray{T,N,MT}; dim::Union{Nothing,Int}=nothing) 
 end
 
 """
-    function to_dlr(obj::MeshArray; dim=nothing)
+    function to_dlr(mesharray[; dim])
 
 Calculate the DLR sepctral density of an imaginary-time or Matsubara-frequency Green's function.
+
 #Arguements
-- 'obj': Function in the imaginary-time space or in the Matsubara-frequency
+- 'mesharray': MeshArray in the imaginary-time or the Matsubara-frequency domain.
 - `dim`: The dimension of the mesh to be transformed. Default value is the first dimension with mesh type ImTime or ImFreq.
 """
-function to_dlr(obj::MeshArray{T,N,MT}; dim::Union{Nothing,Int}=nothing) where {T,N,MT}
-    if isnothing(dim)
-        dim = findfirst(x -> (x isa MeshGrids.ImTime || x isa MeshGrids.ImFreq), obj.mesh)
-        @assert isnothing(dim) == false "No temporal can be transformed to imtime."
-    end
+function to_dlr(obj::MeshArray{T,N,MT};
+    dim::Int=_find_mesh(MT, ImTime, ImFreq)
+) where {T,N,MT}
+    @assert dim > 0 "No temporal can be transformed to imtime."
+    @assert dim <= N "Dimension must be <= $N."
 
     if obj.mesh[dim] isa MeshGrids.ImTime
         return imtime_to_dlr(obj; dim=dim)
@@ -270,6 +270,50 @@ function to_dlr(obj::MeshArray{T,N,MT}; dim::Union{Nothing,Int}=nothing) where {
         return imfreq_to_dlr(obj; dim=dim)
     else
         error("ImTime or ImFreq is expect for the dim = $dim.")
+    end
+end
+
+"""
+    function to_imtime(mesharray[; dim])
+
+Transform a Green's function to the imaginary-time domain.
+
+#Arguements
+- 'mesharray': MeshArray in the imaginary-time, the Matsubara-frequency or the DLR frequency domain.
+- `dim`: The dimension of the mesh to be transformed. Default value is the first dimension with mesh type DLRFreq, ImTime or ImFreq.
+"""
+function to_imtime(obj::MeshArray{T,N,MT};
+    dim::Int=_find_mesh(MT, ImTime, ImFreq, DLRFreq)
+) where {T,N,MT}
+    @assert dim > 0 "No temporal can be transformed to imtime."
+    @assert dim <= N "Dimension must be <= $N."
+
+    if obj.mesh[dim] isa DLRFreq
+        return dlr_to_imtime(obj; dim=dim)
+    else
+        error("Direct ImTime to ImTime or ImTime to ImFreq transform is not supported right now.")
+    end
+end
+
+"""
+    function to_imfreq(mesharray[; dim])
+
+Transform a Green's function to the Matsubara-frequency domain.
+
+#Arguements
+- 'mesharray': MeshArray in the imaginary-time, the Matsubara-frequency or the DLR frequency domain.
+- `dim`: The dimension of the mesh to be transformed. Default value is the first dimension with mesh type DLRFreq, ImTime or ImFreq.
+"""
+function to_imfreq(obj::MeshArray{T,N,MT};
+    dim::Int=_find_mesh(MT, ImTime, ImFreq, DLRFreq)
+) where {T,N,MT}
+    @assert dim > 0 "No temporal can be transformed to imtime."
+    @assert dim <= N "Dimension must be <= $N."
+
+    if obj.mesh[dim] isa DLRFreq
+        return dlr_to_imfreq(obj; dim=dim)
+    else
+        error("Direct ImTime to ImTime or ImTime to ImFreq transform is not supported right now.")
     end
 end
 

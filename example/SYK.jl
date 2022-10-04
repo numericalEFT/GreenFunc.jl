@@ -26,6 +26,7 @@ using LinearAlgebra
 
 const β = 1e4
 const J = 1.0
+const rtol = 1e-10
 
 diff(a, b) = maximum(abs.(a - b)) # return the maximum deviation between a and b
 distance(a, b) = norm(a - b, 2) # return the 1-norm distance between a and b
@@ -33,7 +34,7 @@ distance(a, b) = norm(a - b, 2) # return the 1-norm distance between a and b
 conformal_tau(τ, β) = π^(1 / 4) / sqrt(2β) * 1 / sqrt(sin(π * τ / β)) #analytic solution with the conformal invariance
 reverseview(x) = view(x, reverse(axes(x, 1))) # reversed view of x
 
-const dlrmesh = DLRFreq(β, FERMION; Euv=5.0, rtol=1e-10, symmetry=:ph)   # Initialize DLR grid
+const dlrmesh = DLRFreq(β, FERMION; Euv=5.0, rtol=rtol, symmetry=:ph)   # Initialize DLR grid
 
 function selfenergy(Gt)
     ######### calculate sigma ###############
@@ -41,7 +42,7 @@ function selfenergy(Gt)
     Gt_inv = dlr_to_imtime(to_dlr(Gt), minus_tau) # interpolate into minus_tau grid
     Gmt = reverseview(Gt_inv)
     Σt = J .^ 2 .* Gt .^ 2 .* Gmt  # SYK self-energy in imaginary time
-    return Σt |> to_dlr |> dlr_to_imfreq
+    return Σt |> to_dlr |> to_imfreq
 end
 
 function dyson(Gt)
@@ -50,7 +51,7 @@ function dyson(Gt)
     freq = matfreq(Σω.mesh[1]) * im
     Gω = 1im * imag.(-1 ./ (freq .+ Σω))
 
-    return Gω |> to_dlr |> dlr_to_imtime # Gω --> Gτ
+    return Gω |> to_dlr |> to_imtime # Gω --> Gτ
 
 end
 
