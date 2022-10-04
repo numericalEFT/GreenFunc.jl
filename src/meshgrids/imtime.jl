@@ -14,14 +14,14 @@ Time grid for Green's functions.
 - `Euv`:  the UV energy scale of the spectral density.
 - `isFermi`: the statistics for particles is fermionic or not.
 """
-struct ImTime{T<:Real,G<:AbstractVector{T},B} <: TemporalGrid{T}
+struct ImTime{T<:Real,G<:AbstractGrid{T},R} <: TemporalGrid{T}
     grid::G
     β::T
     Euv::T
     isFermi::Bool
     symmetry::Symbol
     rtol::T
-    basis::B
+    representation::R
 end
 
 """

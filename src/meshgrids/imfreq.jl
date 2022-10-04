@@ -14,14 +14,14 @@ Imaginary-frequency grid for Green's functions.
 - `Euv`:  the UV energy scale of the spectral density.
 - `isFermi`: the statistics for particles is fermionic or not.
 """
-struct ImFreq{T<:Real,G<:AbstractVector{Int},B} <: TemporalGrid{Int}
+struct ImFreq{T<:Real,G<:AbstractGrid{Int},R} <: TemporalGrid{Int}
     grid::G
     β::T
     Euv::T
     isFermi::Bool
     symmetry::Symbol
     rtol::T
-    basis::B # representation of the imaginary-time axis
+    representation::R # representation of the imaginary-time axis
 end
 
 """

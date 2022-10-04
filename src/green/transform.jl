@@ -135,16 +135,14 @@ function dlr_to_imtime(obj::MeshArray{T,N,MT},
     mesh = obj.mesh[dim]
     @assert mesh isa MeshGrids.DLRFreq "DLRFreq is expect for the dim = $dim."
 
-    if tgrid isa MeshGrids.ImTime
+    if isnothing(tgrid)
+        tgrid = ImTime(mesh)
+    elseif tgrid isa ImTime
         @assert tgrid.β ≈ mesh.β "Target grid has to have the same inverse temperature as the source grid."
         @assert tgrid.isFermi ≈ mesh.isFermi "Target grid has to have the same statistics as the source grid."
         # @assert ngrid.Euv ≈ mesh.Euv "Target grid has to have the same Euv as the source grid."
-    elseif isnothing(tgrid)
-        tgrid = MeshGrids.ImTime(mesh)
-    elseif ngrid isa AbstractGrid
-        tgrid = MeshGrids.ImTime(mesh, grid=tgrid.grid)
-    else # ngrid isa AbstractVector
-        tgrid = MeshGrids.ImTime(mesh, grid=tgrid)
+    else
+        tgrid = ImTime(mesh, grid=tgrid)
     end
 
     mesh_new = _replace_mesh(obj.mesh, mesh, tgrid)
@@ -178,15 +176,13 @@ function dlr_to_imfreq(obj::MeshArray{T,N,MT},
     mesh = obj.mesh[dim]::MeshGrids.DLRFreq
     @assert mesh isa MeshGrids.DLRFreq "DLRFreq is expect for the dim = $dim."
 
-    if ngrid isa MeshGrids.ImFreq
+    if isnothing(ngrid)
+        ngrid = MeshGrids.ImFreq(mesh)
+    elseif ngrid isa MeshGrids.ImFreq
         @assert ngrid.β ≈ mesh.β "Target grid has to have the same inverse temperature as the source grid."
         @assert ngrid.isFermi ≈ mesh.isFermi "Target grid has to have the same statistics as the source grid."
         # @assert ngrid.Euv ≈ mesh.Euv "Target grid has to have the same Euv as the source grid."
-    elseif isnothing(ngrid)
-        ngrid = MeshGrids.ImFreq(mesh)
-    elseif ngrid isa AbstractGrid
-        ngrid = MeshGrids.ImFreq(mesh, grid=ngrid.grid)
-    else # ngrid isa AbstractVector
+    else
         ngrid = MeshGrids.ImFreq(mesh, grid=ngrid)
     end
 
@@ -215,8 +211,8 @@ function imfreq_to_dlr(obj::MeshArray{T,N,MT}; dim::Union{Nothing,Int}=nothing) 
 
     mesh = obj.mesh[dim]
     @assert mesh isa MeshGrids.ImFreq "ImFreq is expect for the dim = $dim."
-    isnothing(mesh.basis) && error("`ImFreq.basis = $(mesh.basis)` is not a `DLRGrid`")
-    dlrgrid = MeshGrids.DLRFreq(mesh.basis)
+    isnothing(mesh.representation) && error("`ImFreq representation = $(mesh.representation)` is not a `DLRGrid`")
+    dlrgrid = MeshGrids.DLRFreq(mesh.representation)
 
     mesh_new = _replace_mesh(obj.mesh, mesh, dlrgrid)
     # mesh_new = (obj.mesh[1:dim-1]..., dlrgrid, obj.mesh[dim+1:end]...)
@@ -243,8 +239,8 @@ function imtime_to_dlr(obj::MeshArray{T,N,MT}; dim::Union{Nothing,Int}=nothing) 
 
     mesh = obj.mesh[dim]
     @assert mesh isa MeshGrids.ImTime "ImTime is expect for the dim = $dim."
-    isnothing(mesh.basis) && error("`ImFreq.basis = $(mesh.basis)` is not a `DLRGrid`")
-    dlrgrid = MeshGrids.DLRFreq(mesh.basis)
+    isnothing(mesh.representation) && error("`ImFreq representation = $(mesh.representation)` is not a `DLRGrid`")
+    dlrgrid = MeshGrids.DLRFreq(mesh.representation)
 
     mesh_new = _replace_mesh(obj.mesh, mesh, dlrgrid)
     # mesh_new = (obj.mesh[1:dim-1]..., dlrgrid, obj.mesh[dim+1:end]...)
