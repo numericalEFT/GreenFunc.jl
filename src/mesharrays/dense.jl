@@ -27,15 +27,38 @@ The mesh is stored in the field `mesh` and the data is stored in the field `data
 - `dims`: dimension of the data
 """
 struct MeshArray{T,N,MT} <: AbstractMeshArray{T,N}
-    #########   Mesh   ##############
     mesh::MT
     data::Array{T,N}
     dims::NTuple{N,Int}
+    function MeshArray{T,N,MT}(data::AbstractArray{T,N}, mesh) where {T,N,MT}
+        # do nothing constructor, so that it is fast with no additional allocation
+        # but you need to make sure that the mesh and data make sense
+
+        # @assert mesh isa Tuple "The mesh should be wrappered with a tuple."
+        # for (i, s) in enumerate(size(data))
+        #     @assert length(mesh[i]) == s "The size of data and the $(i)th mesh do not match."
+        # end
+        return new{T,N,MT}(mesh, data, size(data))
+    end
 end
 
+
 """
-    function MeshArray(mesh...;
-        innerstate::Union{AbstractVector{Int},Tuple{Vararg{Int}}}=(),
+    MeshMatrix{T}
+Alias for [`MeshArray{T,2,MT}`](@ref MeshArray).
+"""
+const MeshMatrix{T,MT} = MeshArray{T,2,MT}
+
+"""
+    MeshVector{T}
+Alias for [`MeshArray{T,1,MT}`](@ref MeshArray).
+"""
+const MeshVector{T,MT} = MeshArray{T,1,MT}
+
+"""
+    function MeshArray(;
+        mesh...;
+        dtype = Float64,
         data::Union{Nothing,AbstractArray}=nothing) where {T}
     
 Create a Green struct. Its memeber `dims` is setted as the tuple consisting of the length of all meshes.
@@ -60,9 +83,8 @@ function MeshArray(mesh...;
     else
         data = Array{dtype,N}(undef, dims...)
     end
-    return MeshArray{dtype,N,typeof(mesh)}(mesh, data, dims)
+    return MeshArray{dtype,N,typeof(mesh)}(data, mesh)
 end
-
 function MeshArray(; mesh::Union{Tuple,AbstractVector},
     dtype=Float64,
     data::Union{Nothing,AbstractArray}=nothing)
@@ -81,21 +103,8 @@ function MeshArray(; mesh::Union{Tuple,AbstractVector},
     else
         data = Array{dtype,N}(undef, dims...)
     end
-    return MeshArray{dtype,N,typeof(mesh)}(mesh, data, dims)
+    return MeshArray{dtype,N,typeof(mesh)}(data, mesh)
 end
-
-# somehow, the following leads to stackoverflow due to some kind of infinite loop
-# function Base.getproperty(obj::MeshArray{T,MT,N,Ninner}, sym::Symbol) where {T,MT,N,Ninner}
-#     if sym === :N
-#         return N
-#     elseif sym === :Ninner
-#         return Ninner
-#     elseif sym === :dims
-#         return obj.dims
-#     else # fallback to getfield
-#         return getfield(obj, sym)
-#     end
-# end
 
 """
     getindex(obj::MeshArray, inds...)
@@ -125,9 +134,9 @@ Base.setindex!(obj::MeshArray{T,N,MT}, v, inds::Vararg{Int,N}) where {T,MT,N} = 
 - `Base.similar(obj::MeshArray, ::Type{S})`: Return a new MeshArray with the same meshes, but with the uninitialized data of type `S`.
 """
 function Base.similar(obj::MeshArray{T,N,MT}, ::Type{S}) where {T,MT,N,S}
-    return MeshArray(obj.mesh...; dtype=S, data=similar(obj.data, S))
+    return MeshArray(mesh=obj.mesh, dtype=S, data=similar(obj.data, S))
 end
-Base.similar(obj::MeshArray{T,N,MT}) where {T,MT,N} = Base.similar(obj, T)
+Base.similar(obj::MeshArray{T,N,MT}) where {T,MT,N,D} = Base.similar(obj, T)
 #By default, the following functions will all call Base.similar(obj::MeshArray, ::Type{S}, inds) as explained in https://docs.julialang.org/en/v1/manual/interfaces/#man-interface-array
 #`Base.similar(obj::MeshArray, ::Type{S}, inds)`: Return a slice of obj.data.
 #However, we don't want that since slice of GreeNew itself is not well defined with meshes.
@@ -136,11 +145,12 @@ Base.similar(obj::MeshArray{T,N,MT}) where {T,MT,N} = Base.similar(obj, T)
 Base.BroadcastStyle(::Type{<:MeshArray}) = Broadcast.ArrayStyle{MeshArray}()
 
 function Base.similar(bc::Base.Broadcast.Broadcasted{Broadcast.ArrayStyle{MeshArray}}, ::Type{ElType}) where {ElType}
-    # println("get called")
     # Scan the inputs for the MeshArray:
     A = find_gf(bc)
     # Use other fields of A to create the output
-    MeshArray(A.mesh, similar(Array{ElType}, axes(bc)), A.dims)
+    data = similar(Array{ElType}, axes(bc))
+    m = MeshArray{ElType,length(axes(bc)),typeof(A.mesh)}(data, A.mesh)
+    return m
 end
 
 find_gf(bc::Broadcast.Broadcasted) = find_gf(bc.args)
@@ -186,7 +196,7 @@ Base.show(io::IO, ::MIME"text/plain", obj::MeshArray) = Base.show(io, obj)
 Base.show(io::IO, ::MIME"text/html", obj::MeshArray) = Base.show(io, obj)
 
 """
-    function rank(obj::MeshArray{T,N,MT})
+    function rank(obj::MeshArray)
 
 Return the dimension of `obj.data` (`N`).
 """

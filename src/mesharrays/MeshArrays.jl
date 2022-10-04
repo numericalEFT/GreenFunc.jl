@@ -7,7 +7,7 @@ isiterable(::Type{T}) where {T} = hasmethod(iterate, (T,))
 
 include("dense.jl")
 
-export MeshArray
+export MeshArray, MeshMatrix, MeshVector
 
 ########## Array Interface: https://docs.julialang.org/en/v1/manual/interfaces/#man-interface-array #############
 

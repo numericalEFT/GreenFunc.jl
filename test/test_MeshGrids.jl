@@ -50,7 +50,7 @@
     end
 
     @testset "DLRFreq Grid" begin
-        tg2 = MeshGrids.DLRFreq(β, isFermi; dlr=DLR)
+        tg2 = MeshGrids.DLRFreq(DLR)
         println(tg2)
 
         @test length(tg2) == length(DLR)

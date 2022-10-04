@@ -31,6 +31,8 @@ using Random
         # sum/minus/mul/div
         g3 = g .+ g2
         @test g3.data ≈ g.data .+ g2.data
+        @time g3 = g .+ g2 #call similar(broadcaststyle...) to create one copy
+        @time g3 = g .+ g2.data #call similar(broadcaststyle...) to create one copy
 
         g4 = g .- g2
         @test g4.data ≈ g.data .- g2.data
@@ -47,6 +49,12 @@ using Random
         g = deepcopy(_g)
         g .+= g2
         @test _g.data .+ g2.data ≈ g.data
+
+        g = deepcopy(_g)
+        g .+= g2
+        println(".+= test time")
+        @time g .+= g2
+        @time g .+= g2.data
 
         g = deepcopy(_g)
         g .-= g2
@@ -68,4 +76,5 @@ using Random
 
     test_shape(5, 7, ())
     test_shape(5, 7, (1:2, 1:3))
+    test_shape(10, 140, (1:2, 1:3))
 end
