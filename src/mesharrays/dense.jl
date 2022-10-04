@@ -26,16 +26,16 @@ The mesh is stored in the field `mesh` and the data is stored in the field `data
 - `data`: Array{T,N}: the data.
 - `dims`: dimension of the data
 """
-struct MeshArray{T,N,D,MT} <: AbstractMeshArray{T,N}
-    mesh::MT # Ax<:NTuple
-    data::D  # D <:AbstractArray, enforced in constructor to avoid dispatch bugs (https://github.com/JuliaLang/julia/issues/6383)
+struct MeshArray{T,N,MT} <: AbstractMeshArray{T,N}
+    mesh::MT
+    data::Array{T,N}
     dims::NTuple{N,Int}
-    function MeshArray{T,N,D,MT}(data::AbstractArray{T,N}, mesh) where {T,N,D,MT}
-        @assert mesh isa Tuple "The mesh should be wrappered with a tuple."
-        for (i, s) in enumerate(size(data))
-            @assert length(mesh[i]) == s "The size of data and the $(i)th mesh do not match."
-        end
-        return new{T,N,D,MT}(mesh, data, size(data))
+    function MeshArray{T,N,MT}(data::AbstractArray{T,N}, mesh) where {T,N,MT}
+        # @assert mesh isa Tuple "The mesh should be wrappered with a tuple."
+        # for (i, s) in enumerate(size(data))
+        #     @assert length(mesh[i]) == s "The size of data and the $(i)th mesh do not match."
+        # end
+        return new{T,N,MT}(mesh, data, size(data))
     end
 end
 
@@ -49,14 +49,15 @@ end
 
 """
     MeshMatrix{T}
-Alias for [`MeshArray{T,2,D,MT}`](@ref MeshArray).
+Alias for [`MeshArray{T,2,MT}`](@ref MeshArray).
 """
-const MeshMatrix{T,D,MT} = MeshArray{T,2,D,MT}
-const MeshVector{T,D,MT} = MeshArray{T,1,D,MT}
+const MeshMatrix{T,MT} = MeshArray{T,2,MT}
+const MeshVector{T,MT} = MeshArray{T,1,MT}
 
 """
-    function MeshArray(mesh...;
-        innerstate::Union{AbstractVector{Int},Tuple{Vararg{Int}}}=(),
+    function MeshArray(;
+        mesh...;
+        dtype = Float64,
         data::Union{Nothing,AbstractArray}=nothing) where {T}
     
 Create a Green struct. Its memeber `dims` is setted as the tuple consisting of the length of all meshes.
@@ -81,9 +82,8 @@ function MeshArray(mesh...;
     else
         data = Array{dtype,N}(undef, dims...)
     end
-    return MeshArray{dtype,N,typeof(data),typeof(mesh)}(data, mesh)
+    return MeshArray{dtype,N,typeof(mesh)}(data, mesh)
 end
-
 function MeshArray(; mesh::Union{Tuple,AbstractVector},
     dtype=Float64,
     data::Union{Nothing,AbstractArray}=nothing)
@@ -102,7 +102,7 @@ function MeshArray(; mesh::Union{Tuple,AbstractVector},
     else
         data = Array{dtype,N}(undef, dims...)
     end
-    return MeshArray{dtype,N,typeof(data),typeof(mesh)}(data, mesh)
+    return MeshArray{dtype,N,typeof(mesh)}(data, mesh)
 end
 
 # somehow, the following leads to stackoverflow due to some kind of infinite loop
@@ -123,7 +123,7 @@ end
 
 Return a subset of `obj`'s data as specified by `inds`, where each `inds` may be, for example, an Int, an AbstractRange, or a Vector. 
 """
-Base.getindex(obj::MeshArray{T,N,D,MT}, inds::Vararg{Int,N}) where {T,MT,N,D} = Base.getindex(obj.data, inds...)
+Base.getindex(obj::MeshArray{T,N,MT}, inds::Vararg{Int,N}) where {T,MT,N} = Base.getindex(obj.data, inds...)
 # Base.getindex(obj::MeshArray, I::Int) = Base.getindex(obj.data, I)
 
 """
@@ -132,7 +132,7 @@ Base.getindex(obj::MeshArray{T,N,D,MT}, inds::Vararg{Int,N}) where {T,MT,N,D} = 
 
 Store values from array `v` within some subset of `obj.data` as specified by `inds`.
 """
-Base.setindex!(obj::MeshArray{T,N,D,MT}, v, inds::Vararg{Int,N}) where {T,MT,N,D} = Base.setindex!(obj.data, v, inds...)
+Base.setindex!(obj::MeshArray{T,N,MT}, v, inds::Vararg{Int,N}) where {T,MT,N} = Base.setindex!(obj.data, v, inds...)
 # Base.setindex!(obj::MeshArray, v, I::Int) = Base.setindex!(obj.data, v, I)
 
 # IndexStyle(::Type{<:MeshArray}) = IndexCartesian() # by default, it is IndexCartesian
@@ -145,30 +145,23 @@ Base.setindex!(obj::MeshArray{T,N,D,MT}, v, inds::Vararg{Int,N}) where {T,MT,N,D
 - `Base.similar(obj::MeshArray)`: Return a new MeshArray with the same meshes, and the uninitialized data of the same type as `obj.data`.
 - `Base.similar(obj::MeshArray, ::Type{S})`: Return a new MeshArray with the same meshes, but with the uninitialized data of type `S`.
 """
-function Base.similar(obj::MeshArray{T,N,D,MT}, ::Type{S}) where {T,MT,N,S,D}
-    return MeshArray(obj.mesh...; dtype=S, data=similar(obj.data, S))
+function Base.similar(obj::MeshArray{T,N,MT}, ::Type{S}) where {T,MT,N,S}
+    return MeshArray(mesh=obj.mesh, dtype=S, data=similar(obj.data, S))
 end
-Base.similar(obj::MeshArray{T,N,D,MT}) where {T,MT,N,D} = Base.similar(obj, T)
+Base.similar(obj::MeshArray{T,N,MT}) where {T,MT,N,D} = Base.similar(obj, T)
 #By default, the following functions will all call Base.similar(obj::MeshArray, ::Type{S}, inds) as explained in https://docs.julialang.org/en/v1/manual/interfaces/#man-interface-array
 #`Base.similar(obj::MeshArray, ::Type{S}, inds)`: Return a slice of obj.data.
 #However, we don't want that since slice of GreeNew itself is not well defined with meshes.
 
 ################################ broadcast interface ###############################################
-Base.BroadcastStyle(::Type{MeshArray{T,N,D,MT}}) = Broadcast.ArrayStyle{MeshArray}()
+Base.BroadcastStyle(::Type{<:MeshArray}) = Broadcast.ArrayStyle{MeshArray}()
 
 function Base.similar(bc::Base.Broadcast.Broadcasted{Broadcast.ArrayStyle{MeshArray}}, ::Type{ElType}) where {ElType}
-    println(typeof(bc))
-    # println("get called")
     # Scan the inputs for the MeshArray:
     A = find_gf(bc)
-    # println("A: ", typeof(A.mesh), ", ", size(A.data), ", ", A.dims)
-    # println(axes(bc))
     # Use other fields of A to create the output
     data = similar(Array{ElType}, axes(bc))
-    # println("intermediate data: ", size(data), ", type:", ElType)
-    # m = MeshArray(dtype=ElType, data=data, mesh=A.mesh)
-    m = MeshArray{ElType,length(size(data)),typeof(data),typeof(A.mesh)}(data, A.mesh)
-    # println("similar: ", typeof(m.mesh), ", ", size(m.data), ", ", m.dims)
+    m = MeshArray{ElType,length(axes(bc)),typeof(A.mesh)}(data, A.mesh)
     return m
 end
 
@@ -179,7 +172,7 @@ find_gf(::Tuple{}) = nothing
 find_gf(a::MeshArray, rest) = a
 find_gf(::Any, rest) = find_gf(rest)
 
-function Base.copyto!(dest, bc::Base.Broadcast.Broadcasted{MeshArray{T,N,D,MT}}) where {T,MT,D,N}
+function Base.copyto!(dest, bc::Base.Broadcast.Broadcasted{MeshArray{T,N,MT}}) where {T,MT,N}
     # without this function, inplace operation like g1 .+= g2 will make a lot of allocations
     # Please refer to the following posts for more details:
     # 1. manual on the interface: https://docs.julialang.org/en/v1/manual/interfaces/#extending-in-place-broadcast-2
@@ -219,7 +212,7 @@ Base.show(io::IO, ::MIME"text/html", obj::MeshArray) = Base.show(io, obj)
 
 Return the dimension of `obj.data` (`N`).
 """
-rank(::Type{MeshArray{T,N,D,MT}}) where {T,MT,N,D} = N
+rank(::Type{MeshArray{T,N,MT}}) where {T,MT,N} = N
 
 
 #TODO:Following triqs design, we want the following two things:
