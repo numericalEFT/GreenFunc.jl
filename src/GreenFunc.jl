@@ -26,6 +26,7 @@ export DLRFreq, ImTime, ImFreq
 include("mesharrays/MeshArrays.jl")
 using .MeshArrays
 export MeshArrays, MeshArray
+export int_to_matfreq, matfreq_to_int, matfreq
 
 include("triqs/Triqs.jl")
 using .Triqs
