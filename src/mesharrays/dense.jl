@@ -31,6 +31,9 @@ struct MeshArray{T,N,MT} <: AbstractMeshArray{T,N}
     data::Array{T,N}
     dims::NTuple{N,Int}
     function MeshArray{T,N,MT}(data::AbstractArray{T,N}, mesh) where {T,N,MT}
+        # do nothing constructor, so that it is fast with no additional allocation
+        # but you need to make sure that the mesh and data make sense
+
         # @assert mesh isa Tuple "The mesh should be wrappered with a tuple."
         # for (i, s) in enumerate(size(data))
         #     @assert length(mesh[i]) == s "The size of data and the $(i)th mesh do not match."
@@ -39,19 +42,17 @@ struct MeshArray{T,N,MT} <: AbstractMeshArray{T,N}
     end
 end
 
-# struct MeshArray{T,N,MT} <: AbstractMeshArray{T,N}
-#     #########   Mesh   ##############
-#     mesh::MT
-#     data::Array{T,N}
-#     dims::NTuple{N,Int}
-# end
-
 
 """
     MeshMatrix{T}
 Alias for [`MeshArray{T,2,MT}`](@ref MeshArray).
 """
 const MeshMatrix{T,MT} = MeshArray{T,2,MT}
+
+"""
+    MeshVector{T}
+Alias for [`MeshArray{T,1,MT}`](@ref MeshArray).
+"""
 const MeshVector{T,MT} = MeshArray{T,1,MT}
 
 """
@@ -104,19 +105,6 @@ function MeshArray(; mesh::Union{Tuple,AbstractVector},
     end
     return MeshArray{dtype,N,typeof(mesh)}(data, mesh)
 end
-
-# somehow, the following leads to stackoverflow due to some kind of infinite loop
-# function Base.getproperty(obj::MeshArray{T,MT,N,Ninner}, sym::Symbol) where {T,MT,N,Ninner}
-#     if sym === :N
-#         return N
-#     elseif sym === :Ninner
-#         return Ninner
-#     elseif sym === :dims
-#         return obj.dims
-#     else # fallback to getfield
-#         return getfield(obj, sym)
-#     end
-# end
 
 """
     getindex(obj::MeshArray, inds...)
