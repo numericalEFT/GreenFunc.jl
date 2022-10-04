@@ -48,7 +48,7 @@ Create a `DLRFreq` struct.
 - `rebuild`: if no dlr is input, set false to load DLRGrid from the file; set true to recalculate the DLRGrid on the fly. By default, `rebuild = false`.
 - `dlr`: 1D DLR grid. By default, a DLR grid with input arguments is used.
 """
-function DLRFreq(β, isFermi::Bool=false;
+function DLRFreq(β::Real, isFermi::Bool=false;
     dtype=Float64,
     rtol=1e-12,
     Euv=1000 / β,

@@ -22,28 +22,26 @@ A SYK model solver based on a forward fixed-point iteration method.
 
 using GreenFunc
 using Printf
+using LinearAlgebra
 
-verbose = false
-β = 1e4
-isFermi = true
-J = 1.0
-rtol = 1e-10
+const β = 1e4
+const J = 1.0
 
 diff(a, b) = maximum(abs.(a - b)) # return the maximum deviation between a and b
 distance(a, b) = norm(a - b, 2) # return the 1-norm distance between a and b
 
-conformal_tau(τ, β) = π^(1 / 4) / sqrt(2β) * 1 / sqrt(sin(π * τ / β))
+conformal_tau(τ, β) = π^(1 / 4) / sqrt(2β) * 1 / sqrt(sin(π * τ / β)) #analytic solution with the conformal invariance
 reverseview(x) = view(x, reverse(axes(x, 1))) # reversed view of x
 
-const dlrmesh = DLRFreq(β, isFermi; Euv=5.0, rtol=rtol, sym=:ph, rebuild=false)   # Initialize DLR grid
+const dlrmesh = DLRFreq(β, FERMION; Euv=5.0, rtol=1e-10, symmetry=:ph)   # Initialize DLR grid
 
 function selfenergy(Gt)
     ######### calculate sigma ###############
     minus_tau = reverse(β .- Gt.mesh[1]) # Reversed imaginary time mesh point
-    Gt_inv = dlr_to_imtime(to_dlr(Gt, dlrmesh), minus_tau) # G at beta - tau
+    Gt_inv = dlr_to_imtime(to_dlr(Gt), minus_tau) # interpolate into minus_tau grid
     Gmt = reverseview(Gt_inv)
     Σt = J .^ 2 .* Gt .^ 2 .* Gmt  # SYK self-energy in imaginary time
-    return dlr_to_imfreq(to_dlr(Σt, dlrmesh))
+    return Σt |> to_dlr |> dlr_to_imfreq
 end
 
 function dyson(Gt)
@@ -52,21 +50,11 @@ function dyson(Gt)
     freq = matfreq(Σω.mesh[1]) * im
     Gω = 1im * imag.(-1 ./ (freq .+ Σω))
 
-    #############  Gω --> Gτ  ###############
-    # return dlr_to_imtime(to_dlr(Gω, dlrmesh))
-    println(size(Gω))
-    Gdlr = Gω |> to_dlr
-    println(Gdlr.mesh[1].dlr)
-    println(size(Gdlr))
-    Gnew = Gdlr |> dlr_to_imtime
-    println(size(Gnew))
-    return Gnew
-    # return Gω |> to_dlr |> dlr_to_imtime
-    # return dlr_to_imtime(to_dlr(Gω, dlrmesh))
+    return Gω |> to_dlr |> dlr_to_imtime # Gω --> Gτ
 
 end
 
-function nlsolve(G_t, tol=rtol, maxiter=1000, verbose=false, mix=0.1)
+function nlsolve(G_t; tol=rtol, maxiter=1000, verbose=false, mix=0.1)
     for iter in 1:maxiter
         G_t_new = dyson(G_t)
         if verbose && (iter % (maxiter / 10) == 0)
@@ -79,16 +67,13 @@ function nlsolve(G_t, tol=rtol, maxiter=1000, verbose=false, mix=0.1)
     end
 end
 
-const mesh = ImTime(β, isFermi; Euv=5.0, grid=dlrmesh.dlr.τ)
-const G_t = MeshArray(mesh; dtype=ComplexF64)
+const G_t = MeshArray(ImTime(dlrmesh); dtype=ComplexF64)
 fill!(G_t, 0.0)
-G = nlsolve(G_t)
+G = nlsolve(G_t, verbose=true)
 
 @printf("%15s%40s%40s%40s\n", "τ", "DLR imag", "DLR real", "asymtotically exact")
-for i in eachindex(G)
-    # if dlr.τ[i] <= dlr.β / 2
-    @printf("%15.8f%40.15f%40.15f%40.15f\n", mesh[i], imag(G[i]), real(G[i]), conformal_tau(mesh[i], mesh.β))
-    # end
+for (i, t) in enumerate(G.mesh[1])
+    @printf("%15.8f%40.15f%40.15f%40.15f\n", t, imag(G[i]), real(G[i]), conformal_tau(t, β))
 end
 println()
 
