@@ -54,10 +54,12 @@ SemiCircle(dlr, grid, type) = Sample.SemiCircle(dlr.Euv, dlr.β, dlr.isFermi, gr
         @test err < 50 * rtol
 
 
+        g_freq1 << g_dlr
         @time g_freq1 << g_dlr
         err = maximum(abs.(g_freq1.data[1, :] .- Gn))
         printstyled("test  imfreq<<dlr $err\n", color=:white)
         @test err < 50 * rtol
+        g_time << g_dlr
         @time g_time << g_dlr
         err = maximum(abs.(g_time.data[1, :] .- Gτ))
         printstyled("test  imtime<<dlr $err\n", color=:white)
@@ -66,6 +68,6 @@ SemiCircle(dlr, grid, type) = Sample.SemiCircle(dlr.Euv, dlr.β, dlr.isFermi, gr
 
 
     end
-    @time test_fourier(5, 100.0, FERMION)
-    @time test_fourier(5, 100.0, BOSON)
+    test_fourier(5, 100.0, FERMION)
+    test_fourier(5, 100.0, BOSON)
 end

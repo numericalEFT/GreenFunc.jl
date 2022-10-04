@@ -1,57 +1,3 @@
-"""
-    Base.:<<(objL::MeshArray, objR::MeshArray)
-
-DLR Fourier transform of functions that has exactly one TemporalGrid(ImTime, ImFreq or DLRFreq) among the meshes. 
-If objL and objR have identical TemporalGrid, objL<<objR assign objR to objL.
-If objL and objR have different TemporalGrid, one of them has to be in DLR space.
-If objL is in DLR space, objL<<objR calculates the DLR spectral density of data in objR
-if objR is in DLR space, objL<<objR calculates the corresponding data from the DLR spectral density in objR.
-"""
-
-function Base.:<<(objL::MeshArray, objR::MeshArray)
-    # init version of <<
-    # more general version needed
-    axes = []
-    for (mi, mesh) in enumerate(objL.mesh)
-        if (typeof(mesh) <: TemporalGrid)
-            append!(axes, mi)
-        else
-            #TODO:add hashtable for mesh to support == operation 
-            @assert typeof(mesh) == typeof(objR.mesh[mi]) "Meshes not involved in Fourier transform have to be identical" #should assert mesh == objR.mesh[mi] when == is defined
-        end
-    end
-    @assert length(axes) == 1 "Only one temporal mesh with built in DLR grid is allowed"
-    typeL = typeof(objL.mesh[axes[1]])
-    typeR = typeof(objR.mesh[axes[1]])
-    meshL = objL.mesh[axes[1]]
-    meshR = objR.mesh[axes[1]]
-
-    if typeL == typeR
-        error("Assignment still work in progress") #need == operation for mesh
-    # if meshL == meshR
-    #     objL.data=deepcopy(objR.data)
-    # else
-    #     error("Green's function can only be assigned to another with the same mesh")
-    # end
-    elseif typeL <: MeshGrids.DLRFreq
-        if typeR <: MeshGrids.ImFreq
-            objL.data .= matfreq2dlr(meshL.dlr, objR.data, meshR.grid; axis=axes[1])
-        elseif typeR <: MeshGrids.ImTime
-            objL.data .= tau2dlr(meshL.dlr, objR.data, meshR.grid; axis=axes[1])
-        end
-    elseif typeR <: MeshGrids.DLRFreq
-        if typeL <: MeshGrids.ImFreq
-            objL.data .= dlr2matfreq(meshR.dlr, objR.data, meshL.grid; axis=axes[1])
-        elseif typeL <: MeshGrids.ImTime
-            objL.data .= dlr2tau(meshR.dlr, objR.data, meshL.grid; axis=axes[1])
-        end
-    else
-        error("One of the Grren's function has to be in DLRfreq space to do Fourier transform")
-    end
-end
-
-
-
 @generated function replace_mesh_tuple(mesh::MT, N::Int, dim::Int, mesh_new::M) where {MT,M}
     if dim == 1
         m = :(mesh_new)
@@ -127,6 +73,45 @@ end
         end
     end
     return :(0)
+end
+
+"""
+    Base.:<<(objL::MeshArray, objR::MeshArray)
+
+DLR Fourier transform of functions on the first temporal grid (ImTime, ImFreq or DLRFreq). 
+
+- If objL and objR have identical temporal grid, objL<<objR assign objR to objL.
+- If objL and objR have different temporal grid, one of them has to be in DLR space.
+    * If objL is in DLR space, objL<<objR calculates the DLR spectral density of data in objR
+    * if objR is in DLR space, objL<<objR calculates the Green's function from the DLR spectral density in objR.
+"""
+function Base.:<<(objL::MeshArray{T,N,MT1}, objR::MeshArray{T,N,MT2}) where {T,N,MT1,MT2}
+    dimL = _find_mesh(MT1, ImTime, ImFreq, DLRFreq)
+    dimR = _find_mesh(MT2, ImTime, ImFreq, DLRFreq)
+    @assert dimL == dimR "The temporal dimensions should be identical for source and target MeshArrays."
+
+    typeL = typeof(objL.mesh[dimL])
+    typeR = typeof(objR.mesh[dimR])
+    meshL = objL.mesh[dimL]
+    meshR = objR.mesh[dimR]
+
+    if typeL == typeR
+        error("ImTime to ImTime or ImFreq to ImFreq is not supported yet!")h
+    elseif typeL <: DLRFreq
+        if typeR <: ImFreq
+            objL.data .= matfreq2dlr(meshL.dlr, objR.data, meshR.grid; axis=dimR)
+        elseif typeR <: ImTime
+            objL.data .= tau2dlr(meshL.dlr, objR.data, meshR.grid; axis=dimR)
+        end
+    elseif typeR <: DLRFreq
+        if typeL <: ImFreq
+            objL.data .= dlr2matfreq(meshR.dlr, objR.data, meshL.grid; axis=dimR)
+        elseif typeL <: ImTime
+            objL.data .= dlr2tau(meshR.dlr, objR.data, meshL.grid; axis=dimR)
+        end
+    else
+        error("One of the Grren's function has to be in DLRfreq space to do Fourier transform")
+    end
 end
 
 """
