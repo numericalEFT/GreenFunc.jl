@@ -7,13 +7,14 @@
 [![Build Status](https://github.com/numericalEFT/GreenFunc.jl/actions/workflows/CI.yml/badge.svg?branch=master)](https://github.com/numericalEFT/GreenFunc.jl/actions/workflows/CI.yml?query=branch%3Amaster)
 [![Coverage](https://codecov.io/gh/numericalEFT/GreenFunc.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/numericalEFT/GreenFunc.jl)
 
-GreenFunc.jl provides a general container for multidimensional Green's functions. 
+GreenFunc.jl differentiable numerical framework to manipulate multidimensional Green's functions.
+
 ## Features
- - Universal structure for data array that is saved on meshes
- - Structured temporal meshes for imaginary time/Matsubara frequency space.
- - Discrete Lehmann representaion (DLR) meshes, which is a generic and compact representation of Green's functions proposed in the Ref. [1]. Allows fast and accurate Fourier transform between the imaginary-time domain and the Matsubara-frequency domain.
- - Structure of direct product of arbitrary number of meshes.
- - Conversion between Green's function in this package and in TRIQS.
+ - `MeshArray` type provides an array defined on meshes. It provides a generic data structure for Green's functions.
+ - Structured (non-)uniform temporal meshes for imaginary time/Matsubara frequency domains.
+ - Compression and Fourier transform based on the discrete Lehmann representation.
+ - Interface to the TRIQS library.
+ 
 ## Installation
 This package has been registered. So, simply type `import Pkg; Pkg.add("GreenFunc")` in the Julia REPL to install.
 
