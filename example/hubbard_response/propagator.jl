@@ -37,6 +37,11 @@ ga_imt = dlr_to_imtime(ga_dlr, CompositeGrids.SimpleG.Uniform{Float64}([0, para.
 # use default here cause ERROR:
 # when dlr.τ is converted to CompositeGrid.SimpleG.Arbitrary, the bound is not [0, β]
 
+rdyn = MeshArray(gr_imt.mesh[3:4]...)
+rdyn.data .= 0.0
+r0 = MeshArray(gr_imt.mesh[3])
+r0.data .= 0.0
+
 function green(k, t1, t2)
     t = t2 - t1
     factor = 1.0
@@ -66,9 +71,19 @@ function dynamicW0(k, t1, t2)
 end
 
 function bareR(k)
-    return 1.0
+    ik = locate(r0.mesh[1], k)
+    return real(r0[ik])
 end
 
 function dynamicR(k, t1, t2)
-    return 0.0
+    t = t2 - t1
+    factor = 1.0
+    if t < 0
+        t = t + para.beta
+        factor = -1.0
+    end
+
+    ik, it = locate(rdyn.mesh[1], k), locate(rdyn.mesh[2], t)
+
+    return real(rdyn[ik, it])
 end

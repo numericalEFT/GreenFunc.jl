@@ -29,7 +29,7 @@ function integrand(vars, config)
     dynamic += green(k, t1, t3) * bareR(k) * green(k, t3, t2) / beta
     dynamic *= dynamicW0(q, t1, t2)
 
-    return instant, dynamic
+    return instant / config.normalization + 1.0, dynamic / config.normalization
 end
 
 # for vegas algorithm
@@ -71,8 +71,8 @@ function PPver(;
     dof = [[1, 2, 1, 0], [1, 2, 1, 1]] # K, T, ExtKidx, ExtTidx
     # there are only 2 time variables (T[3], T[4]), while T[1] and T[2] are fixed to 0.0 and the external time
 
-    obs = [zeros(Float64, nk * nk), zeros(Float64, nk * nk, nt)] # instant R and dynamic R
-
+    # obs = [zeros(Float64, nk * nk), zeros(Float64, nk * nk, nt)] # instant R and dynamic R
+    obs = [r0.data, rdyn.data]
     if isnothing(config)
         config = Configuration(;
             # var=(R, Theta, Phi, T, X, ExtKidx),
@@ -119,4 +119,4 @@ end
 
 # solve linear response function and compute Tc 
 
-PPver(neval=1e6)
+PPver(neval=1e5)
