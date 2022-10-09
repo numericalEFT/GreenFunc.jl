@@ -7,10 +7,6 @@ tb = pyimport("triqs.lattice.tight_binding")
 np = pyimport("numpy")
 
 BL = lat.BravaisLattice(units=((1, 0, 0), (0, 1, 0))) #square lattice
-# the following also works
-# BL = lat.BravaisLattice(units=pylist([(1, 0, 0), (0, 1, 0)])) #square lattice
-# but this will not work (you can not directly pass a julia vector as a python-list argument
-# BL = lat.BravaisLattice(units=[(1, 0, 0), (0, 1, 0)]) #square lattice
 
 nk = 20
 mk = gf.MeshBrillouinZone(lat.BrillouinZone(BL), nk)
@@ -29,6 +25,6 @@ for (ik, k) in enumerate(G_k_w.mesh[0])
     G_k_w.data[ik-1, pyslice(0, nk^2), 0, 0] = G_w.data[pyslice(0, nk^2), 0, 0]
 end
 
-Gkw = from_triqs(G_k_w)
-println(size(Gkw)) #should be (1, 1, 200, 400)
+Gkw = from_triqs(G_k_w) #Gkw is a julia MeshArray object with size (1, 1, 200, 400)
+
 
