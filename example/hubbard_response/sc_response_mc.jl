@@ -19,17 +19,17 @@ function integrand(vars, config)
     t3, t4 = T[3], T[4]  # set internal t3, t4
 
     #### instant R = instant W0 * G * G * (instant R + dynamic R) ############
-    instant = green(k, t1, t3) * dynamicR(k, t3, t4) * green(k, t4, t1)
-    instant += green(k, t1, t3) * bareR(k) * green(k, t3, t1) / beta
+    instant = green(k, t1, t3) * dynamicR(k, t3, t4; data=config.observable[2]) * green(k, t4, t1)
+    instant += green(k, t1, t3) * (bareR(k; data=config.observable[1]) + config.normalization) * green(k, t3, t1) / beta
     # both t3 and t4 will be integrated over, but bareR doesn't depend on t3, t4. So one must divide by beta
     instant *= bareW0(q)
 
     #### dynamic R = dynamic W0 * G * G * (instant R + dynamic R) ############
-    dynamic = green(k, t1, t3) * dynamicR(k, t3, t4) * green(k, t4, t2)
-    dynamic += green(k, t1, t3) * bareR(k) * green(k, t3, t2) / beta
+    dynamic = green(k, t1, t3) * dynamicR(k, t3, t4; data=config.observable[2]) * green(k, t4, t2)
+    dynamic += green(k, t1, t3) * (bareR(k; data=config.observable[1]) + config.normalization) * green(k, t3, t2) / beta
     dynamic *= dynamicW0(q, t1, t2)
 
-    return instant / config.normalization + 1.0, dynamic / config.normalization
+    return instant / config.normalization, dynamic / config.normalization
 end
 
 # for vegas algorithm
@@ -50,12 +50,13 @@ function PPver(;
 
     Euv = 4t
 
-    kmesh = ga_w.mesh[5]
+    kmesh = rdyn.mesh[1]
 
     ##### prepare external K grid and tau grid ##############
     extKgrid = [(k[1], k[2]) for k in kmesh]
-    extTgrid = CompositeGrid.LogDensedGrid(:uniform, [0.0, beta], [0.0, beta], 8, 1 / Euv, 8) #roughly ~100 points if resolution = β/128
-
+    # extTgrid = CompositeGrid.LogDensedGrid(:uniform, [0.0, beta], [0.0, beta], 8, 1 / Euv, 8) #roughly ~100 points if resolution = β/128
+    extTgrid = rdyn.mesh[2]
+    println(extTgrid)
     nt = length(extTgrid)
 
     latvec = 1.0 * π
@@ -73,6 +74,7 @@ function PPver(;
 
     # obs = [zeros(Float64, nk * nk), zeros(Float64, nk * nk, nt)] # instant R and dynamic R
     obs = [r0.data, rdyn.data]
+
     if isnothing(config)
         config = Configuration(;
             # var=(R, Theta, Phi, T, X, ExtKidx),
@@ -110,6 +112,8 @@ function PPver(;
             # datadict[partition[o]] = data
             datadict[o] = data
         end
+        r0.data .= result.mean[1]
+        rdyn.data .= result.mean[2]
         return datadict, result
     else
         return nothing, nothing
@@ -119,4 +123,9 @@ end
 
 # solve linear response function and compute Tc 
 
-PPver(neval=1e5)
+datadict, result = PPver(neval=1e6)
+rdyn_freq = rdyn |> to_dlr |> dlr_to_imfreq
+println(r0.data[9])
+println(rdyn.data[9, :])
+# println(rdyn_freq.data[9, :])
+println("1/Δ0 = ", 1 / (1.0 + r0.data[9] + rdyn_freq.data[9, 1]))

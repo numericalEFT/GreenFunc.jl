@@ -70,12 +70,12 @@ function dynamicW0(k, t1, t2)
     return real(ga_imt[1, 1, 1, 1, ik, it])
 end
 
-function bareR(k)
+function bareR(k; data=r0.data)
     ik = locate(r0.mesh[1], k)
-    return real(r0[ik])
+    return real(data[ik])
 end
 
-function dynamicR(k, t1, t2)
+function dynamicR(k, t1, t2; data=rdyn.data)
     t = t2 - t1
     factor = 1.0
     if t < 0
@@ -85,5 +85,5 @@ function dynamicR(k, t1, t2)
 
     ik, it = locate(rdyn.mesh[1], k), locate(rdyn.mesh[2], t)
 
-    return real(rdyn[ik, it])
+    return real(data[ik, it])
 end
