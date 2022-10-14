@@ -20,16 +20,18 @@ function integrand(vars, config)
 
     #### instant R = instant W0 * G * G * (instant R + dynamic R) ############
     instant = green(k, t1, t3) * dynamicR(k, t3, t4; data=config.observable[2]) * green(k, t4, t1)
-    instant += green(k, t1, t3) * (bareR(k; data=config.observable[1]) + config.normalization) * green(k, t3, t1) / beta
+    instant += green(k, t1, t3) * bareR(k; data=config.observable[1]) * green(k, t3, t1) / beta
+    instant = instant / config.normalization + green(k, t1, t3) * green(k, t3, t1) / beta
     # both t3 and t4 will be integrated over, but bareR doesn't depend on t3, t4. So one must divide by beta
     instant *= bareW0(q)
 
     #### dynamic R = dynamic W0 * G * G * (instant R + dynamic R) ############
     dynamic = green(k, t1, t3) * dynamicR(k, t3, t4; data=config.observable[2]) * green(k, t4, t2)
-    dynamic += green(k, t1, t3) * (bareR(k; data=config.observable[1]) + config.normalization) * green(k, t3, t2) / beta
+    dynamic += green(k, t1, t3) * bareR(k; data=config.observable[1]) * green(k, t3, t2) / beta
+    dynamic = dynamic / config.normalization + green(k, t1, t3) * green(k, t3, t2) / beta
     dynamic *= dynamicW0(q, t1, t2)
 
-    return instant / config.normalization, dynamic / config.normalization
+    return instant, dynamic
 end
 
 # for vegas algorithm
@@ -47,6 +49,7 @@ function PPver(;
     para::HubbardRPA.Para=para,
     kwargs...)
     HubbardRPA.@unpack t, nk, dim, beta, U = para
+    nkf = Base.floor(Int, nk / 2 + 1)
 
     Euv = 4t
 
@@ -72,8 +75,8 @@ function PPver(;
     dof = [[1, 2, 1, 0], [1, 2, 1, 1]] # K, T, ExtKidx, ExtTidx
     # there are only 2 time variables (T[3], T[4]), while T[1] and T[2] are fixed to 0.0 and the external time
 
-    # obs = [zeros(Float64, nk * nk), zeros(Float64, nk * nk, nt)] # instant R and dynamic R
-    obs = [r0.data, rdyn.data]
+    obs = [zeros(Float64, nk * nk), zeros(Float64, nk * nk, nt)] # instant R and dynamic R
+    # obs = [r0.data, rdyn.data]
 
     if isnothing(config)
         config = Configuration(;
@@ -95,7 +98,7 @@ function PPver(;
 
         if print >= -1
             report(result.config)
-            println(report(result, pick=o -> first(o)))
+            println(report(result, pick=o -> o[nkf]))#irst(o)))
             println(result)
         end
         if print >= -2
@@ -123,7 +126,7 @@ end
 
 # solve linear response function and compute Tc 
 
-datadict, result = PPver(neval=1e6)
+datadict, result = PPver(neval=1e7)
 rdyn_freq = rdyn |> to_dlr |> dlr_to_imfreq
 println(r0.data[9])
 println(rdyn.data[9, :])

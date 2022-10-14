@@ -22,24 +22,28 @@ catch
     global paras, greens, gammas = save_hubbard_rpa_list(betas=betas, fname=fname)
 end
 
-gr_w = greens[pid]
-ga_w = gammas[pid]
-para = paras[pid]
+const gr_w = greens[pid]
+const ga_w = gammas[pid]
+const para = paras[pid]
 
+const beta = para.beta
+const Euv = 20
+const extTgrid = CompositeGrid.LogDensedGrid(:cheb, [0.0, beta], [0.0, beta], 4, 1 / Euv, 4)
+# const extTgrid = CompositeGrids.SimpleG.Uniform{Float64}([0, para.beta], para.nw)
 
-gr_dlr = gr_w |> to_dlr
-gr_imt = dlr_to_imtime(gr_dlr, CompositeGrids.SimpleG.Uniform{Float64}([0, para.beta], para.nw))
+const gr_dlr = gr_w |> to_dlr
+const gr_imt = dlr_to_imtime(gr_dlr, extTgrid)
 
-ga0 = ga_w[1, 1, 1, 1, 1, 1]
+const ga0 = ga_w[1, 1, 1, 1, 1, 1]
 ga_w .-= ga0
-ga_dlr = ga_w |> to_dlr
-ga_imt = dlr_to_imtime(ga_dlr, CompositeGrids.SimpleG.Uniform{Float64}([0, para.beta], para.nw))
+const ga_dlr = ga_w |> to_dlr
+const ga_imt = dlr_to_imtime(ga_dlr, extTgrid)
 # use default here cause ERROR:
 # when dlr.τ is converted to CompositeGrid.SimpleG.Arbitrary, the bound is not [0, β]
 
-rdyn = MeshArray(gr_imt.mesh[3:4]...)
+const rdyn = MeshArray(gr_imt.mesh[3:4]...)
 rdyn.data .= 0.0
-r0 = MeshArray(gr_imt.mesh[3])
+const r0 = MeshArray(gr_imt.mesh[3])
 r0.data .= 0.0
 
 function green(k, t1, t2)
@@ -71,11 +75,13 @@ function dynamicW0(k, t1, t2)
 end
 
 function bareR(k; data=r0.data)
+    return 0.0
     ik = locate(r0.mesh[1], k)
     return real(data[ik])
 end
 
 function dynamicR(k, t1, t2; data=rdyn.data)
+    return 0.0
     t = t2 - t1
     factor = 1.0
     if t < 0
