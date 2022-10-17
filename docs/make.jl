@@ -7,6 +7,7 @@ makedocs(;
     modules=[GreenFunc],
     authors="Kun Chen, Tao Wang, Xiansheng Cai, PengCheng Hou, and Zhiyi Li",
     repo="https://github.com/numericaleft/GreenFunc.jl/blob/{commit}{path}#{line}",
+    sitename="GreenFunc.jl",
     format=Documenter.HTML(;
         prettyurls=get(ENV, "CI", "false") == "true",
         canonical="https://numericaleft.github.io/GreenFunc.jl",
@@ -18,7 +19,6 @@ makedocs(;
             "GreenFunc" => "lib/greenfunc.md",
             "MeshArrays" => "lib/mesharrays.md",
             "MeshGrids" => "lib/meshgrids.md",
-            "Deprecated" => "lib/deprecated.md",
         ]
     ]
 )

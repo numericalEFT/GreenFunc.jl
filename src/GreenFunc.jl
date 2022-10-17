@@ -11,18 +11,6 @@ export TemporalGrid
 export MeshProduct
 export DLRFreq, ImTime, ImFreq
 
-# include("green/Green.jl")
-# #export TimeDomain, ImTime, ReTime, ImFreq, ReFreq, DLRFreq
-# export Green2DLR, toTau, toMatFreq, toDLR
-
-
-# include("green/GreenSym.jl")
-# export GreenSym2DLR, dynamic, instant
-
-# include("green/meshgrids/MeshProduct.jl")
-# export MeshProduct
-# export locate, volume
-
 include("mesharrays/MeshArrays.jl")
 using .MeshArrays
 export MeshArrays
@@ -34,8 +22,5 @@ export dlr_to_imfreq, dlr_to_imtime
 export imfreq_to_dlr, imtime_to_dlr, to_dlr, to_imtime, to_imfreq
 
 include("green/testcase.jl")
-
-include("deprecated/Deprecated.jl")
-export Deprecated
 
 end
