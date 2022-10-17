@@ -22,7 +22,6 @@ jobs:
           - "nightly"
         os:
           - ubuntu-latest
-        # python-version: ["3.7"]
         arch:
           - x64
           - x86
