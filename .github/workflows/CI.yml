@@ -14,9 +14,6 @@ jobs:
   test:
     name: Julia ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }} - ${{ github.event_name }}
     runs-on: ${{ matrix.os }}
-    env:
-      JULIA_PYTHONCALL_EXE: "/usr/bin/python3"
-      # test for PythonCall needs python, solution from https://github.com/cjdoris/PythonCall.jl/issues/120
     strategy:
       fail-fast: false
       matrix:
@@ -28,7 +25,7 @@ jobs:
         # python-version: ["3.7"]
         arch:
           - x64
-          # - x86
+          - x86
     steps:
       - uses: actions/checkout@v2
       - uses: julia-actions/setup-julia@v1
@@ -46,10 +43,6 @@ jobs:
             ${{ runner.os }}-test-
             ${{ runner.os }}-
       - uses: julia-actions/julia-buildpkg@v1
-      - name: Install triqs
-        run: sudo apt-get update && sudo apt-get install -y software-properties-common apt-transport-https curl && source /etc/lsb-release && curl -L https://users.flatironinstitute.org/~ccq/triqs3/$DISTRIB_CODENAME/public.gpg | sudo apt-key add - && sudo add-apt-repository "deb https://users.flatironinstitute.org/~ccq/triqs3/$DISTRIB_CODENAME/ /" && sudo apt-get update && sudo apt-get install -y triqs
-      - name: Check triqs
-        run: python3 -c "import triqs.version; print(triqs.version.version)"
       - uses: julia-actions/julia-runtest@v1
       - uses: julia-actions/julia-processcoverage@v1
       - uses: codecov/codecov-action@v2
