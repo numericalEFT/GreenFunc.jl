@@ -55,7 +55,7 @@ function ImTime(β, isFermi::Bool=false;
     grid::Union{AbstractGrid,AbstractVector,Nothing}=nothing
 )
 
-    dlr = DLRGrid(Euv, β, rtol, isFermi, :none)
+    dlr = DLRGrid(Euv, β, rtol, isFermi, symmetry)
     if isnothing(grid)
         grid = SimpleG.Arbitrary{dtype}(dlr.τ)
         # grid = SimpleG.Uniform{dtype}([0, β], Int(round(β / resolution)))
