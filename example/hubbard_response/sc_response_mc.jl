@@ -19,16 +19,16 @@ function integrand(vars, config)
     t3, t4 = T[3], T[4]  # set internal t3, t4
 
     #### instant R = instant W0 * G * G * (instant R + dynamic R) ############
-    instant = green(k, t1, t3) * dynamicR(k, t3, t4; data=config.observable[2]) * green(k, t4, t1)
-    instant += green(k, t1, t3) * bareR(k; data=config.observable[1]) * green(k, t3, t1) / beta
-    instant = instant / config.normalization + green(k, t1, t3) * green(k, t3, t1) / beta
+    instant = green(k, t1, t3) * dynamicR(k, t3, t4) * green(k, t4, t1)
+    instant += green(k, t1, t3) * bareR(k) * green(k, t3, t1) / beta
+    instant = instant + green(k, t1, t3) * green(k, t3, t1) / beta
     # both t3 and t4 will be integrated over, but bareR doesn't depend on t3, t4. So one must divide by beta
     instant *= bareW0(q)
 
     #### dynamic R = dynamic W0 * G * G * (instant R + dynamic R) ############
-    dynamic = green(k, t1, t3) * dynamicR(k, t3, t4; data=config.observable[2]) * green(k, t4, t2)
-    dynamic += green(k, t1, t3) * bareR(k; data=config.observable[1]) * green(k, t3, t2) / beta
-    dynamic = dynamic / config.normalization + green(k, t1, t3) * green(k, t3, t2) / beta
+    dynamic = green(k, t1, t3) * dynamicR(k, t3, t4) * green(k, t4, t2)
+    dynamic += green(k, t1, t3) * bareR(k) * green(k, t3, t2) / beta
+    dynamic = dynamic + green(k, t1, t3) * green(k, t3, t2) / beta
     dynamic *= dynamicW0(q, t1, t2)
 
     return instant, dynamic
@@ -91,6 +91,11 @@ function PPver(;
     end
 
     result = integrate(integrand; config=config, measure=measure, print=print, neval=neval, kwargs...)
+    # for i in 1:9
+    #     r0.data .= result.mean[1]
+    #     rdyn.data .= result.mean[2]
+    #     result = integrate(integrand; config=config, measure=measure, print=print, neval=neval, kwargs...)
+    # end
     # # result = integrate(integrandKW; config=config, print=print, neval=neval, kwargs...)
     # # niter=niter, print=print, block=block, kwargs...)
 
@@ -126,9 +131,11 @@ end
 
 # solve linear response function and compute Tc 
 
-datadict, result = PPver(neval=1e7)
+datadict, result = PPver(neval=1e6)
 rdyn_freq = rdyn |> to_dlr |> dlr_to_imfreq
-println(r0.data[9])
+println(r0.data[1:16])
+println(r0.data[129:144])
+println(rdyn.data[1, :])
 println(rdyn.data[9, :])
 # println(rdyn_freq.data[9, :])
 println("1/Δ0 = ", 1 / (1.0 + r0.data[9] + rdyn_freq.data[9, 1]))

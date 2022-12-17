@@ -27,8 +27,8 @@ const ga_w = gammas[pid]
 const para = paras[pid]
 
 const beta = para.beta
-const Euv = 20
-const extTgrid = CompositeGrid.LogDensedGrid(:cheb, [0.0, beta], [0.0, beta], 4, 1 / Euv, 4)
+const Euv = 100
+const extTgrid = CompositeGrid.LogDensedGrid(:uniform, [0.0, beta], [0.0, beta], 5, 1 / Euv, 5)
 # const extTgrid = CompositeGrids.SimpleG.Uniform{Float64}([0, para.beta], para.nw)
 
 const gr_dlr = gr_w |> to_dlr
@@ -41,6 +41,8 @@ const ga_imt = dlr_to_imtime(ga_dlr, extTgrid)
 # use default here cause ERROR:
 # when dlr.τ is converted to CompositeGrid.SimpleG.Arbitrary, the bound is not [0, β]
 
+println(ga_imt.data[1, 1, 1, 1, 1, :])
+
 const rdyn = MeshArray(gr_imt.mesh[3:4]...)
 rdyn.data .= 0.0
 const r0 = MeshArray(gr_imt.mesh[3])
@@ -49,7 +51,7 @@ r0.data .= 0.0
 function green(k, t1, t2)
     t = t2 - t1
     factor = 1.0
-    if t < 0
+    if t <= 0
         t = t + para.beta
         factor = -1.0
     end
@@ -65,7 +67,7 @@ end
 
 function dynamicW0(k, t1, t2)
     t = t2 - t1
-    if t < 0
+    if t <= 0
         t = t + para.beta
     end
 
@@ -75,16 +77,16 @@ function dynamicW0(k, t1, t2)
 end
 
 function bareR(k; data=r0.data)
-    return 0.0
+    # return 0.0
     ik = locate(r0.mesh[1], k)
     return real(data[ik])
 end
 
 function dynamicR(k, t1, t2; data=rdyn.data)
-    return 0.0
+    # return 0.0
     t = t2 - t1
     factor = 1.0
-    if t < 0
+    if t <= 0
         t = t + para.beta
         factor = -1.0
     end
