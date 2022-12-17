@@ -43,6 +43,8 @@ Return the length of the specifict Ith mesh factor of the MeshProduct.
 """
 Base.size(obj::MeshProduct) = obj.dims
 
+Base.eachindex(obj::MeshProduct) = Base.eachindex(obj.meshes)
+
 # """
 #     rank(obj::MeshProduct{MT,N})
 # Return the number of the factor meshes.

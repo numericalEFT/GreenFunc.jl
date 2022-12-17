@@ -136,7 +136,7 @@ Base.setindex!(obj::MeshArray{T,N,MT}, v, inds::Vararg{Int,N}) where {T,MT,N} = 
 function Base.similar(obj::MeshArray{T,N,MT}, ::Type{S}) where {T,MT,N,S}
     return MeshArray(mesh=obj.mesh, dtype=S, data=similar(obj.data, S))
 end
-Base.similar(obj::MeshArray{T,N,MT}) where {T,MT,N,D} = Base.similar(obj, T)
+Base.similar(obj::MeshArray{T,N,MT}) where {T,MT,N} = Base.similar(obj, T)
 #By default, the following functions will all call Base.similar(obj::MeshArray, ::Type{S}, inds) as explained in https://docs.julialang.org/en/v1/manual/interfaces/#man-interface-array
 #`Base.similar(obj::MeshArray, ::Type{S}, inds)`: Return a slice of obj.data.
 #However, we don't want that since slice of GreeNew itself is not well defined with meshes.
