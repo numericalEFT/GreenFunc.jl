@@ -54,7 +54,7 @@ function ImFreq(β, isFermi::Bool=false;
     symmetry=:none,
     grid::Union{AbstractGrid,AbstractVector,Nothing}=nothing
 )
-    dlr = DLRGrid(Euv, β, rtol, isFermi, :none)
+    dlr = DLRGrid(Euv, β, rtol, isFermi, symmetry)
     if isnothing(grid)
         # TODO: replace the dlr.n with a non-dlr grid. User don't want dlr if it is not initialized with a dlr
         grid = SimpleG.Arbitrary{Int}(dlr.n)
