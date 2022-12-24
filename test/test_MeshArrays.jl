@@ -78,3 +78,17 @@ using Random
     test_shape(5, 7, (1:2, 1:3))
     test_shape(10, 140, (1:2, 1:3))
 end
+
+
+@testset "MeshArray Mesh Type" begin
+    N1, N2 = 16, 8
+
+    mesh1 = SimpleGrid.Uniform{Float64}([0.0, 1.0], N1)
+    mesh2 = SimpleGrid.Uniform{Float64}([0.0, 1.0], N2)
+
+    g = MeshArray(mesh1, mesh2)
+    @test isconcretetype(typeof(g.mesh))
+
+    g = MeshArray(mesh1, mesh1, mesh1, mesh1, mesh1, mesh1)
+    @test isconcretetype(typeof(g.mesh))
+end

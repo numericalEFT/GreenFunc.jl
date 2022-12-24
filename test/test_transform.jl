@@ -72,7 +72,38 @@ SemiCircle(dlr, grid, type) = Sample.SemiCircle(dlr.Euv, dlr.β, dlr.isFermi, gr
         @test err < 50 * rtol
 
 
+        ## test reversed grid ######
+        mesh_rev = MeshGrids.ImTime(beta, statistics, grid=reverse(mesh2.dlr.τ)) #reversed imtime grid
+        g_rev = MeshArray(mesh1, mesh_rev; data=zeros(N1, length(mesh_rev)))
+        GreenFunc.semicircle!(g_rev)
+        g_rev_new = g_rev |> to_dlr |> to_imtime #tranform back to non-revered grid
+
+        mesh_t = MeshGrids.ImTime(beta, statistics, grid=mesh2.dlr.τ) #non reversed imtime grid
+        g = MeshArray(mesh1, mesh_t; data=zeros(N1, length(mesh_t)))
+        GreenFunc.semicircle!(g)
+
+        err = maximum(abs.(g_rev_new.data[:, :] .- g.data[:, :]))
+        printstyled("test  reverse imtime grid $err\n", color=:white)
+        @test err < 50 * rtol
+
+        mesh_rev = MeshGrids.ImFreq(beta, statistics, grid=reverse(mesh2.dlr.n)) #reversed imtime grid
+        g_rev = MeshArray(mesh1, mesh_rev; data=zeros(N1, length(mesh_rev)), dtype=ComplexF64)
+        GreenFunc.semicircle!(g_rev)
+        g_rev_new = g_rev |> to_dlr |> to_imfreq #tranform back to non-revered grid
+
+        mesh_t = MeshGrids.ImFreq(beta, statistics, grid=mesh2.dlr.n) #non reversed imtime grid
+        g = MeshArray(mesh1, mesh_t; data=zeros(N1, length(mesh_t)), dtype=ComplexF64)
+        GreenFunc.semicircle!(g)
+
+        err = maximum(abs.(g_rev_new.data[:, :] .- g.data[:, :]))
+        printstyled("test  reverse imfreq grid $err\n", color=:white)
+        @test err < 50 * rtol
+
     end
     test_fourier(5, 100.0, FERMION)
     test_fourier(5, 100.0, BOSON)
+end
+
+@testset "Reversed grid" begin
+
 end
