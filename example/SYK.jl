@@ -32,7 +32,6 @@ diff(a, b) = maximum(abs.(a - b)) # return the maximum deviation between a and b
 distance(a, b) = norm(a - b, 2) # return the 1-norm distance between a and b
 
 conformal_tau(τ, β) = π^(1 / 4) / sqrt(2β) * 1 / sqrt(sin(π * τ / β)) #analytic solution with the conformal invariance
-reverseview(x) = view(x, reverse(axes(x, 1))) # reversed view of x
 
 const dlrmesh = DLRFreq(β, FERMION; Euv=5.0, rtol=rtol, symmetry=:ph)   # Initialize DLR grid
 

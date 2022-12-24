@@ -75,6 +75,10 @@ function MeshArray(mesh...;
 
     @assert all(x -> isiterable(typeof(x)), mesh) "all meshes should be iterable"
 
+    if isconcretetype(typeof(mesh)) == false
+        @warn "Mesh type $(typeof(mesh)) is not concrete, it may cause performance issue."
+    end
+
     N = length(mesh)
     dims = tuple([length(v) for v in mesh]...)
     if isnothing(data) == false
@@ -98,6 +102,11 @@ function MeshArray(; mesh::Union{Tuple,AbstractVector},
     if mesh isa AbstractVector
         mesh = (m for m in mesh)
     end
+
+    if isconcretetype(typeof(mesh)) == false
+        @warn "Mesh type $(typeof(mesh)) is not concrete, it may cause performance issue."
+    end
+
     @assert mesh isa Tuple "mesh should be a tuple, now get $(typeof(mesh))"
     N = length(mesh)
     dims = tuple([length(v) for v in mesh]...)
