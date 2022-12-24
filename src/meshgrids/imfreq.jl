@@ -64,7 +64,7 @@ function ImFreq(β, isFermi::Bool=false;
         error("Proper grid or basis are required.")
     end
 
-    @assert issorted(grid) "The grid should be sorted."
+    @assert issorted(grid) || issorted(grid, rev=true) "The grid should be sorted."
     @assert eltype(grid) <: Int "Matsubara-frequency grid should be Int."
     return ImFreq{dtype,typeof(grid),typeof(dlr)}(grid, β, Euv, isFermi, symmetry, rtol, dlr)
 end
@@ -78,7 +78,7 @@ function ImFreq(dlr::DLRGrid; dtype=Float64, grid::Union{AbstractGrid,AbstractVe
     if (grid isa AbstractGrid) == false
         grid = SimpleG.Arbitrary{Int}(grid)
     end
-    @assert issorted(grid) "The grid should be sorted."
+    @assert issorted(grid) || issorted(grid, rev=true) "The grid should be sorted."
     @assert eltype(grid) <: Int "Matsubara-frequency grid should be Int."
     return ImFreq{dtype,typeof(grid),typeof(dlr)}(grid, dlr.β, dlr.Euv, dlr.isFermi, dlr.symmetry, dlr.rtol, dlr)
 end

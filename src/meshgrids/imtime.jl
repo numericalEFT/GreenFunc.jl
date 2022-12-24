@@ -66,7 +66,7 @@ function ImTime(β, isFermi::Bool=false;
         error("Proper grid and basis are required!")
     end
     @assert grid[1] >= 0 && grid[end] <= β "The grid should be in the range [0, β]."
-    @assert issorted(grid) "The grid should be sorted."
+    @assert issorted(grid) || issorted(grid, rev=true) "The grid should be sorted."
     @assert eltype(grid) == dtype "The type of grid should be the same as dtype = $dtype"
     return ImTime{dtype,typeof(grid),typeof(dlr)}(grid, β, Euv, isFermi, symmetry, rtol, dlr)
 end
@@ -83,7 +83,7 @@ function ImTime(dlr::DLRGrid; dtype=Float64, grid::Union{AbstractGrid,AbstractVe
     if (grid isa AbstractGrid) == false
         grid = SimpleG.Arbitrary{dtype}(grid)
     end
-    @assert issorted(grid) "The grid should be sorted."
+    @assert issorted(grid) || issorted(grid, rev=true) "The grid should be sorted."
     @assert eltype(grid) == dtype "The type of grid should be the same as dtype = $dtype"
     return ImTime{dtype,typeof(grid),typeof(dlr)}(grid, dlr.β, dlr.Euv, dlr.isFermi, dlr.symmetry, dlr.rtol, dlr)
 end

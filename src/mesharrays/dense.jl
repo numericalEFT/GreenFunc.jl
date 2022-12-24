@@ -83,6 +83,10 @@ function MeshArray(mesh...;
     else
         data = Array{dtype,N}(undef, dims...)
     end
+
+    if dtype != eltype(data)
+        data = convert(Array{dtype,N}, data)
+    end
     return MeshArray{dtype,N,typeof(mesh)}(data, mesh)
 end
 function MeshArray(; mesh::Union{Tuple,AbstractVector},
@@ -102,6 +106,10 @@ function MeshArray(; mesh::Union{Tuple,AbstractVector},
         @assert size(data) == dims "data size $(size(data)) should be the same as the mesh size $dims"
     else
         data = Array{dtype,N}(undef, dims...)
+    end
+
+    if dtype != eltype(data)
+        data = convert(Array{dtype,N}, data)
     end
     return MeshArray{dtype,N,typeof(mesh)}(data, mesh)
 end
