@@ -7,9 +7,10 @@ Time grid for Green's functions.
 - `T<:Real`: type of the `grid` point, `β` and `Euv`.
 - `G<:AbstractGrid{T}`: type of 1D grid with `T` as the grid point type.
 - `R`: type of the representation.
+- REV: access the grid in reverse order or not.
 
 # Members
-- `grid`: 1D grid of time axis, with locate, volume, and AbstractArray interface implemented.
+- `grid`: 1D grid of time axis, with locate, volume, and AbstractArray interface implemented. Always in ascend order.
   It should be grid of Int for ImFreq, and DLRGrid for DLRFreq.
 - `β`: inverse temperature.
 - `Euv`:  the UV energy scale of the spectral density.

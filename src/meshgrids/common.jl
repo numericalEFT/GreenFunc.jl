@@ -3,15 +3,11 @@ Base.length(tg::TemporalGrid) = length(tg.grid)
 Base.size(tg::TemporalGrid) = size(tg.grid)
 Base.size(tg::TemporalGrid, I::Int) = size(tg.grid, I)
 
-# ascend order
-Base.getindex(tg::TemporalGrid{T,false}, I::Int) where {T} = tg.grid[I]
-Base.firstindex(tg::TemporalGrid{T,false}) where {T} = 1
-Base.lastindex(tg::TemporalGrid{T,false}) where {T} = length(tg)
+Base.firstindex(tg::TemporalGrid) = 1
+Base.lastindex(tg::TemporalGrid) = length(tg)
 
-# descend order
-Base.getindex(tg::TemporalGrid{T,true}, I::Int) where {T} = tg.grid[end-I+1]
-Base.firstindex(tg::TemporalGrid{T,true}) where {T} = length(tg)
-Base.lastindex(tg::TemporalGrid{T,true}) where {T} = 1
+Base.getindex(tg::TemporalGrid{T,false}, I::Int) where {T} = tg.grid[I] # ascend order
+Base.getindex(tg::TemporalGrid{T,true}, I::Int) where {T} = tg.grid[end-I+1] # descend order
 
 # iterator
 Base.iterate(tg::TemporalGrid) = (tg[1], 1)
@@ -22,11 +18,17 @@ Base.IteratorEltype(::Type{TemporalGrid{GT,REV}}) where {GT,REV} = Base.HasEltyp
 Base.eltype(::Type{TemporalGrid{GT,REV}}) where {GT,REV} = eltype(GT)
 
 # locate and volume could fail if tg.grid has no implementation
-volume(tg::TemporalGrid, I::Int) = volume(tg.grid, I)
 volume(tg::TemporalGrid) = volume(tg.grid)
-locate(tg::TemporalGrid, pos) = locate(tg.grid, pos)
 
-Base.floor(tg::TemporalGrid, pos) = floor(tg.grid, pos)
+#ascend order
+volume(tg::TemporalGrid{T,false}, I::Int) where {T} = volume(tg.grid, I)
+locate(tg::TemporalGrid{T,false}, pos) where {T} = locate(tg.grid, pos)
+Base.floor(tg::TemporalGrid{T,false}, pos) where {T} = floor(tg.grid, pos)
+
+#descend order
+volume(tg::TemporalGrid{T,true}, I::Int) where {T} = volume(tg.grid, length(tg) - I + 1) # TODO: Add test
+#locate(tg::TemporalGrid{T,true}, pos) where {T} = locate(tg.grid, pos) #TODO: how to implement?
+#Base.floor(tg::TemporalGrid{T,true}, pos) where {T} = floor(tg.grid, pos) #TODO: how to implement?
 
 function _round(grid, sigdigits)
     if sigdigits <= 0

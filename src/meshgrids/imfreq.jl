@@ -7,9 +7,10 @@ Imaginary-frequency grid for Green's functions.
 - `T<:Real`: type of the `grid` point, `β` and `Euv`.
 - `G<:AbstractGrid{T}`: type of 1D grid with `T` as the grid point type.
 - `R`: type of the representation.
+- REV: access the grid in reverse order or not.
 
 # Members
-- `grid`: 1D grid of time axis, with locate, volume, and AbstractArray interface implemented.
+- `grid`: 1D grid of time axis, with locate, volume, and AbstractArray interface implemented. Always in ascend order
   It should be grid of Int for ImFreq, and DLRGrid for DLRFreq.
 - `β`: inverse temperature.
 - `Euv`:  the UV energy scale of the spectral density.
@@ -100,17 +101,21 @@ ImFreq(dlrfreq::DLRFreq; kwargs...) = ImFreq(dlrfreq.dlr; kwargs...)
 matfreq_to_int(tg::ImFreq, ωn) = tg.isFermi ? Int(round((ωn * tg.β / π - 1) / 2)) : Int(round((ωn * tg.β / π) / 2))
 int_to_matfreq(tg::ImFreq, n::Int) = tg.isFermi ? (2n + 1) * π / tg.β : 2n * π / tg.β
 
-matfreq(tg::ImFreq) = [int_to_matfreq(tg, n) for n in tg.grid]
+matfreq(tg::ImFreq{T,G,R,false}) where {T,G,R} = [int_to_matfreq(tg, n) for n in tg.grid]
+matfreq(tg::ImFreq{T,G,R,true}) where {T,G,R} = [int_to_matfreq(tg, n) for n in reverse(tg.grid)]
 
 """
-    getindex(g::ImFreq, I::Int)
+    getindex(g::ImFreq{T, G, R, REV}, I::Int)
 
 Equivalent to `g[I]`, get the __real-valued__ Matsubara frequency of the Ith point in the grid. 
 For fermion, return (2g[I]+1)π/β, for boson, return 2g[I]*π/β.
 
+If REV = true, then index in the reversed order, namely I will be replaced with `length(g) - I + 1`.
+
 If you need the __integer-valued__ frequency, use `g.grid[I]` instead.
 """
-Base.getindex(tg::ImFreq, I::Int) = int_to_matfreq(tg, tg.grid[I])
+Base.getindex(tg::ImFreq{T,G,R,false}, I::Int) where {T,G,R} = int_to_matfreq(tg, tg.grid[I]) # ascend order
+Base.getindex(tg::ImFreq{T,G,R,true}, I::Int) where {T,G,R} = int_to_matfreq(tg, tg.grid[end-I+1]) # descend order
 
 """
     show(io::IO, tg::ImFreq)

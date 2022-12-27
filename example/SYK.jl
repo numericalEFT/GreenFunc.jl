@@ -64,6 +64,7 @@ function nlsolve(G_t; tol=rtol, maxiter=1000, verbose=false, mix=0.1)
         end
         G_t = mix .* G_t_new + (1 - mix) .* G_t # Linear mixing
     end
+    return G_t
 end
 
 const G_t = MeshArray(ImTime(dlrmesh); dtype=ComplexF64)
