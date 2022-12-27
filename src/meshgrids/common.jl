@@ -30,6 +30,8 @@ volume(tg::TemporalGrid{T,true}, I::Int) where {T} = volume(tg.grid, length(tg) 
 #locate(tg::TemporalGrid{T,true}, pos) where {T} = locate(tg.grid, pos) #TODO: how to implement?
 #Base.floor(tg::TemporalGrid{T,true}, pos) where {T} = floor(tg.grid, pos) #TODO: how to implement?
 
+is_reverse(tg::TemporalGrid{T,REV}) where {T,REV} = REV
+
 function _round(grid, sigdigits)
     if sigdigits <= 0
         return grid

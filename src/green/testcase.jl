@@ -9,7 +9,11 @@ function semicircle!(g::MeshArray; dim::Union{Int,Nothing}=nothing, rtol=1e-12, 
 
     isFermi = mesh.isFermi
     type = mesh isa MeshGrids.ImFreq ? :n : :τ
-    gs = Sample.SemiCircle(mesh.Euv, mesh.β, isFermi, mesh.grid, type, sym; rtol=rtol, degree=24, regularized=false)
+    if MeshGrids.is_reverse(mesh)
+        gs = Sample.SemiCircle(mesh.Euv, mesh.β, isFermi, reverse(mesh.grid), type, sym; rtol=rtol, degree=24, regularized=false)
+    else
+        gs = Sample.SemiCircle(mesh.Euv, mesh.β, isFermi, mesh.grid, type, sym; rtol=rtol, degree=24, regularized=false)
+    end
     for ind in eachindex(g) # ind is a CartesianIndex, ind[dim] gives the index in the dimension dim
         g[ind] = gs[ind[dim]]
     end
@@ -25,7 +29,11 @@ function multipole!(g::MeshArray, poles::AbstractVector; dim::Union{Int,Nothing}
 
     isFermi = mesh.isFermi
     type = mesh isa MeshGrids.ImFreq ? :n : :τ
-    gs = Sample.MultiPole(mesh.β, isFermi, mesh.grid, type, poles, sym; regularized=false)
+    if MeshGrids.is_reverse(mesh)
+        gs = Sample.MultiPole(mesh.β, isFermi, reverse(mesh.grid), type, poles, sym; regularized=false)
+    else
+        gs = Sample.MultiPole(mesh.β, isFermi, mesh.grid, type, poles, sym; regularized=false)
+    end
     for ind in eachindex(g) # ind is a CartesianIndex, ind[dim] gives the index in the dimension dim
         g[ind] = gs[ind[dim]]
     end
