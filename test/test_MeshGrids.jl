@@ -18,11 +18,24 @@
         # eltype
         @test eltype(typeof(tg2)) == Float64
 
+        # test locate and volume
         for (ti, t) in enumerate(tg2)
             @test t == DLR.τ[ti]
             @test MeshGrids.locate(tg2, t) == ti
         end
         @test volume(tg2) ≈ sum(volume(tg2, i) for i in 1:length(tg2))
+
+        # test floor
+        δ = 1e-6
+        N = length(tg2)
+        @test floor(tg2, tg2[1] - δ) == 1
+        @test floor(tg2, tg2[1] + δ) == 1
+        for i in 2:N-1
+            @test floor(tg2, tg2[i] - δ) == i - 1
+            @test floor(tg2, tg2[i] + δ) == i
+        end
+        @test floor(tg2, tg2[N] - δ) == N - 1
+        @test floor(tg2, tg2[N] + δ) == N - 1
     end
 
     @testset "ImTime Grid Reversed" begin
@@ -45,6 +58,20 @@
             # @test MeshGrids.locate(tg2, t) == ti #TODO: add test for locate
         end
         @test volume(tg2) ≈ sum(volume(tg2, i) for i in 1:length(tg2))
+
+        # test floor
+        δ = 1e-6
+        N = length(tg2)
+        @test floor(tg2, tg2[1] - δ) == 1
+        @test floor(tg2, tg2[1] + δ) == 1
+        for i in 2:N-1
+            # reversed 
+            @test floor(tg2, tg2[i] - δ) == i
+            @test floor(tg2, tg2[i] + δ) == i - 1
+        end
+        @test floor(tg2, tg2[N] - δ) == N - 1
+        @test floor(tg2, tg2[N] + δ) == N - 1
+
     end
 
     @testset "ImFreq Grid" begin
@@ -67,6 +94,20 @@
         @test volume(tg2) == sum(volume(tg2, i) for i in 1:length(tg2))
 
         MeshGrids.matfreq(tg2) ≈ DLR.ωn
+
+        # test floor
+        # notice for imfreq tg2[i]!=tg2.grid[i]
+        δ = 1e-6
+        N = length(tg2)
+        @test floor(tg2, tg2.grid[1] - δ) == 1
+        @test floor(tg2, tg2.grid[1] + δ) == 1
+        for i in 2:N-1
+            @test floor(tg2, tg2.grid[i] - δ) == i - 1
+            @test floor(tg2, tg2.grid[i] + δ) == i
+        end
+        @test floor(tg2, tg2.grid[N] - δ) == N - 1
+        @test floor(tg2, tg2.grid[N] + δ) == N - 1
+
     end
 
     @testset "ImFreq Grid Reversed" begin
@@ -93,6 +134,19 @@
         @test volume(tg2) == sum(volume(tg2, i) for i in 1:length(tg2))
 
         MeshGrids.matfreq(tg2) ≈ reverse(DLR.ωn)
+
+        # test floor
+        # notice for imfreq tg2[i]!=tg2.grid[i]
+        δ = 1e-6
+        N = length(tg2)
+        @test floor(tg2, tg2.grid[N] - δ) == 1
+        @test floor(tg2, tg2.grid[N] + δ) == 1
+        for i in 2:N-1
+            @test floor(tg2, tg2.grid[N+1-i] - δ) == i
+            @test floor(tg2, tg2.grid[N+1-i] + δ) == i - 1
+        end
+        @test floor(tg2, tg2.grid[1] - δ) == N - 1
+        @test floor(tg2, tg2.grid[1] + δ) == N - 1
     end
 
     @testset "DLRFreq Grid" begin
