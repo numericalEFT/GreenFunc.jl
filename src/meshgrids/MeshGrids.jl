@@ -17,7 +17,7 @@ volume(m::BrillouinZoneMeshes.BaseMesh.AbstractMesh) = BrillouinZoneMeshes.BaseM
 
 export locate, volume
 
-abstract type TemporalGrid{T} <: AbstractGrid{T} end
+abstract type TemporalGrid{T,REV} <: AbstractGrid{T} end
 
 const FERMION = true
 const BOSON = false

@@ -2,17 +2,24 @@
 Base.length(tg::TemporalGrid) = length(tg.grid)
 Base.size(tg::TemporalGrid) = size(tg.grid)
 Base.size(tg::TemporalGrid, I::Int) = size(tg.grid, I)
-Base.getindex(tg::TemporalGrid, I::Int) = tg.grid[I]
-Base.firstindex(tg::TemporalGrid) = 1
-Base.lastindex(tg::TemporalGrid) = length(tg)
+
+# ascend order
+Base.getindex(tg::TemporalGrid{T,false}, I::Int) where {T} = tg.grid[I]
+Base.firstindex(tg::TemporalGrid{T,false}) where {T} = 1
+Base.lastindex(tg::TemporalGrid{T,false}) where {T} = length(tg)
+
+# descend order
+Base.getindex(tg::TemporalGrid{T,true}, I::Int) where {T} = tg.grid[end-I+1]
+Base.firstindex(tg::TemporalGrid{T,true}) where {T} = length(tg)
+Base.lastindex(tg::TemporalGrid{T,true}) where {T} = 1
 
 # iterator
 Base.iterate(tg::TemporalGrid) = (tg[1], 1)
 Base.iterate(tg::TemporalGrid, state) = (state >= length(tg)) ? nothing : (tg[state+1], state + 1)
 # Base.IteratorSize(tg)
-Base.IteratorSize(::Type{TemporalGrid{GT}}) where {GT} = Base.HasLength()
-Base.IteratorEltype(::Type{TemporalGrid{GT}}) where {GT} = Base.HasEltype()
-Base.eltype(::Type{TemporalGrid{GT}}) where {GT} = eltype(GT)
+Base.IteratorSize(::Type{TemporalGrid{GT,REV}}) where {GT,REV} = Base.HasLength()
+Base.IteratorEltype(::Type{TemporalGrid{GT,REV}}) where {GT,REV} = Base.HasEltype()
+Base.eltype(::Type{TemporalGrid{GT,REV}}) where {GT,REV} = eltype(GT)
 
 # locate and volume could fail if tg.grid has no implementation
 volume(tg::TemporalGrid, I::Int) = volume(tg.grid, I)

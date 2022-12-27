@@ -18,7 +18,7 @@ Imaginary-frequency grid for Green's functions.
 - `rtol`: relative tolerance
 - `representation`: the representation of the Green's function.
 """
-struct ImFreq{T<:Real,G<:AbstractGrid{Int},R} <: TemporalGrid{Int}
+struct ImFreq{T<:Real,G<:AbstractGrid{Int},R,REV} <: TemporalGrid{Int,REV}
     grid::G
     β::T
     Euv::T
@@ -55,6 +55,11 @@ function ImFreq(β, isFermi::Bool=false;
     grid::Union{AbstractGrid,AbstractVector,Nothing}=nothing
 )
     dlr = DLRGrid(Euv, β, rtol, isFermi, symmetry)
+
+    rev = issorted(grid, rev=true)
+    if rev
+        grid = reverse(grid)
+    end
     if isnothing(grid)
         # TODO: replace the dlr.n with a non-dlr grid. User don't want dlr if it is not initialized with a dlr
         grid = SimpleG.Arbitrary{Int}(dlr.n)
@@ -64,9 +69,9 @@ function ImFreq(β, isFermi::Bool=false;
         error("Proper grid or basis are required.")
     end
 
-    @assert issorted(grid) || issorted(grid, rev=true) "The grid should be sorted."
     @assert eltype(grid) <: Int "Matsubara-frequency grid should be Int."
-    return ImFreq{dtype,typeof(grid),typeof(dlr)}(grid, β, Euv, isFermi, symmetry, rtol, dlr)
+    @assert issorted(grid) "The grid should be sorted."
+    return ImFreq{dtype,typeof(grid),typeof(dlr),rev}(grid, β, Euv, isFermi, symmetry, rtol, dlr)
 end
 
 """
@@ -74,13 +79,21 @@ end
 
 Construct `ImFreq` from a `DLRGrid`, with a given `grid`. By default, `grid` is the Matsubara-frequency points from `DLRGrid`.
 """
-function ImFreq(dlr::DLRGrid; dtype=Float64, grid::Union{AbstractGrid,AbstractVector}=SimpleG.Arbitrary{Int}(dlr.n))
+function ImFreq(dlr::DLRGrid;
+    dtype=Float64,
+    grid::Union{AbstractGrid,AbstractVector}=SimpleG.Arbitrary{Int}(dlr.n)
+)
+    rev = issorted(grid, rev=true)
+    if rev
+        grid = reverse(grid)
+    end
     if (grid isa AbstractGrid) == false
         grid = SimpleG.Arbitrary{Int}(grid)
     end
-    @assert issorted(grid) || issorted(grid, rev=true) "The grid should be sorted."
     @assert eltype(grid) <: Int "Matsubara-frequency grid should be Int."
-    return ImFreq{dtype,typeof(grid),typeof(dlr)}(grid, dlr.β, dlr.Euv, dlr.isFermi, dlr.symmetry, dlr.rtol, dlr)
+
+    @assert issorted(grid) "The grid should be sorted."
+    return ImFreq{dtype,typeof(grid),typeof(dlr),rev}(grid, dlr.β, dlr.Euv, dlr.isFermi, dlr.symmetry, dlr.rtol, dlr)
 end
 ImFreq(dlrfreq::DLRFreq; kwargs...) = ImFreq(dlrfreq.dlr; kwargs...)
 

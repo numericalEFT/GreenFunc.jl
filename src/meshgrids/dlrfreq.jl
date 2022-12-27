@@ -16,7 +16,7 @@ Discrete-Lehmann-representation grid for Green's functions.
 - `symmetry`: `:ph` for particle-hole symmetric, `:pha` for particle-hole symmetry, and `:none` for no symmetry. By default, `sym = :none`.
 - `isFermi`: the statistics for particles. 
 """
-struct DLRFreq{T<:Real} <: TemporalGrid{T}
+struct DLRFreq{T<:Real} <: TemporalGrid{T,false}
     dlr::DLRGrid
     grid::SimpleG.Arbitrary{T}
     β::T
