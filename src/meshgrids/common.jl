@@ -17,18 +17,30 @@ Base.IteratorSize(::Type{TemporalGrid{GT,REV}}) where {GT,REV} = Base.HasLength(
 Base.IteratorEltype(::Type{TemporalGrid{GT,REV}}) where {GT,REV} = Base.HasEltype()
 Base.eltype(::Type{TemporalGrid{GT,REV}}) where {GT,REV} = eltype(GT)
 
+
+
 # locate and volume could fail if tg.grid has no implementation
 volume(tg::TemporalGrid) = volume(tg.grid)
 
 #ascend order
 volume(tg::TemporalGrid{T,false}, I::Int) where {T} = volume(tg.grid, I)
 locate(tg::TemporalGrid{T,false}, pos) where {T} = locate(tg.grid, pos)
-Base.floor(tg::TemporalGrid{T,false}, pos) where {T} = floor(tg.grid, pos)
 
 #descend order
-volume(tg::TemporalGrid{T,true}, I::Int) where {T} = volume(tg.grid, length(tg) - I + 1) # TODO: Add test
-#locate(tg::TemporalGrid{T,true}, pos) where {T} = locate(tg.grid, pos) #TODO: how to implement?
-#Base.floor(tg::TemporalGrid{T,true}, pos) where {T} = floor(tg.grid, pos) #TODO: how to implement?
+volume(tg::TemporalGrid{T,true}, I::Int) where {T} = volume(tg.grid, length(tg) - I + 1)
+locate(tg::TemporalGrid{T,true}, pos) where {T} = length(tg) - locate(tg.grid, pos) + 1 #TODO: how to implement?
+
+"""
+    Base.floor(tg::TemporalGrid{T,false}, pos) where {T} = floor(tg.grid, pos) #TODO: how to implement?
+    Base.floor(tg::TemporalGrid{T,true}, pos) where {T} = length(tg) - floor(tg.grid, pos) #TODO: how to implement?
+
+If the grid is in ascend order, then floor returns the largest index that the grid point is smaller than pos.
+If the grid is in descend order, then floor returns the smallest index that the grid point is larger than pos.
+
+In both cases, the returned index is in the range [1, length(tg)-1]
+"""
+Base.floor(tg::TemporalGrid{T,false}, pos) where {T} = floor(tg.grid, pos) #TODO: how to implement?
+Base.floor(tg::TemporalGrid{T,true}, pos) where {T} = N - floor(tg.grid, pos) #TODO: how to implement?
 
 is_reverse(tg::TemporalGrid{T,REV}) where {T,REV} = REV
 
