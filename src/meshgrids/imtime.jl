@@ -7,9 +7,10 @@ Time grid for Green's functions.
 - `T<:Real`: type of the `grid` point, `β` and `Euv`.
 - `G<:AbstractGrid{T}`: type of 1D grid with `T` as the grid point type.
 - `R`: type of the representation.
+- REV: access the grid in reverse order or not.
 
 # Members
-- `grid`: 1D grid of time axis, with locate, volume, and AbstractArray interface implemented.
+- `grid`: 1D grid of time axis, with locate, volume, and AbstractArray interface implemented. Always in ascend order.
   It should be grid of Int for ImFreq, and DLRGrid for DLRFreq.
 - `β`: inverse temperature.
 - `Euv`:  the UV energy scale of the spectral density.
@@ -18,7 +19,7 @@ Time grid for Green's functions.
 - `rtol`: relative tolerance
 - `representation`: the representation of the Green's function.
 """
-struct ImTime{T<:Real,G<:AbstractGrid{T},R} <: TemporalGrid{T}
+struct ImTime{T<:Real,G<:AbstractGrid{T},R,REV} <: TemporalGrid{T,REV}
     grid::G
     β::T
     Euv::T
@@ -54,8 +55,13 @@ function ImTime(β, isFermi::Bool=false;
     symmetry=:none,
     grid::Union{AbstractGrid,AbstractVector,Nothing}=nothing
 )
-
     dlr = DLRGrid(Euv, β, rtol, isFermi, symmetry)
+
+    rev = issorted(grid, rev=true)
+    if rev
+        grid = reverse(grid)
+    end
+
     if isnothing(grid)
         grid = SimpleG.Arbitrary{dtype}(dlr.τ)
         # grid = SimpleG.Uniform{dtype}([0, β], Int(round(β / resolution)))
@@ -65,10 +71,10 @@ function ImTime(β, isFermi::Bool=false;
     else
         error("Proper grid and basis are required!")
     end
-    @assert grid[1] >= 0 && grid[end] <= β "The grid should be in the range [0, β]."
-    @assert issorted(grid) || issorted(grid, rev=true) "The grid should be sorted."
     @assert eltype(grid) == dtype "The type of grid should be the same as dtype = $dtype"
-    return ImTime{dtype,typeof(grid),typeof(dlr)}(grid, β, Euv, isFermi, symmetry, rtol, dlr)
+    @assert issorted(grid) "The grid should be sorted."
+    @assert grid[1] >= 0 && grid[end] <= β "The grid should be in the range [0, β]."
+    return ImTime{dtype,typeof(grid),typeof(dlr),rev}(grid, β, Euv, isFermi, symmetry, rtol, dlr)
 end
 
 """
@@ -76,16 +82,23 @@ end
 
 Construct `ImTime` from a `DLRGrid`, with a given `grid`. By default, `grid` is the imaginary-time grid points from `DLRGrid`.
 """
-function ImTime(dlr::DLRGrid; dtype=Float64, grid::Union{AbstractGrid,AbstractVector}=SimpleG.Arbitrary{dtype}(dlr.τ))
+function ImTime(dlr::DLRGrid;
+    dtype=Float64,
+    grid::Union{AbstractGrid,AbstractVector}=SimpleG.Arbitrary{dtype}(dlr.τ)
+)
+    rev = issorted(grid, rev=true)
+    if rev
+        grid = reverse(grid)
+    end
     # if isnothing(grid)
     #     grid = SimpleG.Arbitrary{dtype}(dlr.τ)
     # end
     if (grid isa AbstractGrid) == false
         grid = SimpleG.Arbitrary{dtype}(grid)
     end
-    @assert issorted(grid) || issorted(grid, rev=true) "The grid should be sorted."
     @assert eltype(grid) == dtype "The type of grid should be the same as dtype = $dtype"
-    return ImTime{dtype,typeof(grid),typeof(dlr)}(grid, dlr.β, dlr.Euv, dlr.isFermi, dlr.symmetry, dlr.rtol, dlr)
+    @assert issorted(grid) "The grid should be sorted."
+    return ImTime{dtype,typeof(grid),typeof(dlr),rev}(grid, dlr.β, dlr.Euv, dlr.isFermi, dlr.symmetry, dlr.rtol, dlr)
 end
 ImTime(dlrfreq::DLRFreq; kwargs...) = ImTime(dlrfreq.dlr; kwargs...)
 

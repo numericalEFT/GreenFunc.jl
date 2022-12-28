@@ -137,7 +137,7 @@ function dlr_to_imtime(obj::MeshArray{T,N,MT},
 
     mesh_new = _replace_mesh(obj.mesh, mesh, tgrid)
     # mesh_new = (obj.mesh[1:dim-1]..., tgrid, obj.mesh[dim+1:end]...)
-    data = dlr2tau(mesh.dlr, obj.data, tgrid.grid; axis=dim)
+    data = dlr2tau(mesh.dlr, obj.data, tgrid; axis=dim) #note that the tgrid may be in reverse order, then tgrid != tgrid.grid
     return MeshArray(mesh=mesh_new, dtype=eltype(data), data=data)
 end
 
@@ -162,18 +162,23 @@ function dlr_to_imfreq(obj::MeshArray{T,N,MT},
     @assert mesh isa MeshGrids.DLRFreq "DLRFreq is expect for the dim = $dim."
 
     if isnothing(ngrid)
-        ngrid = ImFreq(mesh)
+        _ngrid = ImFreq(mesh)
     elseif ngrid isa MeshGrids.ImFreq
         @assert ngrid.β ≈ mesh.β "Target grid has to have the same inverse temperature as the source grid."
         @assert ngrid.isFermi ≈ mesh.isFermi "Target grid has to have the same statistics as the source grid."
         # @assert ngrid.Euv ≈ mesh.Euv "Target grid has to have the same Euv as the source grid."
+        _ngrid = ngrid
     else
-        ngrid = MeshGrids.ImFreq(mesh, grid=ngrid)
+        _ngrid = MeshGrids.ImFreq(mesh, grid=ngrid)
     end
 
-    mesh_new = _replace_mesh(obj.mesh, mesh, ngrid)
+    mesh_new = _replace_mesh(obj.mesh, mesh, _ngrid)
     # mesh_new = (obj.mesh[1:dim-1]..., ngrid, obj.mesh[dim+1:end]...)
-    data = dlr2matfreq(mesh.dlr, obj.data, ngrid.grid.grid; axis=dim)
+    if MeshGrids.is_reverse(_ngrid)
+        data = dlr2matfreq(mesh.dlr, obj.data, reverse(_ngrid.grid.grid); axis=dim)
+    else
+        data = dlr2matfreq(mesh.dlr, obj.data, _ngrid.grid.grid; axis=dim)
+    end
     return MeshArray(mesh=mesh_new, dtype=Base.eltype(data), data=data)
 end
 
@@ -196,7 +201,11 @@ function imfreq_to_dlr(obj::MeshArray{T,N,MT}; dim::Int=_find_mesh(MT, ImFreq)) 
 
     mesh_new = _replace_mesh(obj.mesh, mesh, dlrgrid)
     # mesh_new = (obj.mesh[1:dim-1]..., dlrgrid, obj.mesh[dim+1:end]...)
-    data = matfreq2dlr(dlrgrid.dlr, obj.data, mesh.grid.grid; axis=dim) # should be mesh.grid.grid here
+    if MeshGrids.is_reverse(mesh)
+        data = matfreq2dlr(dlrgrid.dlr, obj.data, reverse(mesh.grid.grid); axis=dim) # should be mesh.grid.grid here
+    else
+        data = matfreq2dlr(dlrgrid.dlr, obj.data, mesh.grid.grid; axis=dim) # should be mesh.grid.grid here
+    end
     return MeshArray(mesh=mesh_new, dtype=eltype(data), data=data)
 end
 
@@ -222,7 +231,12 @@ function imtime_to_dlr(obj::MeshArray{T,N,MT}; dim::Int=_find_mesh(MT, ImTime)) 
     # mesh_new = (obj.mesh[1:dim-1]..., dlrgrid, obj.mesh[dim+1:end]...)
 
     # println(mesh_new)
-    data = tau2dlr(dlrgrid.dlr, obj.data, mesh.grid.grid; axis=dim)
+    if MeshGrids.is_reverse(mesh)
+        data = tau2dlr(dlrgrid.dlr, obj.data, reverse(mesh.grid.grid); axis=dim)
+    else
+        data = tau2dlr(dlrgrid.dlr, obj.data, mesh.grid.grid; axis=dim)
+    end
+    # data = tau2dlr(dlrgrid.dlr, obj.data, mesh; axis=dim) # mesh works even if it is reversed
     return MeshArray(mesh=mesh_new, dtype=eltype(data), data=data)
 end
 
