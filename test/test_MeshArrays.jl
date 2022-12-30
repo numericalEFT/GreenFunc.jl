@@ -72,6 +72,8 @@ using Random
         g ./= 2.0
         @test _g.data ./ 2.0 ≈ g.data
 
+        zg = zero(g)
+        @test zg.data ≈ zero(g.data)
     end
 
     test_shape(5, 7, ())

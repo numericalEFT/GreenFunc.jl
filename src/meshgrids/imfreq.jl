@@ -57,14 +57,15 @@ function ImFreq(β, isFermi::Bool=false;
 )
     dlr = DLRGrid(Euv, β, rtol, isFermi, symmetry)
 
-    rev = issorted(grid, rev=true)
-    if rev
-        grid = reverse(grid)
-    end
     if isnothing(grid)
         # TODO: replace the dlr.n with a non-dlr grid. User don't want dlr if it is not initialized with a dlr
         grid = SimpleG.Arbitrary{Int}(dlr.n)
+        rev = false
     elseif (grid isa AbstractVector)
+        rev = issorted(grid, rev=true)
+        if rev
+            grid = reverse(grid)
+        end
         grid = SimpleG.Arbitrary{Int}(Int.(grid))
     else
         error("Proper grid or basis are required.")

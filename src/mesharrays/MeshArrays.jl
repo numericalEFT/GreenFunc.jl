@@ -25,6 +25,10 @@ Return the type of the elements contained in `obj.data`.
 """
 Base.eltype(::Type{AbstractMeshArray{T,N}}) where {T,N} = T
 
-Base.zero(obj::AbstractMeshArray) = Base.zero(obj.data)
+function Base.zero(obj::AbstractMeshArray{T,N}) where {T,N}
+    _obj = similar(obj)
+    _obj.data .= zero(T)
+    return _obj
+end
 
 end
