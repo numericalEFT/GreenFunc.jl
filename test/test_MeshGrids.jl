@@ -9,6 +9,10 @@
     DLR = DLRGrid(Euv, β, rtol, isFermi, tsym)
 
     @testset "ImTime Grid" begin
+
+        tg2 = MeshGrids.ImTime(β, isFermi) # check default reverse
+        @test length(tg2) > 0
+
         tg2 = MeshGrids.ImTime(β, isFermi; grid=DLR.τ)
 
         @test length(tg2) == length(DLR)
@@ -75,6 +79,10 @@
     end
 
     @testset "ImFreq Grid" begin
+
+        tg2 = MeshGrids.ImFreq(β, isFermi) # check default reverse
+        @test length(tg2) > 0
+
         tg2 = MeshGrids.ImFreq(β, isFermi; grid=DLR.n)
         println(tg2)
 
@@ -111,9 +119,10 @@
     end
 
     @testset "ImFreq Grid Reversed" begin
+
         tg2 = MeshGrids.ImFreq(β, isFermi; grid=reverse(DLR.n))
-        println(typeof(tg2))
-        println(tg2)
+        # println(typeof(tg2))
+        # println(tg2)
 
         @test length(tg2) == length(DLR)
         @test size(tg2) == (length(DLR),)

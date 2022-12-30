@@ -57,16 +57,17 @@ function ImTime(β, isFermi::Bool=false;
 )
     dlr = DLRGrid(Euv, β, rtol, isFermi, symmetry)
 
-    rev = issorted(grid, rev=true)
-    if rev
-        grid = reverse(grid)
-    end
-
     if isnothing(grid)
+        rev = false
         grid = SimpleG.Arbitrary{dtype}(dlr.τ)
         # grid = SimpleG.Uniform{dtype}([0, β], Int(round(β / resolution)))
         # grid = CompositeGrid.LogDensedGrid(:uniform, [0.0, β], [0.0, β], 8, 1 / Euv, 8) #roughly ~100 points if resolution = β/128
     elseif (grid isa AbstractVector)
+        rev = issorted(grid, rev=true)
+        if rev
+            grid = reverse(grid)
+        end
+
         grid = SimpleG.Arbitrary{dtype}(grid)
     else
         error("Proper grid and basis are required!")
