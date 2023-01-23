@@ -56,7 +56,7 @@ end
 # If grid is very long, return [grid[1], grid[2], grid[3], ..., grid[end-2], grid[end-1], grid[end]]
 # If grid is short, return the entire grid
 function _grid(grid, n=3)
-    if eltype(grid) <: Int
+    if eltype(grid) <: Int || length(grid) == 1
         # return join(io, ["[", join([grid[1:n]..., "...", grid[end-n:end]...], ", "), "]"])
         digits = 0
     else
