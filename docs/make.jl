@@ -5,12 +5,12 @@ DocMeta.setdocmeta!(GreenFunc, :DocTestSetup, :(using GreenFunc); recursive=true
 
 makedocs(;
     modules=[GreenFunc],
-    authors="Tao Wang, Xiansheng Cai",
-    repo="https://github.com/fsxbhyy/GreenFunc.jl/blob/{commit}{path}#{line}",
+    authors="Kun Chen, Tao Wang, Xiansheng Cai, PengCheng Hou, and Zhiyi Li",
+    repo="https://github.com/numericaleft/GreenFunc.jl/blob/{commit}{path}#{line}",
     sitename="GreenFunc.jl",
     format=Documenter.HTML(;
         prettyurls=get(ENV, "CI", "false") == "true",
-        canonical="https://fsxbhyy.github.io/GreenFunc.jl",
+        canonical="https://numericaleft.github.io/GreenFunc.jl",
         assets=String[]
     ),
     pages=[
@@ -19,8 +19,6 @@ makedocs(;
             "GreenFunc" => "lib/greenfunc.md",
             "MeshArrays" => "lib/mesharrays.md",
             "MeshGrids" => "lib/meshgrids.md",
-            "Triqs" => "lib/triqs.md",
-            "Deprecated" => "lib/deprecated.md",
         ]
     ]
 )

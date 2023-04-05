@@ -75,6 +75,10 @@ function MeshArray(mesh...;
 
     @assert all(x -> isiterable(typeof(x)), mesh) "all meshes should be iterable"
 
+    if isconcretetype(typeof(mesh)) == false
+        @warn "Mesh type $(typeof(mesh)) is not concrete, it may cause performance issue."
+    end
+
     N = length(mesh)
     dims = tuple([length(v) for v in mesh]...)
     if isnothing(data) == false
@@ -82,6 +86,10 @@ function MeshArray(mesh...;
         @assert size(data) == dims "data size $(size(data)) should be the same as the mesh size $dims"
     else
         data = Array{dtype,N}(undef, dims...)
+    end
+
+    if dtype != eltype(data)
+        data = convert(Array{dtype,N}, data)
     end
     return MeshArray{dtype,N,typeof(mesh)}(data, mesh)
 end
@@ -94,6 +102,11 @@ function MeshArray(; mesh::Union{Tuple,AbstractVector},
     if mesh isa AbstractVector
         mesh = (m for m in mesh)
     end
+
+    if isconcretetype(typeof(mesh)) == false
+        @warn "Mesh type $(typeof(mesh)) is not concrete, it may cause performance issue."
+    end
+
     @assert mesh isa Tuple "mesh should be a tuple, now get $(typeof(mesh))"
     N = length(mesh)
     dims = tuple([length(v) for v in mesh]...)
@@ -102,6 +115,10 @@ function MeshArray(; mesh::Union{Tuple,AbstractVector},
         @assert size(data) == dims "data size $(size(data)) should be the same as the mesh size $dims"
     else
         data = Array{dtype,N}(undef, dims...)
+    end
+
+    if dtype != eltype(data)
+        data = convert(Array{dtype,N}, data)
     end
     return MeshArray{dtype,N,typeof(mesh)}(data, mesh)
 end
@@ -136,7 +153,7 @@ Base.setindex!(obj::MeshArray{T,N,MT}, v, inds::Vararg{Int,N}) where {T,MT,N} = 
 function Base.similar(obj::MeshArray{T,N,MT}, ::Type{S}) where {T,MT,N,S}
     return MeshArray(mesh=obj.mesh, dtype=S, data=similar(obj.data, S))
 end
-Base.similar(obj::MeshArray{T,N,MT}) where {T,MT,N,D} = Base.similar(obj, T)
+Base.similar(obj::MeshArray{T,N,MT}) where {T,MT,N} = Base.similar(obj, T)
 #By default, the following functions will all call Base.similar(obj::MeshArray, ::Type{S}, inds) as explained in https://docs.julialang.org/en/v1/manual/interfaces/#man-interface-array
 #`Base.similar(obj::MeshArray, ::Type{S}, inds)`: Return a slice of obj.data.
 #However, we don't want that since slice of GreeNew itself is not well defined with meshes.

@@ -32,16 +32,14 @@ diff(a, b) = maximum(abs.(a - b)) # return the maximum deviation between a and b
 distance(a, b) = norm(a - b, 2) # return the 1-norm distance between a and b
 
 conformal_tau(τ, β) = π^(1 / 4) / sqrt(2β) * 1 / sqrt(sin(π * τ / β)) #analytic solution with the conformal invariance
-reverseview(x) = view(x, reverse(axes(x, 1))) # reversed view of x
 
 const dlrmesh = DLRFreq(β, FERMION; Euv=5.0, rtol=rtol, symmetry=:ph)   # Initialize DLR grid
 
 function selfenergy(Gt)
     ######### calculate sigma ###############
-    minus_tau = reverse(β .- Gt.mesh[1]) # Reversed imaginary time mesh point
+    minus_tau = β .- Gt.mesh[1] # Reversed imaginary time mesh point
     Gt_inv = dlr_to_imtime(to_dlr(Gt), minus_tau) # interpolate into minus_tau grid
-    Gmt = reverseview(Gt_inv)
-    Σt = J .^ 2 .* Gt .^ 2 .* Gmt  # SYK self-energy in imaginary time
+    Σt = J .^ 2 .* Gt .^ 2 .* Gt_inv  # SYK self-energy in imaginary time
     return Σt |> to_dlr |> to_imfreq
 end
 
@@ -66,6 +64,7 @@ function nlsolve(G_t; tol=rtol, maxiter=1000, verbose=false, mix=0.1)
         end
         G_t = mix .* G_t_new + (1 - mix) .* G_t # Linear mixing
     end
+    return G_t
 end
 
 const G_t = MeshArray(ImTime(dlrmesh); dtype=ComplexF64)
