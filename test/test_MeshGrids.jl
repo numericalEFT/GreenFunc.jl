@@ -177,4 +177,26 @@
         end
         @test volume(tg2) ≈ sum(volume(tg2, i) for i in 1:length(tg2))
     end
+
+    @testset "CompositeGrids and BrillouinZoneMeshes" begin
+        # test availability of imported package
+
+        # CompositeGrids
+        N1 = 7
+        mesh1 = MeshGrids.SimpleGrid.Uniform{Float64}([0.0, 1.0], N1)
+        for (i, x) in enumerate(mesh1)
+            @test MeshGrids.locate(mesh1, x) == i
+        end
+        @test MeshGrids.volume(mesh1) ≈ sum(MeshGrids.volume(mesh1, i) for i in 1:length(mesh1))
+
+        # BrillouinZoneMeshes
+        lattice = Matrix([2.0 0 0; 1 sqrt(3) 0; 7 11 19]')
+        msize = (3, 5, 7)
+        br = MeshGrids.BZMeshes.Cell(lattice=lattice)
+        mesh2 = MeshGrids.BZMeshes.UniformBZMesh(cell=br, size=msize)
+        for (i, x) in enumerate(mesh2)
+            @test MeshGrids.locate(mesh2, x) == i
+        end
+        @test MeshGrids.volume(mesh2) ≈ sum(MeshGrids.volume(mesh2, i) for i in 1:length(mesh2))
+    end
 end
