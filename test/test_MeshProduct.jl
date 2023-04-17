@@ -93,8 +93,8 @@
         @test size(meshprod, 2) == N2
         @test size(meshprod) == (N1, N2)
         @test length(meshprod) == N1 * N2
-        # @inferred meshprod[1]
-        # @inferred meshprod[2]
+        @inferred meshprod[1]
+        @inferred meshprod[2]
 
         @test eltype(typeof(meshprod)) == (eltype(typeof(mesh1)), eltype(typeof(mesh2)))
 
@@ -104,9 +104,9 @@
         X0 = 1
         Y0 = 1
         I0 = 1
-        # test_linear_index(meshprod, X, Y, I)
-        # test_linear_index(meshprod, X0, Y0, I0)
-        # test_linear_index(meshprod, N1, N2, N1 * N2)
+        test_linear_index(meshprod, X, Y, I)
+        test_linear_index(meshprod, X0, Y0, I0)
+        test_linear_index(meshprod, N1, N2, N1 * N2)
         #test iterator
         @test (meshprod[I] in meshprod) == true
     end
