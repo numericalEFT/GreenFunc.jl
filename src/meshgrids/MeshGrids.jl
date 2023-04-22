@@ -24,7 +24,6 @@ export FERMION, BOSON
 export TemporalGrid
 include("common.jl")
 
-
 include("dlrfreq.jl")
 export DLRFreq
 

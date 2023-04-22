@@ -63,12 +63,14 @@ function ImTime(β, isFermi::Bool=false;
         # grid = SimpleG.Uniform{dtype}([0, β], Int(round(β / resolution)))
         # grid = CompositeGrid.LogDensedGrid(:uniform, [0.0, β], [0.0, β], 8, 1 / Euv, 8) #roughly ~100 points if resolution = β/128
     elseif (grid isa AbstractVector)
-        rev = issorted(grid, rev=true)
-        if rev
-            grid = reverse(grid)
-        end
-
-        grid = SimpleG.Arbitrary{dtype}(grid)
+        # if !(grid isa AbstractGrid)
+        #     rev = issorted(grid, rev=true)
+        #     if rev
+        #         grid = reverse(grid)
+        #     end
+        #     grid = SimpleG.Arbitrary{dtype}(grid)
+        # end
+        grid, rev = _to_AbstractGrid(grid, dtype)
     else
         error("Proper grid and basis are required!")
     end

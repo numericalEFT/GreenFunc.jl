@@ -73,3 +73,14 @@ end
 
 Base.show(io::IO, ::MIME"text/plain", tg::TemporalGrid) = Base.show(io, tg)
 Base.show(io::IO, ::MIME"text/html", tg::TemporalGrid) = Base.show(io, tg)
+
+_to_AbstractGrid(grid::AbstractGrid, dtype) = grid, false # do nothing if already AbstractGrid
+function _to_AbstractGrid(grid::AbstractVector, dtype)
+    # convert grid into AbstractGrid
+    rev = issorted(grid, rev=true)
+    if rev
+        grid = reverse(grid)
+    end
+    grid = SimpleG.Arbitrary{dtype}(dtype.(grid))
+    return grid, rev
+end

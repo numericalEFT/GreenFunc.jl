@@ -62,11 +62,14 @@ function ImFreq(β, isFermi::Bool=false;
         grid = SimpleG.Arbitrary{Int}(dlr.n)
         rev = false
     elseif (grid isa AbstractVector)
-        rev = issorted(grid, rev=true)
-        if rev
-            grid = reverse(grid)
-        end
-        grid = SimpleG.Arbitrary{Int}(Int.(grid))
+        # if !(grid isa AbstractGrid)
+        #     rev = issorted(grid, rev=true)
+        #     if rev
+        #         grid = reverse(grid)
+        #     end
+        #     grid = SimpleG.Arbitrary{Int}(Int.(grid))
+        # end
+        grid, rev = _to_AbstractGrid(grid, Int)
     else
         error("Proper grid or basis are required.")
     end
