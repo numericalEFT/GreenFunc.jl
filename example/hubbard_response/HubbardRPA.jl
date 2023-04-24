@@ -13,6 +13,8 @@ export hubbard_rpa, save_hubbard_rpa_list, load_hubbard_rpa_list
 
 # load python script(import from file not allowed in PythonCall)
 
+println("HubbardRPA.jl start")
+
 f = open("./example/hubbard_response/tprf_rpa.py", "r")
 # exec python script
 pyexec(read(f, String), Main)
@@ -21,10 +23,10 @@ gamma_rpa = pyeval(Py, "gamma_rpa", Main)
 @with_kw struct Para
     norb::Int = 1
     t::Float64 = 1.0
-    nk::Int = 32
+    nk::Int = 16
     dim::Int = 2
-    beta::Float64 = 10.0
-    nw::Int = 100
+    beta::Float64 = 5.0
+    nw::Int = 50
     mu::Float64 = 0.0
     U::Float64 = 1.0
 end
@@ -68,4 +70,5 @@ function load_hubbard_rpa_list(;
     end
 end
 
+println("HubbardRPA.jl end")
 end

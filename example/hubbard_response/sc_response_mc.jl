@@ -21,12 +21,14 @@ function integrand(vars, config)
     #### instant R = instant W0 * G * G * (instant R + dynamic R) ############
     instant = green(k, t1, t3) * dynamicR(k, t3, t4) * green(k, t4, t1)
     instant += green(k, t1, t3) * bareR(k) * green(k, t3, t1) / beta
+    instant = instant + green(k, t1, t3) * green(k, t3, t1) / beta
     # both t3 and t4 will be integrated over, but bareR doesn't depend on t3, t4. So one must divide by beta
     instant *= bareW0(q)
 
     #### dynamic R = dynamic W0 * G * G * (instant R + dynamic R) ############
     dynamic = green(k, t1, t3) * dynamicR(k, t3, t4) * green(k, t4, t2)
     dynamic += green(k, t1, t3) * bareR(k) * green(k, t3, t2) / beta
+    dynamic = dynamic + green(k, t1, t3) * green(k, t3, t2) / beta
     dynamic *= dynamicW0(q, t1, t2)
 
     return instant, dynamic
@@ -47,15 +49,17 @@ function PPver(;
     para::HubbardRPA.Para=para,
     kwargs...)
     HubbardRPA.@unpack t, nk, dim, beta, U = para
+    nkf = Base.floor(Int, nk / 2 + 1)
 
     Euv = 4t
 
-    kmesh = ga_w.mesh[5]
+    kmesh = rdyn.mesh[1]
 
     ##### prepare external K grid and tau grid ##############
     extKgrid = [(k[1], k[2]) for k in kmesh]
-    extTgrid = CompositeGrid.LogDensedGrid(:uniform, [0.0, beta], [0.0, beta], 8, 1 / Euv, 8) #roughly ~100 points if resolution = β/128
-
+    # extTgrid = CompositeGrid.LogDensedGrid(:uniform, [0.0, beta], [0.0, beta], 8, 1 / Euv, 8) #roughly ~100 points if resolution = β/128
+    extTgrid = rdyn.mesh[2]
+    println(extTgrid)
     nt = length(extTgrid)
 
     latvec = 1.0 * π
@@ -72,6 +76,7 @@ function PPver(;
     # there are only 2 time variables (T[3], T[4]), while T[1] and T[2] are fixed to 0.0 and the external time
 
     obs = [zeros(Float64, nk * nk), zeros(Float64, nk * nk, nt)] # instant R and dynamic R
+    # obs = [r0.data, rdyn.data]
 
     if isnothing(config)
         config = Configuration(;
@@ -86,6 +91,11 @@ function PPver(;
     end
 
     result = integrate(integrand; config=config, measure=measure, print=print, neval=neval, kwargs...)
+    # for i in 1:9
+    #     r0.data .= result.mean[1]
+    #     rdyn.data .= result.mean[2]
+    #     result = integrate(integrand; config=config, measure=measure, print=print, neval=neval, kwargs...)
+    # end
     # # result = integrate(integrandKW; config=config, print=print, neval=neval, kwargs...)
     # # niter=niter, print=print, block=block, kwargs...)
 
@@ -93,7 +103,7 @@ function PPver(;
 
         if print >= -1
             report(result.config)
-            println(report(result, pick=o -> first(o)))
+            println(report(result, pick=o -> o[nkf]))#irst(o)))
             println(result)
         end
         if print >= -2
@@ -110,6 +120,8 @@ function PPver(;
             # datadict[partition[o]] = data
             datadict[o] = data
         end
+        r0.data .= result.mean[1]
+        rdyn.data .= result.mean[2]
         return datadict, result
     else
         return nothing, nothing
@@ -119,4 +131,11 @@ end
 
 # solve linear response function and compute Tc 
 
-PPver(neval=1e6)
+datadict, result = PPver(neval=1e6)
+rdyn_freq = rdyn |> to_dlr |> dlr_to_imfreq
+println(r0.data[1:16])
+println(r0.data[129:144])
+println(rdyn.data[1, :])
+println(rdyn.data[9, :])
+# println(rdyn_freq.data[9, :])
+println("1/Δ0 = ", 1 / (1.0 + r0.data[9] + rdyn_freq.data[9, 1]))
