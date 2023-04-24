@@ -177,4 +177,46 @@
         end
         @test volume(tg2) ≈ sum(volume(tg2, i) for i in 1:length(tg2))
     end
+
+    @testset "CompositeGrids and BrillouinZoneMeshes" begin
+        # test availability of imported package
+
+        # CompositeGrids
+        N1 = 7
+        mesh1 = MeshGrids.SimpleGrid.Uniform{Float64}([0.0, 1.0], N1)
+        for (i, x) in enumerate(mesh1)
+            @test MeshGrids.locate(mesh1, x) == i
+        end
+        @test MeshGrids.volume(mesh1) ≈ sum(MeshGrids.volume(mesh1, i) for i in 1:length(mesh1))
+
+        # test if CompositeGrid could be handled correctly
+        β = 1.0
+        # ImTime
+        mesh1 = [0.0, 0.5β, β]
+        mesh2 = MeshGrids.CompositeGrid.LogDensedGrid(:cheb, [0.0, β], [0.0, β], 4, 0.01, 4)
+        itm1 = MeshGrids.ImTime(β; grid=mesh1)
+        itm2 = MeshGrids.ImTime(β; grid=mesh2)
+        @test itm1.grid isa AbstractGrid
+        @test itm2.grid isa AbstractGrid
+        @test itm2.grid == mesh2 # type of mesh2 should be preserved
+
+        # ImFreq
+        mesh1 = [1, 2, 3]
+        mesh2 = MeshGrids.SimpleGrid.Arbitrary{Int}([1, 2, 3, 4])
+        ifm1 = MeshGrids.ImFreq(β; grid=mesh1)
+        ifm2 = MeshGrids.ImFreq(β; grid=mesh2)
+        @test ifm1.grid isa AbstractGrid
+        @test ifm2.grid isa AbstractGrid
+        @test ifm2.grid == mesh2 # type of mesh2 should be preserved
+
+        # BrillouinZoneMeshes
+        lattice = Matrix([2.0 0 0; 1 sqrt(3) 0; 7 11 19]')
+        msize = (3, 5, 7)
+        br = MeshGrids.BZMeshes.Cell(lattice=lattice)
+        mesh2 = MeshGrids.BZMeshes.UniformBZMesh(cell=br, size=msize)
+        for (i, x) in enumerate(mesh2)
+            @test MeshGrids.locate(mesh2, x) == i
+        end
+        @test MeshGrids.volume(mesh2) ≈ sum(MeshGrids.volume(mesh2, i) for i in 1:length(mesh2))
+    end
 end

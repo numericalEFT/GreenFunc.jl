@@ -75,8 +75,9 @@ The momentum is defined on the first Brillouin zone captured by a 2D k-mesh.
     using GreenFunc: BrillouinZoneMeshes
 
     DIM, nk = 2, 8
-    latvec = [1.0 0.0; 0.0 1.0] .* 2π
-    bzmesh = BrillouinZoneMeshes.BaseMesh.UniformMesh{DIM, nk}([0.0, 0.0], latvec)
+    lattice = Matrix([1.0 0; 0 1]')
+    br = BrillouinZoneMeshes.BZMeshes.Cell(lattice=lattice)
+    bzmesh = BrillouinZoneMeshes.BZMeshes.UniformBZMesh(cell=br, size=(nk, nk))
     ωₙmesh = ImFreq(10.0, FERMION)
     g_freq =  MeshArray(bzmesh, ωₙmesh; dtype=ComplexF64)
 
