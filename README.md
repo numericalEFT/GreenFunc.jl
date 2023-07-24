@@ -7,7 +7,7 @@
 [![Build Status](https://github.com/numericalEFT/GreenFunc.jl/actions/workflows/CI.yml/badge.svg?branch=master)](https://github.com/numericalEFT/GreenFunc.jl/actions/workflows/CI.yml?query=branch%3Amaster)
 [![Coverage](https://codecov.io/gh/numericalEFT/GreenFunc.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/numericalEFT/GreenFunc.jl)
 
-GreenFunc.jl is a differentiable numerical framework to manipulate multidimensional Green's functions.
+GreenFunc.jl is a numerical framework to manipulate multidimensional Green's functions.
 
 ## Features
  - `MeshArray` type as an array defined on meshes, which provides a generic data structure for Green's functions, vertex functions or any other correlation/response functions.
