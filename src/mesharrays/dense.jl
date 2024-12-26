@@ -204,10 +204,8 @@ end
 # end
 
 function Base.show(io::IO, obj::MeshArray)
-    print(io, "Meshed array with dims = $(obj.dims) and total length = $(length(obj.data))\n"
-              *
-              "- Mesh: $(typeof(obj.mesh)) \n"
-    )
+    print(io, "Meshed array with dims = $(obj.dims) and total length = $(length(obj.data))\n",
+              "- Mesh: $(typeof(obj.mesh)) \n")
 end
 
 Base.show(io::IO, ::MIME"text/plain", obj::MeshArray) = Base.show(io, obj)
