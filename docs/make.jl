@@ -1,12 +1,13 @@
 using GreenFunc
 using Documenter
+using Documenter.Remotes: GitHub
 
 DocMeta.setdocmeta!(GreenFunc, :DocTestSetup, :(using GreenFunc); recursive=true)
 
 makedocs(;
     modules=[GreenFunc],
     authors="Kun Chen, Tao Wang, Xiansheng Cai, PengCheng Hou, and Zhiyi Li",
-    repo="https://github.com/numericaleft/GreenFunc.jl/blob/{commit}{path}#{line}",
+    repo=GitHub("numericaleft/GreenFunc.jl"),
     sitename="GreenFunc.jl",
     format=Documenter.HTML(;
         prettyurls=get(ENV, "CI", "false") == "true",
