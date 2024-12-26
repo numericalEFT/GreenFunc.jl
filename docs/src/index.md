@@ -22,7 +22,11 @@ GreenFunc.jl is a differentiable numerical framework to manipulate multidimensio
  - Interface to the [`TRIQS`](https://triqs.github.io/) library.
  
 ## Installation
-This package has been registered. So, simply type `import Pkg; Pkg.add("GreenFunc")` in the Julia REPL to install.
+This package has been registered. So, simply type
+```julia
+import Pkg; Pkg.add("GreenFunc")
+```
+in the Julia REPL to install.
 
 ## Basic Usage
 
