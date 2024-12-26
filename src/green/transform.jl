@@ -88,7 +88,9 @@ DLR Fourier transform of functions on the first temporal grid (`ImTime`, `ImFreq
 function Base.:<<(objL::MeshArray{T,N,MT1}, objR::MeshArray{T,N,MT2}) where {T,N,MT1,MT2}
     dimL = _find_mesh(MT1, ImTime, ImFreq, DLRFreq)
     dimR = _find_mesh(MT2, ImTime, ImFreq, DLRFreq)
-    @assert dimL == dimR "The temporal dimensions should be identical for source and target MeshArrays."
+    if dimL != dimR
+        throw(DimensionMismatch("The temporal dimensions should be identical for source and target MeshArrays."))
+    end
 
     typeL = typeof(objL.mesh[dimL])
     typeR = typeof(objR.mesh[dimR])
