@@ -78,4 +78,12 @@ end
 
 Write a text representation of the DLR grid `tg` to the output stream `io`.
 """
-Base.show(io::IO, tg::DLRFreq) = print(io, "DLR frequency grid with $(length(tg)) points, inverse temperature = $(tg.β), UV Energy scale = $(tg.Euv), rtol = $(tg.rtol), sym = $(tg.symmetry), fermionic = $(tg.isFermi): $(_grid(tg.grid))")
+Base.show(io::IO, tg::DLRFreq) = print(
+    io,
+    "DLR frequency grid with ",
+    length(tg), " points, inverse temperature = ", tg.β,
+    ", UV Energy scale = ", tg.Euv,
+    ", rtol = ", tg.rtol,
+    ", sym = ", tg.symmetry,
+    ", fermionic = ", tg.isFermi, ": ", _grid(tg.grid)
+)

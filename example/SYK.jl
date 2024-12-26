@@ -1,23 +1,27 @@
 """
 A SYK model solver based on a forward fixed-point iteration method.
 
- The self-energy of the SYK model is given by,
+The self-energy of the SYK model is given by,
 
-    Σ(τ) = J² * G(τ) * G(τ) * G(β-τ),
+```math
+Σ(τ) = J² * G(τ) * G(τ) * G(β-τ),
+```
     
- where Green's function of the SYK model is given by the Dyson equation,
+where Green's function of the SYK model is given by the Dyson equation,
 
-    G(iωₙ) = -1/(iωₙ -μ + Σ(iωₙ))
+```math
+G(iωₙ) = -1/(iωₙ -μ + Σ(iωₙ))
+```
 
- We solve the Dyson equation self-consistently by a weighted fixed point iteration, 
- with weight `mix` assigned to the new iterate and weight `1-mix` assigned to the previous iterate. 
+We solve the Dyson equation self-consistently by a weighted fixed point iteration,
+with weight `mix` assigned to the new iterate and weight `1-mix` assigned to the previous iterate.
 
- The self-energy is evaluated in the imaginary time domain, 
- and the Dyson equation is solved in the Matsubara frequency domain.
+The self-energy is evaluated in the imaginary time domain,
+and the Dyson equation is solved in the Matsubara frequency domain.
 
- The SYK Green's function has particle-hole symmetry when μ=0. 
- You may enforce such symmetry by setting `symmetry = :ph` when initialize the DLR grids.
- A symmetrized solver tends to be more robust than a unsymmetrized one.
+The SYK Green's function has particle-hole symmetry when μ=0.
+You may enforce such symmetry by setting `symmetry = :ph` when initialize the DLR grids.
+A symmetrized solver tends to be more robust than a unsymmetrized one.
 """
 
 using GreenFunc
@@ -76,4 +80,3 @@ for (i, t) in enumerate(G.mesh[1])
     @printf("%15.8f%40.15f%40.15f%40.15f\n", t, imag(G[i]), real(G[i]), conformal_tau(t, β))
 end
 println()
-

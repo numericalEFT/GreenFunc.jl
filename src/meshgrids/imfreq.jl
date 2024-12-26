@@ -7,7 +7,7 @@ Imaginary-frequency grid for Green's functions.
 - `T<:Real`: type of the `grid` point, `β` and `Euv`.
 - `G<:AbstractGrid{T}`: type of 1D grid with `T` as the grid point type.
 - `R`: type of the representation.
-- REV: access the grid in reverse order or not.
+- `REV`: access the grid in reverse order or not.
 
 # Members
 - `grid`: 1D grid of time axis, with locate, volume, and AbstractArray interface implemented. Always in ascend order
@@ -80,7 +80,10 @@ function ImFreq(β, isFermi::Bool=false;
 end
 
 """
-    function ImFreq(dlr::DLRGrid; dtype=Float64, grid::Union{AbstractGrid,AbstractVector}=SimpleG.Arbitrary{Int}(dlr.n))
+    function ImFreq(dlr::DLRGrid;
+        dtype=Float64,
+        grid::Union{AbstractGrid,AbstractVector}=SimpleG.Arbitrary{Int}(dlr.n)
+    )
 
 Construct `ImFreq` from a `DLRGrid`, with a given `grid`. By default, `grid` is the Matsubara-frequency points from `DLRGrid`.
 """
@@ -92,7 +95,7 @@ function ImFreq(dlr::DLRGrid;
     if rev
         grid = reverse(grid)
     end
-    if (grid isa AbstractGrid) == false
+    if !(grid isa AbstractGrid)
         grid = SimpleG.Arbitrary{Int}(grid)
     end
     @assert eltype(grid) <: Int "Matsubara-frequency grid should be Int."
@@ -111,10 +114,10 @@ matfreq(tg::ImFreq{T,G,R,true}) where {T,G,R} = [int_to_matfreq(tg, n) for n in 
 """
     getindex(g::ImFreq{T, G, R, REV}, I::Int)
 
-Equivalent to `g[I]`, get the __real-valued__ Matsubara frequency of the Ith point in the grid. 
-For fermion, return (2g[I]+1)π/β, for boson, return 2g[I]*π/β.
+Equivalent to `g[I]`, get the __real-valued__ Matsubara frequency of the `I`th point in the grid.
+For fermion, return `(2g[I]+1)π/β`, for boson, return `2g[I]*π/β`.
 
-If REV = true, then index in the reversed order, namely I will be replaced with `length(g) - I + 1`.
+If `REV` = `true`, then index in the reversed order, namely I will be replaced with `length(g) - I + 1`.
 
 If you need the __integer-valued__ frequency, use `g.grid[I]` instead.
 """
