@@ -80,7 +80,10 @@ function ImFreq(β, isFermi::Bool=false;
 end
 
 """
-    function ImFreq(dlr::DLRGrid; dtype=Float64, grid::Union{AbstractGrid,AbstractVector}=SimpleG.Arbitrary{Int}(dlr.n))
+    function ImFreq(dlr::DLRGrid;
+        dtype=Float64,
+        grid::Union{AbstractGrid,AbstractVector}=SimpleG.Arbitrary{Int}(dlr.n)
+    )
 
 Construct `ImFreq` from a `DLRGrid`, with a given `grid`. By default, `grid` is the Matsubara-frequency points from `DLRGrid`.
 """

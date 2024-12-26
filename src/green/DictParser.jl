@@ -3,7 +3,7 @@ module DictParser
 export evalwithdict
 
 """
-evalwithdict(e::Union{Expr,Symbol,Number}, map::Dict{Symbol,Number})
+    evalwithdict(e::Union{Expr,Symbol,Number}, map::Dict{Symbol,Number})
 
 Evaluate the result produced by Meta.parse, looking up the values of
 user-defined variables in "map". Argument "e" is a Union, because

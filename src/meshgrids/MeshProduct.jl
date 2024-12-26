@@ -151,7 +151,9 @@ Base.show(io::IO, obj::MeshProduct) = print(io, "MeshProduct of: $(obj.meshes)")
 
 
 """
- All meshes in meshes should have locate and volume functions. Here in meshproduct we just delegate these functions to the meshes, and return the proper array of returned values.
+All meshes in meshes should have locate and volume functions. Here in
+meshproduct we just delegate these functions to the meshes, and return the
+proper array of returned values.
 """
 # function locate(obj::MeshProduct, index...)
 #     return Tuple(locate(obj, index[mi]) for (mi, m) in enumerate(obj))

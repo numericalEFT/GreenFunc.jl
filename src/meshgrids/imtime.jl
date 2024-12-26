@@ -81,7 +81,9 @@ function ImTime(β, isFermi::Bool=false;
 end
 
 """
-    function ImTime(dlr::DLRGrid; dtype=Float64, grid::Union{AbstractGrid,AbstractVector}=SimpleG.Arbitrary{dtype}(dlr.τ))
+    function ImTime(dlr::DLRGrid;
+                    dtype=Float64,
+                    grid::Union{AbstractGrid,AbstractVector}=SimpleG.Arbitrary{dtype}(dlr.τ))
 
 Construct `ImTime` from a `DLRGrid`, with a given `grid`. By default, `grid` is the imaginary-time grid points from `DLRGrid`.
 """
