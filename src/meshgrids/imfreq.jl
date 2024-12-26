@@ -95,7 +95,7 @@ function ImFreq(dlr::DLRGrid;
     if rev
         grid = reverse(grid)
     end
-    if (grid isa AbstractGrid) == false
+    if !(grid isa AbstractGrid)
         grid = SimpleG.Arbitrary{Int}(grid)
     end
     @assert eltype(grid) <: Int "Matsubara-frequency grid should be Int."
