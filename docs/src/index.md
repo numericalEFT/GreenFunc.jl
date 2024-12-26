@@ -53,7 +53,7 @@ end
 
 ### Example 2: Green's function of a free electron gas
 
-Now let us show how to create a Green's function of a free electron gas. Unlike the spinless fermionic particle, the electron is a spin-1/2 particle so that it has two inner states. In free space, it has a kinetic energy $ϵ_q = q^2-E$ (we use the unit where $m_e = 1/2$). The Green's function in Matsubara-frequency space is then given by the following equation: $G_n = G_{\sigma_1, \sigma_2}(q,\omega_n) = \frac{1}{i \omega_n - \epsilon_q}$, where $\sigma_i$ denotes the spins of the incoming and the outgoing electron in the propagator. We inherit the Matsubara-frequency grid from the first example. We show how to use the `CompositeGrids` package to generate momentum grids and how to treat the multiple inner states and the meshes with `MeshArray`.
+Now let us show how to create a Green's function of a free electron gas. Unlike the spinless fermionic particle, the electron is a spin-1/2 particle so that it has two inner states. In free space, it has a kinetic energy ``ϵ_q = q^2-E`` (we use the unit where ``m_e = 1/2``). The Green's function in Matsubara-frequency space is then given by the following equation: ``G_n = G_{\sigma_1, \sigma_2}(q,\omega_n) = \frac{1}{i \omega_n - \epsilon_q}``, where ``\sigma_i`` denotes the spins of the incoming and the outgoing electron in the propagator. We inherit the Matsubara-frequency grid from the first example. We show how to use the `CompositeGrids` package to generate momentum grids and how to treat the multiple inner states and the meshes with `MeshArray`.
 ```julia
 using GreenFunc, CompositeGrids
 
@@ -78,8 +78,8 @@ end
 
 ### Example 3: Green's function of a Hubbard lattice
 
-Now we show how to generate a multi-dimensional Green's function on a Brillouin Zone meshe. We calculate the Green's function of a free spinless Fermi gas on a square lattice. It has a tight-binding dispersion $\epsilon_q = -2t(\cos(q_x)+\cos(q_y))$, which gives
-$G(q, \omega_n) = \frac{1}{i\omega_n - \epsilon_q}$.
+Now we show how to generate a multi-dimensional Green's function on a Brillouin Zone meshe. We calculate the Green's function of a free spinless Fermi gas on a square lattice. It has a tight-binding dispersion ``\epsilon_q = -2t(\cos(q_x)+\cos(q_y))``, which gives
+``G(q, \omega_n) = \frac{1}{i\omega_n - \epsilon_q}``.
 The momentum is defined on the first Brillouin zone captured by a 2D k-mesh.
 
 ```julia
@@ -128,7 +128,7 @@ G_tau = to_imtime(G_dlr) # convert G_dlr to the imaginary-time domain
 G_tau = G_n |> to_dlr |> to_imtime #Fourier transform to (k, tau) domain
 
 ```
-The imaginary-time Green's function after the Fourier transform shoud be consistent with the analytic solution $G_{\tau} = -e^{-\tau \epsilon_q}/(1+e^{-\beta \epsilon_q})$.
+The imaginary-time Green's function after the Fourier transform shoud be consistent with the analytic solution ``G_{\tau} = -e^{-\tau \epsilon_q}/(1+e^{-\beta \epsilon_q})``.
 
 - For any Green's function that has at least one imaginary-temporal grid (`ImTime`, `ImFreq`, and `DLRFreq`) in meshes, we provide a set of operations (`to_dlr`, `to_imfreq` and `to_imtime`) to bridge the DLR space with imaginary-time and Matsubara-frequency space. By default, all these functions find the dimension of the imaginary-temporal mesh within Green's function meshes and perform the transformation with respect to it. Alternatively, one can specify the dimension with the optional keyword argument `dim`. Be careful that the original version of DLR is only guaranteed to work with one-body Green's function.
 

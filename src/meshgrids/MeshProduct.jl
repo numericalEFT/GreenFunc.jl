@@ -1,17 +1,20 @@
 """
-Cartisian product of 1 dimensional meshes 
+Cartesian product of 1 dimensional meshes
 """
 
 """
-The cartesian Mesh product:
+    MeshProduct{MT,N}
+    MeshProduct(vargs...)
 
-#Parameters:
-- 'MT': Type of meshes 
-- 'N' : Number of meshes
+The Cartesian Mesh product:
 
-#Members:
-- 'meshes' : The list of Meshes in the MeshProduct
-- 'dims' : A tuple of the length of the mesh factors
+# Parameters:
+- `MT`: Type of meshes
+- `N` : Number of meshes
+
+# Members:
+- `meshes`: The list of Meshes in the MeshProduct
+- `dims`: A tuple of the length of the mesh factors
 """
 struct MeshProduct{MT,N}
     meshes::MT
@@ -33,13 +36,13 @@ Base.length(obj::MeshProduct) = reduce(*, obj.dims)
 
 """
     function Base.size(obj::MeshProduct, I::Int)
-Return the length of the specifict Ith mesh factor of the MeshProduct.
+Return the length of the specific `I`th mesh factor of the MeshProduct.
 """
 Base.size(obj::MeshProduct, I::Int) = obj.dims[I]
 
 """
     function Base.size(obj::MeshProduct, I::Int)
-Return the length of the specifict Ith mesh factor of the MeshProduct.
+Return the length of the specific `I`th mesh factor of the MeshProduct.
 """
 Base.size(obj::MeshProduct) = obj.dims
 
@@ -56,8 +59,8 @@ Base.eachindex(obj::MeshProduct) = Base.eachindex(obj.meshes)
 Convert a tuple of the indexes of each mesh to a single linear index of the MeshProduct.
 
 # Argument:
-- 'obj': The MeshProduct object
-- 'index...': N indexes of the mesh factor, where N is the number of mesh factor
+- `obj`: The MeshProduct object
+- `index...`: N indexes of the mesh factor, where N is the number of mesh factor
 """
 @generated function index_to_linear(obj::MeshProduct{MT,N}, I...) where {MT,N}
     ex = :(I[$N] - 1)
@@ -80,8 +83,8 @@ end
 Convert the single linear index of the MeshProduct to a tuple of indexes of each mesh. 
 
 # Argument:
-- 'obj': The MeshProduct object
-- 'I': The linear index of the MeshProduct 
+- `obj`: The MeshProduct object
+- `I`: The linear index of the MeshProduct
 """
 @generated function linear_to_index(obj::MeshProduct{MT,N}, I::Int) where {MT,N}
     inds, quotient = :((I - 1) % obj.dims[1] + 1), :((I - 1) ÷ obj.dims[1])

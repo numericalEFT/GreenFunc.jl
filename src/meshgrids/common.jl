@@ -37,7 +37,7 @@ locate(tg::TemporalGrid{T,true}, pos) where {T} = length(tg) - locate(tg.grid, p
 If the grid is in ascend order, then floor returns the largest index that the grid point is smaller than pos.
 If the grid is in descend order, then floor returns the largest index that the grid point is larger than pos.
 
-In both cases, the returned index is in the range [1, length(tg)-1]
+In both cases, the returned index is in the range `[1, length(tg)-1]`
 """
 Base.floor(tg::TemporalGrid{T,false}, pos) where {T} = floor(tg.grid, pos) #TODO: how to implement?
 Base.floor(tg::TemporalGrid{T,true}, pos) where {T} = length(tg) - floor(tg.grid, pos) #TODO: how to implement?

@@ -78,12 +78,12 @@ end
 """
     Base.:<<(objL::MeshArray, objR::MeshArray)
 
-DLR Fourier transform of functions on the first temporal grid (ImTime, ImFreq or DLRFreq). 
+DLR Fourier transform of functions on the first temporal grid (`ImTime`, `ImFreq`, or `DLRFreq`).
 
-- If objL and objR have identical temporal grid, objL<<objR assign objR to objL.
-- If objL and objR have different temporal grid, one of them has to be in DLR space.
-    * If objL is in DLR space, objL<<objR calculates the DLR spectral density of data in objR
-    * if objR is in DLR space, objL<<objR calculates the Green's function from the DLR spectral density in objR.
+- If `objL` and `objR` have identical temporal grid, `objL<<objR` assigns `objR` to `objL`.
+- If `objL` and `objR` have different temporal grid, one of them has to be in DLR space.
+    * If `objL` is in DLR space, `objL<<objR` calculates the DLR spectral density of data in `objR`
+    * if `objR` is in DLR space, `objL<<objR` calculates the Green's function from the DLR spectral density in `objR`.
 """
 function Base.:<<(objL::MeshArray{T,N,MT1}, objR::MeshArray{T,N,MT2}) where {T,N,MT1,MT2}
     dimL = _find_mesh(MT1, ImTime, ImFreq, DLRFreq)
@@ -110,10 +110,10 @@ _transform(data, meshL::ImTime, meshR::DLRFreq, axis) = dlr2tau(meshR.dlr, data,
     function dlr_to_imfreq(mesharray[, tgrid; dim])
 
 Transform a Green's function in DLR to the imaginary-time domain. 
-#Arguements
-- 'mesharray': MeshArray in DLR space
+# Arguments
+- `mesharray`: MeshArray in DLR space
 - `tgrid`: The imaginary-time grid which the function transforms into. Default value is the imaginary-time grid from the `DLRGrid` from `mesharray.mesh[dim]`.
-- `dim`: The dimension of the temporal mesh. Default value is the first ImTime mesh.
+- `dim`: The dimension of the temporal mesh. Default value is the first `ImTime` mesh.
 """
 function dlr_to_imtime(obj::MeshArray{T,N,MT},
     tgrid::Union{Nothing,AbstractGrid,AbstractVector,ImFreq}=nothing;
@@ -145,10 +145,10 @@ end
     function dlr_to_imfreq(mesharray[, ngrid; dim])
 
 Transform a Green's function in DLR to Matsubara frequency domain. 
-#Arguements
-- 'mesharray': MeshArray in DLR space
+# Arguments
+- `mesharray`: MeshArray in DLR space
 - `ngrid`: The Matsubara-frequency grid which the function transforms into. Default value is the Matsubara-frequency grid from the `DLRGrid` from `mesharray.mesh[dim]`.
-- `dim`: The dimension of the temporal mesh. Default value is the first ImFreq mesh.
+- `dim`: The dimension of the temporal mesh. Default value is the first `ImFreq` mesh.
 """
 # function dlr_to_imfreq(obj::MeshArray{T,N,MT}, ngrid=nothing; dim::Union{Nothing,Int}=nothing) where {T,N,MT}
 function dlr_to_imfreq(obj::MeshArray{T,N,MT},
@@ -185,9 +185,9 @@ end
 """
     function imfreq_to_dlr(mesharray[; dim])
 
-Calculate the DLR sepctral density of a Matsubara-frequency Green's function.
-#Arguements
-- 'mesharray': MeshArray in the Matsubara-frequency domain.
+Calculate the DLR spectral density of a Matsubara-frequency Green's function.
+# Arguments
+- `mesharray`: MeshArray in the Matsubara-frequency domain.
 - `dim`: The dimension of the mesh to be transformed. Default value is the first dimension with mesh type ImFreq.
 """
 function imfreq_to_dlr(obj::MeshArray{T,N,MT}; dim::Int=_find_mesh(MT, ImFreq)) where {T,N,MT}
@@ -212,11 +212,11 @@ end
 """
     function imtime_to_dlr(mesharray[; dim])
 
-Calculate the DLR sepctral density of an imaginary-time Green's function.
+Calculate the DLR spectral density of an imaginary-time Green's function.
 
-#Arguements
-- 'mesharray': MeshArray in the imaginary-time domain.
-- `dim`: The dimension of the mesh to be transformed. Default value is the first dimension with mesh type ImTime.
+# Arguments
+- `mesharray`: MeshArray in the imaginary-time domain.
+- `dim`: The dimension of the mesh to be transformed. Default value is the first dimension with mesh type `ImTime`.
 """
 function imtime_to_dlr(obj::MeshArray{T,N,MT}; dim::Int=_find_mesh(MT, ImTime)) where {T,N,MT}
     @assert dim > 0 "No temporal can be transformed to dlr."
@@ -243,11 +243,12 @@ end
 """
     function to_dlr(mesharray[; dim])
 
-Calculate the DLR sepctral density of an imaginary-time or Matsubara-frequency Green's function.
+Calculate the DLR spectral density of an imaginary-time or Matsubara-frequency Green's function.
 
-#Arguements
-- 'mesharray': MeshArray in the imaginary-time or the Matsubara-frequency domain.
-- `dim`: The dimension of the mesh to be transformed. Default value is the first dimension with mesh type ImTime or ImFreq.
+# Arguments
+- `mesharray`: MeshArray in the imaginary-time or the Matsubara-frequency domain.
+- `dim`: The dimension of the mesh to be transformed.
+  Default value is the first dimension with mesh type `ImTime` or `ImFreq`.
 """
 function to_dlr(obj::MeshArray{T,N,MT};
     dim::Int=_find_mesh(MT, ImTime, ImFreq)
@@ -269,9 +270,10 @@ end
 
 Transform a Green's function to the imaginary-time domain.
 
-#Arguements
-- 'mesharray': MeshArray in the imaginary-time, the Matsubara-frequency or the DLR frequency domain.
-- `dim`: The dimension of the mesh to be transformed. Default value is the first dimension with mesh type DLRFreq, ImTime or ImFreq.
+# Arguments
+- `mesharray`: MeshArray in the imaginary-time, the Matsubara-frequency or the DLR frequency domain.
+- `dim`: The dimension of the mesh to be transformed.
+  Default value is the first dimension with mesh type `DLRFreq`, `ImTime` or `ImFreq`.
 """
 function to_imtime(obj::MeshArray{T,N,MT};
     dim::Int=_find_mesh(MT, ImTime, ImFreq, DLRFreq)
@@ -291,9 +293,10 @@ end
 
 Transform a Green's function to the Matsubara-frequency domain.
 
-#Arguements
-- 'mesharray': MeshArray in the imaginary-time, the Matsubara-frequency or the DLR frequency domain.
-- `dim`: The dimension of the mesh to be transformed. Default value is the first dimension with mesh type DLRFreq, ImTime or ImFreq.
+# Arguments
+- `mesharray`: MeshArray in the imaginary-time, the Matsubara-frequency or the DLR frequency domain.
+- `dim`: The dimension of the mesh to be transformed.
+  Default value is the first dimension with mesh type `DLRFreq`, `ImTime` or `ImFreq`.
 """
 function to_imfreq(obj::MeshArray{T,N,MT};
     dim::Int=_find_mesh(MT, ImTime, ImFreq, DLRFreq)
@@ -341,6 +344,7 @@ end
 #     return nothing
 # end
 
+# """
 # Return the single-particle density matrix of the Green's function `obj`.
 # """
 # function density(obj::MeshArray; kwargs...)
@@ -349,12 +353,12 @@ end
 # end
 
 #rMatrix transform of the target space of a matrix valued Greens function.
-#Sets the current Greens function :math:`g_{ab}` to the matrix transform of :math:`G_{cd}`
-#using the left and right transform matrices :math:`L_{ac}` and :math:`R_{db}`.
-#.. math::
+#Sets the current Greens function :math:`g_{ab}` to the matrix transform of ``G_{cd}``
+#using the left and right transform matrices ``L_{ac}`` and ``R_{db}``.
+#```math
 #g_{ab} = \sum_{cd} L_{ac} G_{cd} R_{db}
-
-
+#```
+#
 # """
 #     def from_L_G_R(self, L, G, R):
 #         Parameters

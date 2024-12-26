@@ -7,23 +7,23 @@ The mesh is stored in the field `mesh` and the data is stored in the field `data
 
 # Parameters:
 - `T`: type of data
-- `MT`: type of mesh, e.g., Tuple{MeshType1, MeshType2, ...}
+- `MT`: type of mesh, e.g., `Tuple{MeshType1, MeshType2, ...}`
 - `N`: number of dimensions
 
 # Members:
-- `mesh` (MT): the mesh is a tuple of meshes.  
+- `mesh` (`MT`): the mesh is a tuple of meshes.
    The mesh should be an iterable object that contains an ordered list of grid points. 
    Examples are the 
    1. Meshes defined in the `MeshGrids` module.
    2. UnitRange such as `1:10`, etc.
-   2. Product of meshes `MeshProduct` defined in the `MeshGrids` module.
+   3. Product of meshes `MeshProduct` defined in the `MeshGrids` module.
 
    If a mesh is defined on a continuous manifold and supports the following methods, then one can perform interpolation, derivatives, etc. on the mesh:
     - `locate(mesh, value)`: find the index of the closest grid point for given value;
     - `volume(mesh, index)`: find the volume of grid space near the point at griven index.
     - `volume(mesh, gridpoint)`: locate the corresponding index of a given grid point and than find the volume spanned by the grid point. 
 
-- `data`: Array{T,N}: the data.
+- `data` (`Array{T,N}`): the data.
 - `dims`: dimension of the data
 """
 struct MeshArray{T,N,MT} <: AbstractMeshArray{T,N}
@@ -154,7 +154,8 @@ function Base.similar(obj::MeshArray{T,N,MT}, ::Type{S}) where {T,MT,N,S}
     return MeshArray(mesh=obj.mesh, dtype=S, data=similar(obj.data, S))
 end
 Base.similar(obj::MeshArray{T,N,MT}) where {T,MT,N} = Base.similar(obj, T)
-#By default, the following functions will all call Base.similar(obj::MeshArray, ::Type{S}, inds) as explained in https://docs.julialang.org/en/v1/manual/interfaces/#man-interface-array
+#By default, the following functions will all call Base.similar(obj::MeshArray, ::Type{S}, inds)
+#as explained in https://docs.julialang.org/en/v1/manual/interfaces/#man-interface-array
 #`Base.similar(obj::MeshArray, ::Type{S}, inds)`: Return a slice of obj.data.
 #However, we don't want that since slice of GreeNew itself is not well defined with meshes.
 
@@ -269,4 +270,3 @@ function _check(objL::MeshArray, objR::MeshArray)
     # @assert objL.tgrid == objR.tgrid "Green's function time grids are not compatible:\n $(objL.tgrid)\nand\n $(objR.tgrid)"
     # @assert objL.mesh == objR.mesh "Green's function meshes are not compatible:\n $(objL.mesh)\nand\n $(objR.mesh)"
 end
-

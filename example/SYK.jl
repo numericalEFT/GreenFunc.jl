@@ -3,11 +3,15 @@ A SYK model solver based on a forward fixed-point iteration method.
 
 The self-energy of the SYK model is given by,
 
-    Σ(τ) = J² * G(τ) * G(τ) * G(β-τ),
+```math
+Σ(τ) = J² * G(τ) * G(τ) * G(β-τ),
+```
     
 where Green's function of the SYK model is given by the Dyson equation,
 
-    G(iωₙ) = -1/(iωₙ -μ + Σ(iωₙ))
+```math
+G(iωₙ) = -1/(iωₙ -μ + Σ(iωₙ))
+```
 
 We solve the Dyson equation self-consistently by a weighted fixed point iteration,
 with weight `mix` assigned to the new iterate and weight `1-mix` assigned to the previous iterate.
