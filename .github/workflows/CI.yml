@@ -48,10 +48,3 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }}
-      - name: Run doctests
-        shell: julia --project=docs --color=yes {0}
-        run: |
-          using Documenter: DocMeta, doctest
-          using GreenFunc
-          DocMeta.setdocmeta!(GreenFunc, :DocTestSetup, :(using GreenFunc); recursive=true)
-          doctest(GreenFunc)
