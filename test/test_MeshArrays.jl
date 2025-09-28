@@ -94,3 +94,97 @@ end
     g = MeshArray(mesh1, mesh1, mesh1, mesh1, mesh1, mesh1)
     @test isconcretetype(typeof(g.mesh))
 end
+
+@testset "MeshArray Type Stability Helpers (Issue #78)" begin
+    N1, N2 = 8, 6
+    mesh1 = SimpleGrid.Uniform{Float64}([0.0, 1.0], N1)
+    mesh2 = SimpleGrid.Uniform{Float64}([0.0, 1.0], N2)
+
+    mesh_tuple = (mesh1, mesh2)
+    stabilized = MeshArrays._stabilize_mesh_type(mesh_tuple)
+    @test isconcretetype(typeof(stabilized))
+    @test stabilized === mesh_tuple
+
+    # NOTE: Cannot test the non-concrete tuple branch (line 69 in dense.jl) because
+    # typeof() always returns the actual runtime type, which is concrete. The type
+    # annotation ::Tuple{Any, Any} does not change the actual type of the tuple.
+    # non_concrete_tuple = tuple(mesh1, mesh2)::Tuple{Any, Any}
+    # stabilized_non_concrete = MeshArrays._stabilize_mesh_type(non_concrete_tuple)
+    # @test isconcretetype(typeof(stabilized_non_concrete))
+
+    non_concrete_mesh = Any[mesh1, mesh2]
+    stabilized_from_vec = MeshArrays._stabilize_mesh_type(non_concrete_mesh)
+    @test isconcretetype(typeof(stabilized_from_vec))
+
+    data = rand(N1, N2)
+    result = MeshArrays._create_mesharray_typed(data, mesh_tuple, Float64, 2)
+    @test result isa MeshArray{Float64, 2}
+    @test result.data === data
+
+    data_float = ones(Float64, N1, N2)
+    result_same_type = MeshArrays._create_mesharray_typed(data_float, mesh_tuple, Float64, 2)
+    @test result_same_type isa MeshArray{Float64, 2}
+    @test result_same_type.data === data_float
+
+    data_int = ones(Int, N1, N2)
+    result_converted = MeshArrays._create_mesharray_typed(data_int, mesh_tuple, Float64, 2)
+    @test result_converted isa MeshArray{Float64, 2}
+    @test eltype(result_converted.data) == Float64
+
+    MT = typeof(mesh_tuple)
+    @test MeshArrays._infer_mesh_type(mesh_tuple) == MT
+end
+
+@testset "MeshArray Broadcast Type Stability" begin
+    N1, N2 = 10, 12
+    mesh1 = SimpleGrid.Uniform{Float64}([0.0, 1.0], N1)
+    mesh2 = SimpleGrid.Uniform{Float64}([0.0, 1.0], N2)
+
+    g1 = MeshArray(mesh1, mesh2; data=rand(N1, N2))
+    g2 = MeshArray(mesh1, mesh2; data=rand(N1, N2))
+
+    g3 = similar(g1)
+    g3 .= g1 .+ g2
+    @test g3.data ≈ g1.data .+ g2.data
+
+    g4 = similar(g1)
+    Base.copyto!(g4, Base.Broadcast.broadcasted(+, g1, g2))
+    @test g4.data ≈ g1.data .+ g2.data
+
+    indices = CartesianIndices(g1.data)
+    bcf = Base.Broadcast.flatten(Base.Broadcast.broadcasted(*, g1, 2.0))
+    g5 = similar(g1)
+    MeshArrays._copyto_typed!(g5, bcf, indices)
+    @test g5.data ≈ g1.data .* 2.0
+end
+
+@testset "MeshArray with AbstractVector mesh" begin
+    N1, N2 = 8, 6
+    mesh1 = SimpleGrid.Uniform{Float64}([0.0, 1.0], N1)
+    mesh2 = SimpleGrid.Uniform{Float64}([0.0, 1.0], N2)
+
+    mesh_vector = [mesh1, mesh2]
+    g = MeshArray(; mesh=mesh_vector, dtype=Float64)
+
+    @test size(g) == (N1, N2)
+    @test eltype(g.data) == Float64
+    @test isconcretetype(typeof(g.mesh))
+end
+
+@testset "MeshArray with type conversion" begin
+    N1, N2 = 8, 6
+    mesh1 = SimpleGrid.Uniform{Float64}([0.0, 1.0], N1)
+    mesh2 = SimpleGrid.Uniform{Float64}([0.0, 1.0], N2)
+
+    # Test dtype conversion from Int to Float64
+    data_int = ones(Int, N1, N2)
+    g1 = MeshArray(; mesh=(mesh1, mesh2), dtype=Float64, data=data_int)
+    @test eltype(g1.data) == Float64
+    @test g1.data ≈ ones(Float64, N1, N2)
+
+    # Test dtype conversion from Float64 to ComplexF64
+    data_float = ones(Float64, N1, N2)
+    g2 = MeshArray(mesh1, mesh2; dtype=ComplexF64, data=data_float)
+    @test eltype(g2.data) == ComplexF64
+    @test g2.data ≈ ones(ComplexF64, N1, N2)
+end
