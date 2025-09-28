@@ -105,6 +105,10 @@ end
     @test isconcretetype(typeof(stabilized))
     @test stabilized === mesh_tuple
 
+    non_concrete_tuple = tuple(mesh1, mesh2)::Tuple{Any, Any}
+    stabilized_non_concrete = MeshArrays._stabilize_mesh_type(non_concrete_tuple)
+    @test isconcretetype(typeof(stabilized_non_concrete))
+
     non_concrete_mesh = Any[mesh1, mesh2]
     stabilized_from_vec = MeshArrays._stabilize_mesh_type(non_concrete_mesh)
     @test isconcretetype(typeof(stabilized_from_vec))
@@ -113,6 +117,11 @@ end
     result = MeshArrays._create_mesharray_typed(data, mesh_tuple, Float64, 2)
     @test result isa MeshArray{Float64, 2}
     @test result.data === data
+
+    data_float = ones(Float64, N1, N2)
+    result_same_type = MeshArrays._create_mesharray_typed(data_float, mesh_tuple, Float64, 2)
+    @test result_same_type isa MeshArray{Float64, 2}
+    @test result_same_type.data === data_float
 
     data_int = ones(Int, N1, N2)
     result_converted = MeshArrays._create_mesharray_typed(data_int, mesh_tuple, Float64, 2)
