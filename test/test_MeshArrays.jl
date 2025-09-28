@@ -170,3 +170,21 @@ end
     @test eltype(g.data) == Float64
     @test isconcretetype(typeof(g.mesh))
 end
+
+@testset "MeshArray with type conversion" begin
+    N1, N2 = 8, 6
+    mesh1 = SimpleGrid.Uniform{Float64}([0.0, 1.0], N1)
+    mesh2 = SimpleGrid.Uniform{Float64}([0.0, 1.0], N2)
+
+    # Test dtype conversion from Int to Float64
+    data_int = ones(Int, N1, N2)
+    g1 = MeshArray(; mesh=(mesh1, mesh2), dtype=Float64, data=data_int)
+    @test eltype(g1.data) == Float64
+    @test g1.data ≈ ones(Float64, N1, N2)
+
+    # Test dtype conversion from Float64 to ComplexF64
+    data_float = ones(Float64, N1, N2)
+    g2 = MeshArray(mesh1, mesh2; dtype=ComplexF64, data=data_float)
+    @test eltype(g2.data) == ComplexF64
+    @test g2.data ≈ ones(ComplexF64, N1, N2)
+end
