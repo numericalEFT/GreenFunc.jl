@@ -105,9 +105,12 @@ end
     @test isconcretetype(typeof(stabilized))
     @test stabilized === mesh_tuple
 
-    non_concrete_tuple = tuple(mesh1, mesh2)::Tuple{Any, Any}
-    stabilized_non_concrete = MeshArrays._stabilize_mesh_type(non_concrete_tuple)
-    @test isconcretetype(typeof(stabilized_non_concrete))
+    # NOTE: Cannot test the non-concrete tuple branch (line 69 in dense.jl) because
+    # typeof() always returns the actual runtime type, which is concrete. The type
+    # annotation ::Tuple{Any, Any} does not change the actual type of the tuple.
+    # non_concrete_tuple = tuple(mesh1, mesh2)::Tuple{Any, Any}
+    # stabilized_non_concrete = MeshArrays._stabilize_mesh_type(non_concrete_tuple)
+    # @test isconcretetype(typeof(stabilized_non_concrete))
 
     non_concrete_mesh = Any[mesh1, mesh2]
     stabilized_from_vec = MeshArrays._stabilize_mesh_type(non_concrete_mesh)

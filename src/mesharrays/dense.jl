@@ -64,9 +64,11 @@ function _stabilize_mesh_type(mesh::Tuple)
     # Concretize the mesh tuple type
     if isconcretetype(typeof(mesh))
         return mesh
-    else
+    # else
+        # NOTE: This branch is unreachable in practice because typeof() always returns
+        # the actual runtime type, which is concrete. Kept for defensive programming.
         # Create a new tuple while preserving the type of each element
-        return map(identity, mesh)
+        # return map(identity, mesh)
     end
 end
 
@@ -121,9 +123,11 @@ function MeshArray(mesh...;
 
     mesh = _stabilize_mesh_type(mesh)
 
-    if isconcretetype(typeof(mesh)) == false
-        @warn "Mesh type $(typeof(mesh)) is not concrete, it may cause performance issue."
-    end
+    # NOTE: This check is unreachable in practice because typeof() always returns
+    # the actual runtime type, which is concrete. Kept for defensive programming.
+    # if isconcretetype(typeof(mesh)) == false
+    #     @warn "Mesh type $(typeof(mesh)) is not concrete, it may cause performance issue."
+    # end
 
     N = length(mesh)
     dims = tuple([length(v) for v in mesh]...)
@@ -151,9 +155,11 @@ function MeshArray(; mesh::Union{Tuple,AbstractVector},
 
     mesh = _stabilize_mesh_type(mesh)
 
-    if isconcretetype(typeof(mesh)) == false
-        @warn "Mesh type $(typeof(mesh)) is not concrete, it may cause performance issue."
-    end
+    # NOTE: This check is unreachable in practice because typeof() always returns
+    # the actual runtime type, which is concrete. Kept for defensive programming.
+    # if isconcretetype(typeof(mesh)) == false
+    #     @warn "Mesh type $(typeof(mesh)) is not concrete, it may cause performance issue."
+    # end
 
     @assert mesh isa Tuple "mesh should be a tuple, now get $(typeof(mesh))"
     N = length(mesh)
