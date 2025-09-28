@@ -154,3 +154,16 @@ end
     MeshArrays._copyto_typed!(g5, bcf, indices)
     @test g5.data ≈ g1.data .* 2.0
 end
+
+@testset "MeshArray with AbstractVector mesh" begin
+    N1, N2 = 8, 6
+    mesh1 = SimpleGrid.Uniform{Float64}([0.0, 1.0], N1)
+    mesh2 = SimpleGrid.Uniform{Float64}([0.0, 1.0], N2)
+
+    mesh_vector = [mesh1, mesh2]
+    g = MeshArray(; mesh=mesh_vector, dtype=Float64)
+
+    @test size(g) == (N1, N2)
+    @test eltype(g.data) == Float64
+    @test isconcretetype(typeof(g.mesh))
+end
