@@ -60,8 +60,9 @@ function _grid(grid, n=3)
         # return join(io, ["[", join([grid[1:n]..., "...", grid[end-n:end]...], ", "), "]"])
         digits = 0
     else
-        resolution = grid[2] - grid[1]
-        digits = Int(round(log(grid[end] / resolution) / log(10))) + 3
+        resolution = abs(grid[2] - grid[1])
+        scale = max(abs(grid[1]), abs(grid[end]), resolution)
+        digits = resolution == 0 ? 5 : Int(round(log10(scale / resolution))) + 3
         digits = digits < 5 ? 5 : digits
     end
     if length(grid) <= 2n + 3
@@ -83,4 +84,33 @@ function _to_AbstractGrid(grid::AbstractVector, dtype)
     end
     grid = SimpleG.Arbitrary{dtype}(dtype.(grid))
     return grid, rev
+end
+
+function _to_realdomain_grid(grid, dtype, domain_name)
+    isempty(grid) && throw(ArgumentError("a $domain_name grid cannot be empty"))
+    eltype(grid) <: Real || throw(ArgumentError("$domain_name grid points must be real"))
+    all(isfinite, grid) || throw(ArgumentError("$domain_name grid points must be finite"))
+
+    ascending = issorted(grid)
+    descending = issorted(grid; rev=true)
+    (ascending || descending) || throw(ArgumentError("$domain_name grid points must be sorted"))
+    if length(grid) > 1
+        strictly_sorted = ascending ?
+            all(grid[i] < grid[i + 1] for i in 1:(length(grid) - 1)) :
+            all(grid[i] > grid[i + 1] for i in 1:(length(grid) - 1))
+        strictly_sorted || throw(ArgumentError("$domain_name grid points must be unique"))
+    end
+
+    if grid isa AbstractGrid && descending
+        # Preserve the public iteration order while restoring the internal
+        # ascending-grid invariant used by TemporalGrid.
+        converted = SimpleG.Arbitrary{dtype}(dtype.(reverse(collect(grid))))
+        return converted, true
+    end
+
+    converted, rev = _to_AbstractGrid(grid, dtype)
+    eltype(converted) == dtype || throw(ArgumentError(
+        "grid element type $(eltype(converted)) does not match dtype=$dtype",
+    ))
+    return converted, rev
 end

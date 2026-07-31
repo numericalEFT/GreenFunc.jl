@@ -9,6 +9,7 @@ if isempty(ARGS)
     include("test_MeshArrays.jl")
     include("test_transform.jl")
     include("test_MeshGrids.jl")
+    include("test_semantics.jl")
 else
     include(ARGS[1])
 end

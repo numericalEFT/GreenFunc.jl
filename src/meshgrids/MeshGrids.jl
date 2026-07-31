@@ -35,6 +35,12 @@ export ImFreq
 export int_to_matfreq, matfreq_to_int
 export matfreq
 
+include("refreq.jl")
+export ReFreq
+
+include("retime.jl")
+export ReTime
+
 include("MeshProduct.jl")
 export MeshProduct
 
